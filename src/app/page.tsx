@@ -22,6 +22,8 @@ import { AuthModal } from '@/components/hud/modals/AuthModal';
 import { DaySummaryModal } from '@/components/hud/modals/DaySummaryModal';
 import { ExpandModal } from '@/components/hud/modals/ExpandModal';
 import { CloudConflictModal } from '@/components/hud/modals/CloudConflictModal';
+import { WorkshopModal } from '@/components/hud/modals/WorkshopModal';
+import { MarketModal } from '@/components/hud/modals/MarketModal';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -70,6 +72,8 @@ export default function HomePage() {
       {activeModal === 'summary' && <DaySummaryModal />}
       {activeModal === 'expand' && <ExpandModal />}
       {activeModal === 'cloudConflict' && <CloudConflictModal />}
+      {activeModal === 'workshop' && <WorkshopModal />}
+      {activeModal === 'market' && <MarketModal />}
     </main>
   );
 }

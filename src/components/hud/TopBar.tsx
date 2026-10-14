@@ -6,9 +6,7 @@ import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import { npcPresetsFor } from '@/config/npcs';
 import { soundFX } from '@/lib/audio';
-
-const sum = (record: Record<string, number>) =>
-  Object.values(record).reduce((a, b) => a + b, 0);
+import { countItems } from '@/lib/inventory';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -21,9 +19,8 @@ export function TopBar() {
   const maxWater = useGameStore((s) => s.maxWater);
   const currentWorld = useGameStore((s) => s.currentWorld);
   const quests = useGameStore((s) => s.quests);
-  const harvested = useGameStore((s) => s.harvested);
+  const items = useGameStore((s) => s.items);
   const shippingBin = useGameStore((s) => s.shippingBin);
-  const animalProducts = useGameStore((s) => s.animalProducts);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
   const signedIn = useGameStore((s) => !!s.userProfile);
   const cloudError = useGameStore((s) => !!s.cloudError);
@@ -31,13 +28,14 @@ export function TopBar() {
   const cycleTimeOfDay = useGameStore((s) => s.cycleTimeOfDay);
   const nextDay = useGameStore((s) => s.nextDay);
   const openExpand = useGameStore((s) => s.openExpand);
+  const openWorkshop = useGameStore((s) => s.openWorkshop);
 
   const [muted, setMuted] = useState(soundFX.muted);
   const worldCfg = WORLDS[currentWorld];
 
   const onlineCount =
     1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
-  const storedCount = sum(harvested) + sum(shippingBin) + sum(animalProducts);
+  const storedCount = countItems(items) + countItems(shippingBin);
   const hasClaimable = quests.some((q) => !q.claimed && q.progress >= q.target);
 
   return (
@@ -173,6 +171,14 @@ export function TopBar() {
           className="game-btn flex items-center gap-1.5 rounded-xl border-2 border-rose-950 bg-rose-600 px-2.5 py-2 text-xs font-extrabold text-white hover:bg-rose-500 sm:text-sm"
         >
           <span>🐄</span> <span className="hidden md:inline">Chăn Nuôi</span>
+        </button>
+
+        <button
+          onClick={() => openWorkshop()}
+          title="Xưởng Chế Biến (Phím X)"
+          className="game-btn flex items-center gap-1.5 rounded-xl border-2 border-yellow-900 bg-yellow-500 px-2.5 py-2 text-xs font-extrabold text-yellow-950 hover:bg-yellow-400 sm:text-sm"
+        >
+          <span>🏭</span> <span className="hidden md:inline">Xưởng</span>
         </button>
 
         <button

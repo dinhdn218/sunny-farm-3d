@@ -1,11 +1,12 @@
-import { SaveData } from '@/types/game';
+import { ItemCounts, SaveData } from '@/types/game';
 import { COSMETICS } from '@/config/cosmetics';
 import { GRID_SIZE, PLOT_TILES, STARTER_PLOTS } from '@/config/farm';
 import { defaultDecorPlacements } from '@/lib/farmLayout';
-import { createInitialQuests } from '@/lib/quests';
+import { createInitialQuests, reconcileQuests } from '@/lib/quests';
+import { addItems } from '@/lib/inventory';
 import { createEmptyGrid, createNewGameSave } from '@/lib/newGame';
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 // A save as read back from storage: possibly from an older version, possibly with extra keys
 export type StoredSave = Partial<SaveData> & Record<string, unknown>;
@@ -22,12 +23,13 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   tiles: true,
   ownedPlots: true,
   seeds: true,
-  harvested: true,
+  items: true,
   shippingBin: true,
   breadCount: true,
   animals: true,
   animalFeed: true,
-  animalProducts: true,
+  machines: true,
+  lastFreeSnackDay: true,
   cosmetics: true,
   ownedCosmetics: true,
   decorPlacements: true,
@@ -60,13 +62,9 @@ const achievementProgressFrom = (ownedCosmetics: string[], day: number) => ({
   a_days: day - 1,
 });
 
-// Brings a save written by an older version of the game up to date
-export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
-  const saved = raw as StoredSave;
-  if (version >= 1) return saved;
-
-  // v0 saves: an 8×8 field and one-off quests. Centre the old field in the
-  // 16×16 grid, place owned decor at its old spots and switch to the new quest system.
+// v0 saves: an 8×8 field and one-off quests. Centre the old field in the
+// 16×16 grid, place owned decor at its old spots and switch to the new quest system.
+function fromV0(saved: StoredSave): StoredSave {
   const tiles = createEmptyGrid();
   (saved.tiles ?? []).forEach((t) => {
     const r = t.r + PLOT_TILES;
@@ -85,7 +83,31 @@ export function migrateSave(raw: Record<string, unknown>, version: number): Stor
   };
 }
 
+// v1 saves kept crops and animal products apart and the shipping bin took crops only
+function fromV1(saved: StoredSave): StoredSave {
+  const { harvested, animalProducts, ...rest } = saved as StoredSave & {
+    harvested?: ItemCounts;
+    animalProducts?: ItemCounts;
+  };
+  return {
+    ...rest,
+    items: addItems(addItems({}, harvested ?? {}), animalProducts ?? {}),
+    shippingBin: addItems({}, saved.shippingBin ?? {}),
+    machines: {},
+    lastFreeSnackDay: 0,
+  };
+}
+
+// Brings a save written by an older version of the game up to date
+export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
+  let save = raw as StoredSave;
+  if (version < 1) save = fromV0(save);
+  if (version < 2) save = fromV1(save);
+  return save;
+}
+
 // A cloud save is complete game data: anything it lacks starts as in a new game, anything extra is dropped
 export function saveFromCloud(raw: Record<string, unknown>, version: number): SaveData {
-  return pickSaveData({ ...createNewGameSave(), ...migrateSave(raw, version) } as SaveData);
+  const save = pickSaveData({ ...createNewGameSave(), ...migrateSave(raw, version) } as SaveData);
+  return { ...save, quests: reconcileQuests(save.quests, save.day) };
 }

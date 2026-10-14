@@ -3,7 +3,27 @@ export type TileState = 'empty' | 'tilled' | 'planted';
 export type CropId = 'carrot' | 'wheat' | 'tomato' | 'pumpkin';
 export type AnimalSpecies = 'chicken' | 'sheep' | 'cow';
 export type AnimalProductId = 'egg' | 'wool' | 'milk';
+export type ArtisanId =
+  | 'carrot_juice'
+  | 'tomato_sauce'
+  | 'flan'
+  | 'cheese'
+  | 'wool_scarf'
+  | 'pumpkin_pie';
+// Everything that goes in the bag and can be sold
+export type ItemId = CropId | AnimalProductId | ArtisanId;
+export type ItemCounts = Partial<Record<ItemId, number>>;
 export type TreeType = 'pine' | 'oak' | 'sakura' | 'palm';
+
+export type MachineId = 'machine_oven' | 'machine_kitchen' | 'machine_cheese' | 'machine_loom';
+export type RecipeId =
+  | 'bread'
+  | 'pumpkin_pie'
+  | 'carrot_juice'
+  | 'tomato_sauce'
+  | 'flan'
+  | 'cheese'
+  | 'wool_scarf';
 
 export type ToolId =
   | 'hoe'
@@ -47,6 +67,40 @@ export interface AnimalConfig {
   productSellPrice: number;
   glbPath: string;
   description: string;
+}
+
+export interface ItemConfig {
+  id: ItemId;
+  name: string;
+  icon: string;
+  sellPrice: number;
+  kind: 'crop' | 'animal' | 'artisan';
+}
+
+export interface RecipeConfig {
+  id: RecipeId;
+  machine: MachineId;
+  inputs: ItemCounts;
+  // 'bread' goes to the hotbar's bread slot instead of the bag
+  output: { id: ArtisanId | 'bread'; count: number };
+  seconds: number;
+}
+
+export interface MachineConfig {
+  id: MachineId;
+  name: string;
+  icon: string;
+  price: number;
+  // Radius kept clear around the machine when placing it on the farm
+  footprint: number;
+  description: string;
+  recipes: RecipeId[];
+}
+
+export interface MachineJob {
+  recipeId: RecipeId;
+  // Epoch ms when the batch is done (sleeping finishes it at once)
+  readyAt: number;
 }
 
 export interface FarmAnimal {
@@ -136,7 +190,10 @@ export type QuestType =
   | 'feed_animal'
   | 'collect_animal'
   | 'buy_animal'
-  | 'buy_plot';
+  | 'buy_plot'
+  | 'buy_machine'
+  | 'craft'
+  | 'market_sell';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement';
 
@@ -174,14 +231,20 @@ export interface SaveData {
   tiles: TileData[];
   ownedPlots: string[];
   seeds: Record<CropId, number>;
-  harvested: Record<CropId, number>;
-  shippingBin: Record<CropId, number>;
+  // The bag: harvests, animal products and artisan goods
+  items: ItemCounts;
+  // Sold overnight at full price
+  shippingBin: ItemCounts;
   breadCount: number;
   animals: FarmAnimal[];
   animalFeed: number;
-  animalProducts: Record<AnimalProductId, number>;
+  // Processing machines owned (placed ones also have an entry in decorPlacements)
+  machines: Partial<Record<MachineId, { job: MachineJob | null }>>;
+  // Day the free daily popcorn was last eaten
+  lastFreeSnackDay: number;
   cosmetics: PlayerCosmetics;
   ownedCosmetics: string[];
+  // Decor and machines placed on the farm
   decorPlacements: Record<string, DecorPlacement>;
   quests: QuestItem[];
   dailyDay: number;

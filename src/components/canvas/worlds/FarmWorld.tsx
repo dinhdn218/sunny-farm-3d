@@ -1,11 +1,14 @@
 'use client';
 
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { CROPS } from '@/config/crops';
 import { COSMETICS } from '@/config/cosmetics';
+import { MACHINES, RECIPES } from '@/config/machines';
+import { ITEMS } from '@/config/items';
+import { formatCountdown } from '@/lib/format';
 import {
   PLOT_SIZE,
   TILE_SIZE,
@@ -27,11 +30,12 @@ import {
   ranchOffset,
   stretchPoint,
 } from '@/lib/farmLayout';
-import { DecorPlacement, TileData } from '@/types/game';
+import { DecorPlacement, MachineId, MachineJob, TileData } from '@/types/game';
 import { interactable } from '@/lib/interact';
 import { CropMesh } from '../models/CropMesh';
 import { AnimalMesh } from '../models/AnimalMesh';
 import { DecorModel } from '../models/DecorModel';
+import { MachineModel } from '../models/MachineModel';
 import { Tree } from '../environment/Props';
 import { DecorPlacer } from '../DecorPlacer';
 
@@ -262,12 +266,75 @@ function PlacedDecor({ id, placement }: { id: string; placement: DecorPlacement 
   );
 }
 
+// Floating badge over a machine: a countdown while it works, a bouncing "done" sign when goods are waiting
+function MachineBadge({ job }: { job: MachineJob | null }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!job) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [job]);
+
+  if (!job) return null;
+  const { output } = RECIPES[job.recipeId];
+  const icon = output.id === 'bread' ? '🥖' : ITEMS[output.id].icon;
+  const left = job.readyAt - now;
+
+  return (
+    <Html position={[0, 2.1, 0]} zIndexRange={[15, 0]}>
+      {left > 0 ? (
+        <div className="player-tag w-max rounded-full border border-white/30 bg-slate-900/85 px-2.5 py-0.5 text-[11px] font-black text-amber-200 shadow">
+          {icon} ⏳ {formatCountdown(left)}
+        </div>
+      ) : (
+        <div className="player-tag w-max animate-bounce rounded-full border border-white bg-amber-400 px-2.5 py-0.5 text-[11px] font-black text-amber-950 shadow">
+          {icon} Xong! Click thu hàng
+        </div>
+      )}
+    </Html>
+  );
+}
+
+// A workshop machine on the farm: click collects finished goods, otherwise opens it in the workshop
+function PlacedMachine({
+  id,
+  placement,
+  job,
+}: {
+  id: MachineId;
+  placement: DecorPlacement;
+  job: MachineJob | null;
+}) {
+  const cfg = MACHINES[id];
+  const handlers = interactable(
+    `${cfg.icon} ${cfg.name}`,
+    () => {
+      const store = useGameStore.getState();
+      const current = store.machines[id]?.job;
+      if (current && Date.now() >= current.readyAt) store.collectMachine(id);
+      else store.openWorkshop(id);
+    },
+    job ? 'Click để xem mẻ đang làm hoặc thu hàng' : 'Click để chọn món chế biến'
+  );
+
+  return (
+    <group position={[placement.x, 0, placement.z]}>
+      <group rotation={[0, placement.rotY, 0]} {...handlers}>
+        <MachineModel id={id} job={job} />
+      </group>
+      <MachineBadge job={job} />
+    </group>
+  );
+}
+
 export function FarmWorld() {
   const tiles = useGameStore((s) => s.tiles);
   const animals = useGameStore((s) => s.animals);
   const ownedPlots = useGameStore((s) => s.ownedPlots);
   const ownedCosmetics = useGameStore((s) => s.ownedCosmetics);
   const decorPlacements = useGameStore((s) => s.decorPlacements);
+  const machines = useGameStore((s) => s.machines);
   const placingDecor = useGameStore((s) => s.placingDecor);
   const refillWater = useGameStore((s) => s.refillWater);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
@@ -453,6 +520,17 @@ export function FarmWorld() {
         .filter(([id]) => ownedCosmetics.includes(id) && placingDecor?.id !== id)
         .map(([id, placement]) => (
           <PlacedDecor key={id} id={id} placement={placement} />
+        ))}
+
+      {(Object.keys(machines) as MachineId[])
+        .filter((id) => decorPlacements[id] && placingDecor?.id !== id)
+        .map((id) => (
+          <PlacedMachine
+            key={id}
+            id={id}
+            placement={decorPlacements[id]}
+            job={machines[id]?.job ?? null}
+          />
         ))}
 
       <DecorPlacer />

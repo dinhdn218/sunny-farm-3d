@@ -3,6 +3,8 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { isMachineId } from '@/config/machines';
+import { MachineModel } from './MachineModel';
 
 type Vec3 = [number, number, number];
 const ZERO: Vec3 = [0, 0, 0];
@@ -340,8 +342,9 @@ function GoldStatue({ ghost }: { ghost?: boolean }) {
   );
 }
 
-// 3D model of a farm decoration (also used translucent as the placement ghost and in the shop preview)
+// 3D model of a farm decoration or workshop machine (also used translucent as the placement ghost and in shop previews)
 export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
+  if (isMachineId(id)) return <MachineModel id={id} ghost={ghost} />;
   switch (id) {
     case 'decor_scarecrow':
       return <Scarecrow ghost={ghost} />;

@@ -37,12 +37,15 @@ export const MAIN_QUESTS: QuestDef[] = [
   { id: 'm_plot', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Địa Chủ Tập Sự', desc: 'Mở khóa 1 lô đất mới (nút 🏗️ Mở Rộng).', icon: '🗺️', type: 'buy_plot', target: 1, rewardGold: 200, rewardGems: 10 },
   { id: 'm_plant_more', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Cánh Đồng Bát Ngát', desc: 'Gieo thêm 15 hạt giống.', icon: '🌾', type: 'plant', target: 15, rewardGold: 180, rewardGems: 8 },
   { id: 'm_pumpkin', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Bí Ngô Khổng Lồ', desc: 'Thu hoạch 3 Bí Ngô.', icon: '🎃', type: 'harvest', crop: 'pumpkin', target: 3, rewardGold: 250, rewardGems: 12 },
-  { id: 'm_fashion', chapter: 'Chương 4 · Phong Cách', title: 'Tín Đồ Thời Trang', desc: 'Mua 1 món thời trang mới.', icon: '👗', type: 'buy_cosmetic', target: 1, rewardGold: 150, rewardGems: 10 },
-  { id: 'm_decor', chapter: 'Chương 4 · Phong Cách', title: 'Kiến Trúc Sư Nông Trại', desc: 'Đặt 1 đồ trang trí ra nông trại.', icon: '🏡', type: 'place_decor', target: 1, rewardGold: 200, rewardGems: 12 },
-  { id: 'm_visit', chapter: 'Chương 5 · Du Ngoạn', title: 'Nhà Du Hành', desc: 'Ghé thăm đủ 4 khu vực công cộng.', icon: '✈️', type: 'visit_worlds', target: 4, rewardGold: 200, rewardGems: 12 },
-  { id: 'm_cinema', chapter: 'Chương 5 · Du Ngoạn', title: 'Khán Giả Điện Ảnh', desc: 'Đổi kênh phim ở Rạp Chiếu Phim 3 lần.', icon: '🎬', type: 'cinema_channel', target: 3, rewardGold: 150, rewardGems: 10 },
-  { id: 'm_plots', chapter: 'Chương 6 · Đại Điền Chủ', title: 'Đại Điền Chủ', desc: 'Mở khóa thêm 4 lô đất.', icon: '👑', type: 'buy_plot', target: 4, rewardGold: 600, rewardGems: 30 },
-  { id: 'm_tycoon', chapter: 'Chương 6 · Đại Điền Chủ', title: 'Triệu Phú Nông Trại', desc: 'Bán hàng thu về tổng cộng 5.000 Vàng.', icon: '💰', type: 'earn_gold', target: 5000, rewardGold: 800, rewardGems: 40 },
+  { id: 'm_machine', chapter: 'Chương 4 · Nghệ Nhân', title: 'Xưởng Chế Biến Đầu Tiên', desc: 'Mua 1 máy chế biến ở Xưởng (phím X).', icon: '🏭', type: 'buy_machine', target: 1, rewardGold: 150, rewardGems: 8 },
+  { id: 'm_craft', chapter: 'Chương 4 · Nghệ Nhân', title: 'Mẻ Hàng Thủ Công', desc: 'Chế biến xong 3 mẻ hàng.', icon: '🍳', type: 'craft', target: 3, rewardGold: 200, rewardGems: 10 },
+  { id: 'm_market', chapter: 'Chương 4 · Nghệ Nhân', title: 'Phiên Chợ Đầu Tiên', desc: 'Bán hàng ở Chợ Phiên (Trung Tâm Thương Mại) thu về 500 Vàng.', icon: '🧺', type: 'market_sell', target: 500, rewardGold: 200, rewardGems: 10 },
+  { id: 'm_fashion', chapter: 'Chương 5 · Phong Cách', title: 'Tín Đồ Thời Trang', desc: 'Mua 1 món thời trang mới.', icon: '👗', type: 'buy_cosmetic', target: 1, rewardGold: 150, rewardGems: 10 },
+  { id: 'm_decor', chapter: 'Chương 5 · Phong Cách', title: 'Kiến Trúc Sư Nông Trại', desc: 'Đặt 1 đồ trang trí ra nông trại.', icon: '🏡', type: 'place_decor', target: 1, rewardGold: 200, rewardGems: 12 },
+  { id: 'm_visit', chapter: 'Chương 6 · Du Ngoạn', title: 'Nhà Du Hành', desc: 'Ghé thăm đủ 4 khu vực công cộng.', icon: '✈️', type: 'visit_worlds', target: 4, rewardGold: 200, rewardGems: 12 },
+  { id: 'm_cinema', chapter: 'Chương 6 · Du Ngoạn', title: 'Khán Giả Điện Ảnh', desc: 'Đổi kênh phim ở Rạp Chiếu Phim 3 lần.', icon: '🎬', type: 'cinema_channel', target: 3, rewardGold: 150, rewardGems: 10 },
+  { id: 'm_plots', chapter: 'Chương 7 · Đại Điền Chủ', title: 'Đại Điền Chủ', desc: 'Mở khóa thêm 4 lô đất.', icon: '👑', type: 'buy_plot', target: 4, rewardGold: 600, rewardGems: 30 },
+  { id: 'm_tycoon', chapter: 'Chương 7 · Đại Điền Chủ', title: 'Triệu Phú Nông Trại', desc: 'Bán hàng thu về tổng cộng 5.000 Vàng.', icon: '💰', type: 'earn_gold', target: 5000, rewardGold: 800, rewardGems: 40 },
 ];
 
 // Three of these are drawn each day and replaced when you sleep
@@ -60,6 +63,8 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_visit', title: 'Dạo Chơi Thành Phố', desc: 'Dịch chuyển đến 2 khu vực công cộng.', icon: '✈️', type: 'visit_world', target: 2, rewardGold: 90, rewardGems: 4 },
   { id: 'd_cinema', title: 'Suất Chiếu Trong Ngày', desc: 'Đổi kênh phim ở Rạp 1 lần.', icon: '🎬', type: 'cinema_channel', target: 1, rewardGold: 80, rewardGems: 3 },
   { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì hoặc Bắp Rang Bơ 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
+  { id: 'd_craft', title: 'Bếp Núc Bận Rộn', desc: 'Chế biến xong 2 mẻ hàng ở Xưởng.', icon: '🍳', type: 'craft', target: 2, rewardGold: 110, rewardGems: 4 },
+  { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
 ];
 
 export const DAILY_QUEST_COUNT = 3;
@@ -108,6 +113,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: '🐄',
     type: 'collect_animal',
     desc: 'Thu {n} sản phẩm chăn nuôi.',
+    tiers: [
+      { target: 5, rewardGold: 100, rewardGems: 5 },
+      { target: 25, rewardGold: 300, rewardGems: 15 },
+      { target: 100, rewardGold: 800, rewardGems: 40 },
+    ],
+  },
+  {
+    id: 'a_craft',
+    title: 'Nghệ Nhân Làng Nghề',
+    icon: '🏭',
+    type: 'craft',
+    desc: 'Chế biến xong {n} mẻ hàng.',
     tiers: [
       { target: 5, rewardGold: 100, rewardGems: 5 },
       { target: 25, rewardGold: 300, rewardGems: 15 },

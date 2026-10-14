@@ -9,8 +9,12 @@ import {
   FarmAnimal,
   FloatingLabel,
   HoverTooltip,
+  ItemConfig,
+  ItemId,
+  MachineId,
   QuestItem,
   QuestType,
+  RecipeId,
   RemotePlayer,
   SaveData,
   ToolId,
@@ -20,6 +24,8 @@ import {
 import { CROPS } from '@/config/crops';
 import { ANIMALS } from '@/config/animals';
 import { COSMETICS } from '@/config/cosmetics';
+import { ITEMS } from '@/config/items';
+import { MACHINES, RECIPES, isMachineId } from '@/config/machines';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import {
@@ -35,6 +41,7 @@ import {
   FarmBands,
   canPlaceDecor,
   farmBands,
+  placeableInfo,
   ranchOffset,
   stretchPoint,
   worldPortal,
@@ -44,9 +51,19 @@ import {
   advanceQuests,
   afterClaim,
   createDailyQuests,
+  reconcileQuests,
   syncQuestValue,
 } from '@/lib/quests';
-import { EMPTY_CROPS, createNewGameSave } from '@/lib/newGame';
+import {
+  addItems,
+  countItems,
+  instantSellPrice,
+  missingItems,
+  takeItems,
+} from '@/lib/inventory';
+import { marketPrice } from '@/lib/market';
+import { formatCountdown } from '@/lib/format';
+import { createNewGameSave } from '@/lib/newGame';
 import {
   SAVE_KEYS,
   SAVE_VERSION,
@@ -67,7 +84,12 @@ interface DaySummaryData {
   cropsGrownCount: number;
   readyCount: number;
   animalProductsReady: number;
+  // Workshop batches the night finished, waiting to be collected
+  batchesReady: number;
 }
+
+// Popcorn at the cinema: the first one each day is free
+export const SNACK_PRICE = 15;
 
 interface GameState extends SaveData {
   playerId: string;
@@ -101,7 +123,11 @@ interface GameState extends SaveData {
     | 'summary'
     | 'expand'
     | 'cloudConflict'
+    | 'workshop'
+    | 'market'
     | null;
+  // Machine shown in the workshop window
+  workshopMachine: MachineId | null;
   lastDaySummary: DaySummaryData | null;
   floatingLabels: FloatingLabel[];
   tooltip: HoverTooltip | null;
@@ -141,10 +167,17 @@ interface GameState extends SaveData {
   interactFront: () => void;
   buySeed: (crop: CropId, amount?: number) => void;
   buyBread: () => void;
-  sellAllInInventory: () => void;
-  depositToShippingBin: () => void;
-  moveCropToBin: (crop: CropId, amount?: number) => void;
-  returnCropFromBin: (crop: CropId, amount?: number) => void;
+  sellNow: (id: ItemId, amount?: number) => void;
+  sellAllNow: (kind?: ItemConfig['kind']) => void;
+  moveToBin: (id: ItemId, amount?: number) => void;
+  returnFromBin: (id: ItemId, amount?: number) => void;
+  depositAllToBin: () => void;
+  sellAtMarket: (id: ItemId, amount?: number) => void;
+
+  openWorkshop: (machine?: MachineId) => void;
+  buyMachine: (id: MachineId) => void;
+  startRecipe: (recipeId: RecipeId) => void;
+  collectMachine: (id: MachineId) => void;
 
   openExpand: (plot?: string | null) => void;
   selectPlot: (plot: string) => void;
@@ -229,6 +262,7 @@ export const useGameStore = create<GameState>()(
         selectedPlot: null,
         placingDecor: null,
         activeModal: null,
+        workshopMachine: null,
         lastDaySummary: null,
         floatingLabels: [],
         tooltip: null,
@@ -441,10 +475,25 @@ export const useGameStore = create<GameState>()(
         },
 
         eatPopcornOrSnack: (label, bonusEnergy) => {
-          const { energy, maxEnergy } = get();
+          const { energy, maxEnergy, gold, day, lastFreeSnackDay } = get();
+          if (energy >= maxEnergy) {
+            get().showToast('⚡ Thể lực đang đầy 100/100!', 'text-amber-300');
+            return;
+          }
+          const free = lastFreeSnackDay !== day;
+          if (!free && gold < SNACK_PRICE) {
+            soundFX.error();
+            get().showToast(`Cần ${SNACK_PRICE} Vàng 🪙 để mua thêm ${label}!`, 'text-red-400');
+            return;
+          }
           soundFX.coin();
-          set({ energy: Math.min(maxEnergy, energy + bonusEnergy) });
-          get().showToast(`🍿 ${label} thơm lừng (+${bonusEnergy}⚡)!`);
+          set({
+            energy: Math.min(maxEnergy, energy + bonusEnergy),
+            ...(free ? { lastFreeSnackDay: day } : { gold: gold - SNACK_PRICE }),
+          });
+          get().showToast(
+            `🍿 ${label} thơm lừng (+${bonusEnergy}⚡${free ? ', miễn phí hôm nay' : `, -${SNACK_PRICE}🪙`})!`
+          );
           get().incrementQuest('eat', 1);
         },
 
@@ -484,8 +533,7 @@ export const useGameStore = create<GameState>()(
 
         interactTile: (r, c) => {
           const state = get();
-          const { activeTool, tiles, energy, water, seeds, harvested, playerPos } =
-            state;
+          const { activeTool, tiles, energy, water, seeds, items, playerPos } = state;
           const targetTile = tiles.find((t) => t.r === r && t.c === c);
           if (!targetTile) return;
 
@@ -533,10 +581,7 @@ export const useGameStore = create<GameState>()(
 
             set({
               tiles: updatedTiles,
-              harvested: {
-                ...harvested,
-                [cropKey]: (harvested[cropKey] || 0) + 1,
-              },
+              items: addItems(items, { [cropKey]: 1 }),
             });
             spawnParticles(tx, 0.45, tz, 0xfacc15, 20);
             get().showToast(
@@ -712,87 +757,168 @@ export const useGameStore = create<GameState>()(
           set({ gold: gold - 25, breadCount: breadCount + 1 });
         },
 
-        sellAllInInventory: () => {
-          const { harvested, shippingBin, animalProducts, gold } = get();
-          let earned = 0;
-          let count = 0;
+        // Selling on the spot pays 70%; the shipping bin pays full price overnight
+        sellNow: (id, amount = 1) => {
+          const { items, gold } = get();
+          const qty = Math.min(amount, items[id] ?? 0);
+          if (qty <= 0) return;
+          const earned = instantSellPrice(id) * qty;
+          soundFX.coin();
+          set({ gold: gold + earned, items: takeItems(items, { [id]: qty }) ?? items });
+          get().showToast(`🪙 +${earned} Vàng!`);
+          get().incrementQuest('earn_gold', earned);
+        },
 
-          (Object.keys(CROPS) as CropId[]).forEach((k) => {
-            const qty = (harvested[k] || 0) + (shippingBin[k] || 0);
-            if (qty > 0) {
-              earned += qty * CROPS[k].sellPrice;
-              count += qty;
-            }
-          });
-
-          (Object.keys(ANIMALS) as AnimalSpecies[]).forEach((sp) => {
-            const cfg = ANIMALS[sp];
-            const qty = animalProducts[cfg.productId] || 0;
-            if (qty > 0) {
-              earned += qty * cfg.productSellPrice;
-              count += qty;
-            }
-          });
-
-          if (count === 0) {
+        sellAllNow: (kind) => {
+          const { items, gold } = get();
+          const sold = (Object.entries(items) as [ItemId, number][]).filter(
+            ([id, n]) => n > 0 && (!kind || ITEMS[id].kind === kind)
+          );
+          if (sold.length === 0) {
             soundFX.error();
-            get().showToast('🎒 Kho nông sản đang trống!', 'text-red-400');
+            get().showToast('🎒 Không có gì để bán!', 'text-red-400');
             return;
           }
-
+          const earned = sold.reduce((sum, [id, n]) => sum + instantSellPrice(id) * n, 0);
           soundFX.coin();
           set({
             gold: gold + earned,
-            harvested: { ...EMPTY_CROPS },
-            shippingBin: { ...EMPTY_CROPS },
-            animalProducts: { egg: 0, wool: 0, milk: 0 },
+            items: takeItems(items, Object.fromEntries(sold)) ?? items,
           });
           get().showToast(`🪙 +${earned} Vàng!`);
           get().incrementQuest('earn_gold', earned);
         },
 
-        depositToShippingBin: () => {
-          const { harvested, shippingBin } = get();
-          let total = 0;
-          const nextBin = { ...shippingBin };
-
-          (Object.keys(harvested) as CropId[]).forEach((k) => {
-            const qty = harvested[k] || 0;
-            if (qty > 0) {
-              nextBin[k] = (nextBin[k] || 0) + qty;
-              total += qty;
-            }
-          });
-
-          if (total === 0) return;
-
+        moveToBin: (id, amount = 1) => {
+          const { items, shippingBin } = get();
+          const rest = takeItems(items, { [id]: amount });
+          if (!rest) return;
           soundFX.plant();
-          set({
-            shippingBin: nextBin,
-            harvested: { ...EMPTY_CROPS },
-          });
+          set({ items: rest, shippingBin: addItems(shippingBin, { [id]: amount }) });
         },
 
-        moveCropToBin: (crop, amount = 1) => {
-          const { harvested, shippingBin } = get();
-          if ((harvested[crop] || 0) < amount) return;
+        returnFromBin: (id, amount = 1) => {
+          const { items, shippingBin } = get();
+          const rest = takeItems(shippingBin, { [id]: amount });
+          if (!rest) return;
+          set({ shippingBin: rest, items: addItems(items, { [id]: amount }) });
+        },
+
+        depositAllToBin: () => {
+          const { items, shippingBin } = get();
+          if (countItems(items) === 0) return;
+          soundFX.plant();
+          set({ shippingBin: addItems(shippingBin, items), items: {} });
+        },
+
+        // Today's market price, and only at the Mall's market stall
+        sellAtMarket: (id, amount = 1) => {
+          const { items, gold, day, currentWorld } = get();
+          if (currentWorld !== 'mall') {
+            soundFX.error();
+            get().showToast('🛍️ Hãy đến Trung Tâm Thương Mại để bán ở Chợ Phiên!', 'text-amber-300');
+            return;
+          }
+          const qty = Math.min(amount, items[id] ?? 0);
+          if (qty <= 0) return;
+          const earned = marketPrice(id, day) * qty;
+          soundFX.coin();
+          set({ gold: gold + earned, items: takeItems(items, { [id]: qty }) ?? items });
+          get().showToast(`🧺 +${earned} Vàng ở Chợ Phiên!`);
+          get().incrementQuest('earn_gold', earned);
+          get().incrementQuest('market_sell', earned);
+        },
+
+        openWorkshop: (machine) =>
+          set((s) => ({
+            activeModal: 'workshop',
+            workshopMachine: machine ?? s.workshopMachine,
+            tooltip: null,
+          })),
+
+        buyMachine: (id) => {
+          const { gold, machines } = get();
+          const cfg = MACHINES[id];
+          if (machines[id]) return;
+          if (gold < cfg.price) {
+            soundFX.error();
+            get().showToast(`Cần ${cfg.price} Vàng 🪙 để mua ${cfg.name}!`, 'text-red-400');
+            return;
+          }
+          soundFX.questClaim();
+          set({
+            gold: gold - cfg.price,
+            machines: { ...machines, [id]: { job: null } },
+            workshopMachine: id,
+          });
+          get().showToast(`🏭 Đã mua ${cfg.icon} ${cfg.name}! Hãy đặt ra nông trại.`, 'text-lime-300');
+          get().incrementQuest('buy_machine', 1);
+          get().startPlacingDecor(id);
+        },
+
+        startRecipe: (recipeId) => {
+          const { machines, items, decorPlacements } = get();
+          const recipe = RECIPES[recipeId];
+          const cfg = MACHINES[recipe.machine];
+          const machine = machines[recipe.machine];
+          if (!machine) return;
+          const placement = decorPlacements[recipe.machine];
+          if (!placement) {
+            soundFX.error();
+            get().showToast(`🏡 Hãy đặt ${cfg.name} ra nông trại trước!`, 'text-amber-300');
+            return;
+          }
+          if (machine.job) {
+            soundFX.error();
+            get().showToast(`⏳ ${cfg.name} đang làm mẻ khác!`, 'text-amber-300');
+            return;
+          }
+          const rest = takeItems(items, recipe.inputs);
+          if (!rest) {
+            soundFX.error();
+            const missing = (Object.entries(missingItems(items, recipe.inputs)) as [ItemId, number][])
+              .map(([id, n]) => `${n} ${ITEMS[id].icon} ${ITEMS[id].name}`)
+              .join(', ');
+            get().showToast(`Thiếu ${missing}!`, 'text-red-400');
+            return;
+          }
           soundFX.plant();
           set({
-            harvested: { ...harvested, [crop]: harvested[crop] - amount },
-            shippingBin: {
-              ...shippingBin,
-              [crop]: (shippingBin[crop] || 0) + amount,
+            items: rest,
+            machines: {
+              ...machines,
+              [recipe.machine]: { job: { recipeId, readyAt: Date.now() + recipe.seconds * 1000 } },
             },
           });
+          spawnParticles(placement.x, 1.0, placement.z, 0xfde68a, 12);
         },
 
-        returnCropFromBin: (crop, amount = 1) => {
-          const { harvested, shippingBin } = get();
-          if ((shippingBin[crop] || 0) < amount) return;
+        collectMachine: (id) => {
+          const { machines, items, breadCount, decorPlacements } = get();
+          const job = machines[id]?.job;
+          if (!job) return;
+          const placement = decorPlacements[id];
+          const at: [number, number, number] | undefined = placement
+            ? [placement.x, 1.4, placement.z]
+            : undefined;
+          const left = job.readyAt - Date.now();
+          if (left > 0) {
+            get().showToast(`⏳ Còn ${formatCountdown(left)} nữa mới xong!`, 'text-amber-300', at);
+            return;
+          }
+          const { output } = RECIPES[job.recipeId];
+          soundFX.harvest();
           set({
-            shippingBin: { ...shippingBin, [crop]: shippingBin[crop] - amount },
-            harvested: { ...harvested, [crop]: (harvested[crop] || 0) + amount },
+            machines: { ...machines, [id]: { job: null } },
+            ...(output.id === 'bread'
+              ? { breadCount: breadCount + output.count }
+              : { items: addItems(items, { [output.id]: output.count }) }),
           });
+          const label =
+            output.id === 'bread' ? '🥖 Bánh Mì' : `${ITEMS[output.id].icon} ${ITEMS[output.id].name}`;
+          if (placement) spawnParticles(placement.x, 1.0, placement.z, 0xfacc15, 18);
+          get().showToast(`+${output.count} ${label}!`, 'text-yellow-300', at);
+          get().incrementQuest('craft', 1);
         },
 
         openExpand: (plot = null) =>
@@ -855,12 +981,14 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('buy_plot', 1);
         },
 
+        // Decor and workshop machines are placed the same way
         startPlacingDecor: (id) => {
-          const { currentWorld, decorPlacements, ownedCosmetics } = get();
-          const item = cosmeticById(id);
-          if (!item || item.category !== 'decor' || !ownedCosmetics.includes(id)) return;
+          const { currentWorld, decorPlacements, ownedCosmetics, machines } = get();
+          const info = placeableInfo(id);
+          const owned = isMachineId(id) ? !!machines[id] : ownedCosmetics.includes(id);
+          if (!info || !owned) return;
           if (currentWorld !== 'farm') {
-            get().showToast(`🏡 Về Nông Trại để đặt ${item.name}!`, 'text-amber-300');
+            get().showToast(`🏡 Về Nông Trại để đặt ${info.name}!`, 'text-amber-300');
             return;
           }
           set({
@@ -882,7 +1010,7 @@ export const useGameStore = create<GameState>()(
         placeDecor: (x, z) => {
           const { placingDecor, decorPlacements, ownedPlots } = get();
           if (!placingDecor) return;
-          const item = cosmeticById(placingDecor.id);
+          const item = placeableInfo(placingDecor.id);
           if (!canPlaceDecor(placingDecor.id, x, z, ownedPlots, decorPlacements)) {
             soundFX.error();
             get().showToast('🚫 Không đặt được ở đây!', 'text-red-400', [x, 0.5, z]);
@@ -904,12 +1032,13 @@ export const useGameStore = create<GameState>()(
             1.2,
             z,
           ]);
-          if (firstTime) get().incrementQuest('place_decor', 1);
+          if (firstTime && !isMachineId(placingDecor.id)) get().incrementQuest('place_decor', 1);
         },
 
+        // Back into storage (decor only: machines stay on the farm and can just be moved)
         storeDecor: (id) => {
           const { decorPlacements } = get();
-          if (!decorPlacements[id]) return;
+          if (!decorPlacements[id] || isMachineId(id)) return;
           const next = { ...decorPlacements };
           delete next[id];
           soundFX.plant();
@@ -976,7 +1105,7 @@ export const useGameStore = create<GameState>()(
         },
 
         interactAnimal: (animalId) => {
-          const { animals, animalFeed, animalProducts, playerPos, ownedPlots } = get();
+          const { animals, animalFeed, items, playerPos, ownedPlots } = get();
           const target = animals.find((a) => a.id === animalId);
           if (!target) return;
 
@@ -998,10 +1127,7 @@ export const useGameStore = create<GameState>()(
                     }
                   : a
               ),
-              animalProducts: {
-                ...animalProducts,
-                [cfg.productId]: (animalProducts[cfg.productId] || 0) + 1,
-              },
+              items: addItems(items, { [cfg.productId]: 1 }),
             });
             spawnParticles(ax, 0.6, az, 0xfacc15, 16);
             get().showToast(
@@ -1077,50 +1203,27 @@ export const useGameStore = create<GameState>()(
         },
 
         nextDay: () => {
-          const {
-            day,
-            tiles,
-            shippingBin,
-            harvested,
-            animals,
-            animalProducts,
-            gold,
-          } = get();
-          const soldItems: {
-            label: string;
-            icon: string;
-            count: number;
-            gold: number;
-          }[] = [];
-          let totalGoldEarned = 0;
+          const { day, tiles, shippingBin, animals, machines, gold } = get();
 
-          (Object.keys(CROPS) as CropId[]).forEach((cropKey) => {
-            const count = (shippingBin[cropKey] || 0) + (harvested[cropKey] || 0);
-            if (count > 0) {
-              const revenue = count * CROPS[cropKey].sellPrice;
-              soldItems.push({
-                label: CROPS[cropKey].name,
-                icon: CROPS[cropKey].icon,
-                count,
-                gold: revenue,
-              });
-              totalGoldEarned += revenue;
-            }
-          });
+          // The shipping bin sells overnight at full price; the bag is kept
+          const soldItems = (Object.entries(shippingBin) as [ItemId, number][])
+            .filter(([, count]) => count > 0)
+            .map(([id, count]) => ({
+              label: ITEMS[id].name,
+              icon: ITEMS[id].icon,
+              count,
+              gold: count * ITEMS[id].sellPrice,
+            }));
+          const totalGoldEarned = soldItems.reduce((sum, item) => sum + item.gold, 0);
 
-          (Object.keys(ANIMALS) as AnimalSpecies[]).forEach((sp) => {
-            const cfg = ANIMALS[sp];
-            const count = animalProducts[cfg.productId] || 0;
-            if (count > 0) {
-              const revenue = count * cfg.productSellPrice;
-              soldItems.push({
-                label: cfg.productName,
-                icon: cfg.productIcon,
-                count,
-                gold: revenue,
-              });
-              totalGoldEarned += revenue;
-            }
+          // A night's sleep finishes every batch in the workshop
+          const now = Date.now();
+          let batchesReady = 0;
+          const nextMachines: SaveData['machines'] = {};
+          (Object.keys(machines) as MachineId[]).forEach((id) => {
+            const job = machines[id]?.job ?? null;
+            if (job) batchesReady++;
+            nextMachines[id] = { job: job && { ...job, readyAt: Math.min(job.readyAt, now) } };
           });
 
           let cropsGrownCount = 0;
@@ -1172,9 +1275,8 @@ export const useGameStore = create<GameState>()(
             gold: gold + totalGoldEarned,
             tiles: nextTiles,
             animals: nextAnimals,
-            shippingBin: { ...EMPTY_CROPS },
-            harvested: { ...EMPTY_CROPS },
-            animalProducts: { egg: 0, wool: 0, milk: 0 },
+            machines: nextMachines,
+            shippingBin: {},
             quests: [
               ...get().quests.filter((q) => q.category !== 'daily'),
               ...createDailyQuests(day + 1),
@@ -1188,6 +1290,7 @@ export const useGameStore = create<GameState>()(
               cropsGrownCount,
               readyCount,
               animalProductsReady,
+              batchesReady,
             },
             activeModal: 'summary',
           });
@@ -1345,12 +1448,19 @@ export const useGameStore = create<GameState>()(
       }),
       migrate: (persisted, version) =>
         migrateSave(persisted as Record<string, unknown>, version) as unknown as GameState,
-      // The signed-in account always comes from the Supabase session, never from an old save
-      merge: (persisted, current) => ({
-        ...current,
-        ...(persisted as Partial<GameState>),
-        userProfile: null,
-      }),
+      // The signed-in account always comes from the Supabase session, never from an old save;
+      // quests added to the game since the save was written join it
+      merge: (persisted, current) => {
+        // Nothing saved yet (a first visit): zustand still merges, with `undefined`
+        if (!persisted) return current;
+        const saved = persisted as Partial<GameState>;
+        return {
+          ...current,
+          ...saved,
+          quests: reconcileQuests(saved.quests ?? current.quests, saved.day ?? current.day),
+          userProfile: null,
+        };
+      },
     }
   )
 );

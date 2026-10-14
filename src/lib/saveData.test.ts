@@ -53,7 +53,39 @@ describe('migrateSave', () => {
   });
 });
 
+describe('migrateSave from version 1', () => {
+  const v1 = {
+    ...createNewGameSave(),
+    harvested: { carrot: 2, wheat: 0, tomato: 1, pumpkin: 0 },
+    animalProducts: { egg: 1, wool: 0, milk: 3 },
+    shippingBin: { carrot: 0, wheat: 4, tomato: 0, pumpkin: 0 },
+  };
+
+  it('puts harvests and animal products in one bag', () => {
+    const save = migrateSave(v1, 1);
+    expect(save.items).toEqual({ carrot: 2, tomato: 1, egg: 1, milk: 3 });
+    expect(save).not.toHaveProperty('harvested');
+    expect(save).not.toHaveProperty('animalProducts');
+  });
+
+  it('keeps what was waiting in the shipping bin', () => {
+    expect(migrateSave(v1, 1).shippingBin).toEqual({ wheat: 4 });
+  });
+
+  it('starts without machines and with the free popcorn unused', () => {
+    const save = migrateSave(v1, 1);
+    expect(save.machines).toEqual({});
+    expect(save.lastFreeSnackDay).toBe(0);
+  });
+});
+
 describe('saveFromCloud', () => {
+  it('gives an older cloud save the story quests added since', () => {
+    const quests = createNewGameSave().quests.filter((q) => q.id !== 'm_machine');
+    const save = saveFromCloud({ day: 2, quests }, 1);
+    expect(save.quests.some((q) => q.id === 'm_machine')).toBe(true);
+  });
+
   it('fills fields missing from an older cloud save with new-game values', () => {
     const save = saveFromCloud({ gold: 999, day: 7 }, 1);
     expect(save.gold).toBe(999);

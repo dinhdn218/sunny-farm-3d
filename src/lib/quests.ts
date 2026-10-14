@@ -73,6 +73,24 @@ export function createInitialQuests(
   ];
 }
 
+// Brings saved quests in line with the current game: story quests and achievements follow the
+// config (new ones added in order, texts refreshed) while progress, tiers and claims are kept
+export function reconcileQuests(saved: QuestItem[], day: number): QuestItem[] {
+  const savedById = new Map(saved.map((q) => [q.id, q]));
+  const mains = MAIN_QUESTS.map((def) => {
+    const old = savedById.get(def.id);
+    const quest = fromDef(def, 'main');
+    return old ? { ...quest, progress: old.progress, claimed: old.claimed } : quest;
+  });
+  const dailies = saved.filter((q) => q.category === 'daily');
+  const achievements = ACHIEVEMENTS.map((def) => {
+    const old = savedById.get(def.id);
+    if (!old) return achievementQuest(def.id, 0, 0);
+    return { ...achievementQuest(def.id, old.tier ?? 0, old.progress), claimed: old.claimed };
+  });
+  return [...mains, ...(dailies.length > 0 ? dailies : createDailyQuests(day)), ...achievements];
+}
+
 export const activeMainQuest = (quests: QuestItem[]) =>
   quests.find((q) => q.category === 'main' && !q.claimed);
 

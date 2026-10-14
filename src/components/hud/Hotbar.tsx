@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
-import { COSMETICS } from '@/config/cosmetics';
+import { placeableInfo } from '@/lib/farmLayout';
 import { CropId, ToolId } from '@/types/game';
 
 interface HotbarSlot {
@@ -41,9 +41,7 @@ export function Hotbar() {
   if (currentWorld !== 'farm') return null;
 
   const active = SLOTS.find((s) => s.id === activeTool) ?? SLOTS[0];
-  const placingItem = placingDecor
-    ? COSMETICS.find((c) => c.id === placingDecor.id)
-    : undefined;
+  const placingItem = placingDecor ? placeableInfo(placingDecor.id) : undefined;
   const countFor = (slot: HotbarSlot) => {
     if (slot.crop) return seeds[slot.crop] || 0;
     if (slot.id === 'bread') return breadCount;

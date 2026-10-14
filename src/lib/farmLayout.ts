@@ -1,6 +1,7 @@
 import { DecorPlacement, TreeType, WorldId } from '@/types/game';
 import { FIELD_BORDER, PLOT_SIZE, PLOTS_PER_SIDE, parsePlotKey } from '@/config/farm';
 import { COSMETICS } from '@/config/cosmetics';
+import { MACHINES, isMachineId } from '@/config/machines';
 import { WORLDS } from '@/config/worlds';
 
 export interface FarmBands {
@@ -180,8 +181,14 @@ function farmColliders(ownedPlots: string[]): Collider[] {
   ];
 }
 
-export const decorFootprint = (id: string) =>
-  COSMETICS.find((c) => c.id === id)?.footprint ?? 1;
+// Anything placed on the farm: decor from the wardrobe shop or a workshop machine
+export function placeableInfo(id: string) {
+  if (isMachineId(id)) return MACHINES[id];
+  const item = COSMETICS.find((c) => c.id === id && c.category === 'decor');
+  return item && { name: item.name, icon: item.icon, footprint: item.footprint ?? 1 };
+}
+
+export const decorFootprint = (id: string) => placeableInfo(id)?.footprint ?? 1;
 
 function circleHitsRect(x: number, z: number, r: number, rect: Rect) {
   const nx = Math.max(rect.minX, Math.min(x, rect.maxX));

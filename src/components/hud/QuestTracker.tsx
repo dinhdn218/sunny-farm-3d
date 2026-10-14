@@ -1,6 +1,6 @@
 'use client';
 
-import { useGameStore } from '@/store/useGameStore';
+import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { QuestCategory } from '@/types/game';
 import { activeMainQuest, isClaimable } from '@/lib/quests';
@@ -19,6 +19,7 @@ export function QuestTracker() {
   const cycleCinemaChannel = useGameStore((s) => s.cycleCinemaChannel);
   const eatPopcornOrSnack = useGameStore((s) => s.eatPopcornOrSnack);
   const triggerEmote = useGameStore((s) => s.triggerEmote);
+  const snackFree = useGameStore((s) => s.lastFreeSnackDay !== s.day);
 
   // Rewards waiting first, then the current story quest, then today's dailies
   const mainQuest = activeMainQuest(quests);
@@ -113,7 +114,7 @@ export function QuestTracker() {
                 onClick={() => eatPopcornOrSnack('Bắp rang bơ', 30)}
                 className="game-btn w-full rounded-xl bg-amber-500 py-1.5 text-xs font-black text-amber-950 hover:bg-amber-400"
               >
-                🍿 Ăn Bắp Rang Bơ (+30⚡)
+                🍿 Ăn Bắp Rang Bơ (+30⚡ • {snackFree ? 'Miễn phí' : `🪙${SNACK_PRICE}`})
               </button>
             </>
           ) : currentWorld === 'mall' ? (
@@ -121,6 +122,12 @@ export function QuestTracker() {
               <div className="mb-1.5 text-xs font-black text-pink-300">
                 🛍️ Trung Tâm Thương Mại
               </div>
+              <button
+                onClick={() => setActiveModal('market')}
+                className="game-btn mb-1.5 w-full rounded-xl bg-rose-500 py-1.5 text-xs font-black text-white hover:bg-rose-400"
+              >
+                🧺 Chợ Phiên Nông Sản
+              </button>
               <button
                 onClick={() => setActiveModal('wardrobe')}
                 className="game-btn mb-1.5 w-full rounded-xl bg-pink-600 py-1.5 text-xs font-black text-white hover:bg-pink-500"

@@ -21,6 +21,10 @@ const DECOR_FRAMING: Record<string, Framing> = {
   decor_fountain: { position: [0, 3.8, 7.5], target: [0, 1.0, 0] },
   decor_sakura_grove: { position: [0, 4.4, 10], target: [0, 1.8, 0.4] },
   decor_gold_statue: { position: [0, 2.6, 5.6], target: [0, 1.2, 0] },
+  machine_oven: { position: [0, 2.0, 4.2], target: [0, 0.55, 0] },
+  machine_kitchen: { position: [0, 2.2, 4.4], target: [0, 0.8, 0] },
+  machine_cheese: { position: [0, 2.2, 4.4], target: [0, 0.85, 0] },
+  machine_loom: { position: [0, 2.2, 4.4], target: [0, 0.8, 0] },
 };
 
 function PreviewCamera({ decorId }: { decorId: string | null }) {
@@ -41,12 +45,12 @@ function Turntable({ children }: { children: ReactNode }) {
   return <group ref={ref}>{children}</group>;
 }
 
-// Rotating try-on preview of the character (or a farm decoration) for the fashion shop
+// Rotating try-on preview of the character (or a farm decoration or machine) for the shops
 export default function ItemPreview({
   cosmetics,
   decorId,
 }: {
-  cosmetics: PlayerCosmetics;
+  cosmetics?: PlayerCosmetics;
   decorId: string | null;
 }) {
   const motion = useRef(createMotion()).current;
@@ -67,7 +71,7 @@ export default function ItemPreview({
         {decorId ? (
           <DecorModel id={decorId} />
         ) : (
-          <AvatarMesh cosmetics={cosmetics} motion={motion} />
+          cosmetics && <AvatarMesh cosmetics={cosmetics} motion={motion} />
         )}
       </Turntable>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>

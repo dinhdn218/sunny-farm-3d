@@ -1,13 +1,6 @@
-import { CropId, FarmAnimal, SaveData, TileData } from '@/types/game';
+import { FarmAnimal, SaveData, TileData } from '@/types/game';
 import { GRID_SIZE, STARTER_PLOTS } from '@/config/farm';
 import { createInitialQuests } from '@/lib/quests';
-
-export const EMPTY_CROPS: Record<CropId, number> = {
-  carrot: 0,
-  wheat: 0,
-  tomato: 0,
-  pumpkin: 0,
-};
 
 export const createEmptyGrid = (): TileData[] => {
   const grid: TileData[] = [];
@@ -88,12 +81,13 @@ export function createNewGameSave(): SaveData {
     tiles: createInitialGrid(),
     ownedPlots: [...STARTER_PLOTS],
     seeds: { carrot: 6, wheat: 4, tomato: 3, pumpkin: 2 },
-    harvested: { carrot: 2, wheat: 1, tomato: 0, pumpkin: 0 },
-    shippingBin: { ...EMPTY_CROPS },
+    items: { carrot: 2, wheat: 1, egg: 1 },
+    shippingBin: {},
     breadCount: 2,
     animals: createInitialAnimals(),
     animalFeed: 8,
-    animalProducts: { egg: 1, wool: 0, milk: 0 },
+    machines: {},
+    lastFreeSnackDay: 0,
     cosmetics: {
       hat: 'straw_hat',
       outfit: 'farmer_blue',

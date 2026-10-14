@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useGameStore } from '@/store/useGameStore';
+import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { nunito } from '@/lib/fonts';
 
@@ -69,6 +69,7 @@ function drawChannel(ctx: CanvasRenderingContext2D, channel: number, now: number
 export function CinemaWorld() {
   const cycleCinemaChannel = useGameStore((s) => s.cycleCinemaChannel);
   const eatPopcornOrSnack = useGameStore((s) => s.eatPopcornOrSnack);
+  const snackFree = useGameStore((s) => s.lastFreeSnackDay !== s.day);
 
   const screenTexture = useMemo(() => {
     const canvas = document.createElement('canvas');
@@ -90,8 +91,10 @@ export function CinemaWorld() {
     'Màn Hình Rạp Chiếu Phim (Click để đổi Kênh Phim!)',
     cycleCinemaChannel
   );
-  const popcorn = interactable('Quầy Bắp Rang Bơ (+30⚡ Thể lực miễn phí!)', () =>
-    eatPopcornOrSnack('Bắp rang bơ', 30)
+  const popcorn = interactable(
+    'Quầy Bắp Rang Bơ (+30⚡ Thể lực)',
+    () => eatPopcornOrSnack('Bắp rang bơ', 30),
+    snackFree ? 'Phần đầu tiên hôm nay miễn phí!' : `${SNACK_PRICE} Vàng một phần`
   );
 
   return (

@@ -8,14 +8,14 @@ export function RanchModal() {
   const gold = useGameStore((s) => s.gold);
   const animals = useGameStore((s) => s.animals);
   const animalFeed = useGameStore((s) => s.animalFeed);
-  const animalProducts = useGameStore((s) => s.animalProducts);
+  const items = useGameStore((s) => s.items);
   const useGlbModels = useGameStore((s) => s.useGlbModels);
   const toggleGlbModels = useGameStore((s) => s.toggleGlbModels);
   const buyAnimal = useGameStore((s) => s.buyAnimal);
   const buyAnimalFeed = useGameStore((s) => s.buyAnimalFeed);
   const interactAnimal = useGameStore((s) => s.interactAnimal);
   const feedAllAnimals = useGameStore((s) => s.feedAllAnimals);
-  const sellAllInInventory = useGameStore((s) => s.sellAllInInventory);
+  const sellAllNow = useGameStore((s) => s.sellAllNow);
 
   return (
     <ModalShell
@@ -121,16 +121,21 @@ export function RanchModal() {
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3">
-          <div className="flex gap-3 text-xs font-black text-amber-950">
-            <span>🥚 Trứng: {animalProducts.egg}</span>
-            <span>🧶 Lông cừu: {animalProducts.wool}</span>
-            <span>🥛 Sữa: {animalProducts.milk}</span>
+          <div>
+            <div className="flex gap-3 text-xs font-black text-amber-950">
+              <span>🥚 Trứng: {items.egg ?? 0}</span>
+              <span>🧶 Lông cừu: {items.wool ?? 0}</span>
+              <span>🥛 Sữa: {items.milk ?? 0}</span>
+            </div>
+            <div className="mt-0.5 text-[10px] font-bold text-amber-700">
+              Gửi Rương ở Kho để bán đủ giá, hoặc đem vào Xưởng làm Phô Mai, Bánh Flan, Khăn Len
+            </div>
           </div>
           <button
-            onClick={sellAllInInventory}
+            onClick={() => sellAllNow('animal')}
             className="game-btn rounded-xl bg-emerald-600 px-3 py-2 text-xs font-black text-white hover:bg-emerald-500"
           >
-            ⚡ Bán Ngay Lập Tức
+            ⚡ Bán Ngay (70% giá)
           </button>
         </div>
       </div>
