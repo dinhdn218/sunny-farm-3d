@@ -22,7 +22,6 @@ export interface UserProfile {
   name: string;
   avatarUrl: string;
   provider: 'google' | 'guest';
-  lastSyncedAt?: number;
 }
 
 export interface CropConfig {
@@ -160,6 +159,32 @@ export interface QuestItem {
   // Achievements: current tier (0-based) out of `tiers`
   tier?: number;
   tiers?: number;
+}
+
+// Gameplay state that makes up a farm: what is saved on this device and in the cloud.
+// Identity (player id, Google account) and device settings live outside it.
+export interface SaveData {
+  playerName: string;
+  gold: number;
+  gems: number;
+  energy: number;
+  water: number;
+  day: number;
+  visitedWorlds: WorldId[];
+  tiles: TileData[];
+  ownedPlots: string[];
+  seeds: Record<CropId, number>;
+  harvested: Record<CropId, number>;
+  shippingBin: Record<CropId, number>;
+  breadCount: number;
+  animals: FarmAnimal[];
+  animalFeed: number;
+  animalProducts: Record<AnimalProductId, number>;
+  cosmetics: PlayerCosmetics;
+  ownedCosmetics: string[];
+  decorPlacements: Record<string, DecorPlacement>;
+  quests: QuestItem[];
+  dailyDay: number;
 }
 
 export interface RemotePlayer {

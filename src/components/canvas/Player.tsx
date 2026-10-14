@@ -57,6 +57,8 @@ export function Player() {
 
       keys.current[e.code] = true;
       const store = useGameStore.getState();
+      // The save-conflict dialog must be answered before anything else opens
+      if (store.activeModal === 'cloudConflict') return;
 
       // While a decoration is being placed, R rotates it and Esc cancels
       if (store.placingDecor && (e.code === 'KeyR' || e.code === 'Escape')) {

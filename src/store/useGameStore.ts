@@ -3,19 +3,16 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
-  AnimalProductId,
   AnimalSpecies,
   ChatMessage,
   CropId,
-  DecorPlacement,
   FarmAnimal,
   FloatingLabel,
   HoverTooltip,
-  PlayerCosmetics,
   QuestItem,
   QuestType,
   RemotePlayer,
-  TileData,
+  SaveData,
   ToolId,
   UserProfile,
   WorldId,
@@ -26,9 +23,6 @@ import { COSMETICS } from '@/config/cosmetics';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import {
-  GRID_SIZE,
-  PLOT_TILES,
-  STARTER_PLOTS,
   isPlotPurchasable,
   parsePlotKey,
   plotCenter,
@@ -40,7 +34,6 @@ import {
 import {
   FarmBands,
   canPlaceDecor,
-  defaultDecorPlacements,
   farmBands,
   ranchOffset,
   stretchPoint,
@@ -51,13 +44,21 @@ import {
   advanceQuests,
   afterClaim,
   createDailyQuests,
-  createInitialQuests,
   syncQuestValue,
 } from '@/lib/quests';
+import { EMPTY_CROPS, createNewGameSave } from '@/lib/newGame';
+import {
+  SAVE_KEYS,
+  SAVE_VERSION,
+  migrateSave,
+  pickSaveData,
+  saveFromCloud,
+} from '@/lib/saveData';
+import { CloudLink, CloudSave } from '@/lib/cloudSave';
 import { soundFX } from '@/lib/audio';
 import { spawnParticles } from '@/lib/effects';
 import { projectToScreen } from '@/lib/controls';
-import { syncGameToSupabaseCloud } from '@/lib/supabase';
+import { signOutCloud, uploadCloudSave } from '@/lib/supabase';
 
 interface DaySummaryData {
   day: number;
@@ -68,42 +69,27 @@ interface DaySummaryData {
   animalProductsReady: number;
 }
 
-interface GameState {
+interface GameState extends SaveData {
   playerId: string;
-  playerName: string;
+  // Google account signed in right now (from the Supabase session, never stored)
   userProfile: UserProfile | null;
+  cloudLink: CloudLink | null;
+  // The farm changed since it was last synced with the cloud
+  cloudDirty: boolean;
+  cloudSyncing: boolean;
+  cloudError: string | null;
+  // Both this device and the cloud hold a different farm: the player picks one
+  cloudConflict: { profile: UserProfile; cloud: CloudSave } | null;
   networkMode: 'supabase' | 'local';
   useGlbModels: boolean;
 
-  gold: number;
-  gems: number;
-  energy: number;
   maxEnergy: number;
-  water: number;
   maxWater: number;
-  day: number;
   timePhaseIndex: number;
   currentWorld: WorldId;
-  visitedWorlds: WorldId[];
   activeTool: ToolId;
-  tiles: TileData[];
-  ownedPlots: string[];
   selectedPlot: string | null;
-  seeds: Record<CropId, number>;
-  harvested: Record<CropId, number>;
-  shippingBin: Record<CropId, number>;
-  breadCount: number;
-
-  animals: FarmAnimal[];
-  animalFeed: number;
-  animalProducts: Record<AnimalProductId, number>;
-
-  cosmetics: PlayerCosmetics;
-  ownedCosmetics: string[];
-  decorPlacements: Record<string, DecorPlacement>;
   placingDecor: { id: string; rotY: number } | null;
-  quests: QuestItem[];
-  dailyDay: number;
   activeModal:
     | 'map'
     | 'quests'
@@ -114,6 +100,7 @@ interface GameState {
     | 'auth'
     | 'summary'
     | 'expand'
+    | 'cloudConflict'
     | null;
   lastDaySummary: DaySummaryData | null;
   floatingLabels: FloatingLabel[];
@@ -127,9 +114,13 @@ interface GameState {
   chatMessages: ChatMessage[];
 
   setPlayerName: (name: string) => void;
-  loginWithGoogleProfile: (profile: UserProfile) => void;
-  logoutGoogleProfile: () => void;
-  syncToCloud: () => Promise<void>;
+  linkCloudAccount: (profile: UserProfile) => void;
+  applyCloudSave: (profile: UserProfile, cloud: CloudSave) => void;
+  openCloudConflict: (profile: UserProfile, cloud: CloudSave) => void;
+  resolveCloudConflict: (keep: 'cloud' | 'local') => Promise<void>;
+  syncToCloud: (manual?: boolean) => Promise<void>;
+  logoutCloud: () => Promise<void>;
+  endCloudSession: () => void;
   setNetworkMode: (mode: 'supabase' | 'local') => void;
   toggleGlbModels: () => void;
   showToast: (
@@ -180,95 +171,10 @@ interface GameState {
   addChatMessage: (msg: ChatMessage) => void;
 }
 
-const EMPTY_CROPS: Record<CropId, number> = {
-  carrot: 0,
-  wheat: 0,
-  tomato: 0,
-  pumpkin: 0,
-};
-
-const createEmptyGrid = (): TileData[] => {
-  const grid: TileData[] = [];
-  for (let r = 0; r < GRID_SIZE; r++) {
-    for (let c = 0; c < GRID_SIZE; c++) {
-      grid.push({
-        id: `${r}-${c}`,
-        r,
-        c,
-        state: 'empty',
-        watered: false,
-        crop: null,
-        stage: 0,
-        daysWatered: 0,
-      });
-    }
-  }
-  return grid;
-};
-
-// Same starter plot as the HTML version (ripe carrot & wheat, a tomato bush, one tilled tile), in the field centre
-const STARTER_TILES: Record<
-  string,
-  Pick<TileData, 'state' | 'crop' | 'stage' | 'watered'>
-> = {
-  '7-7': { state: 'planted', crop: 'carrot', stage: 3, watered: true },
-  '7-8': { state: 'planted', crop: 'wheat', stage: 3, watered: true },
-  '8-7': { state: 'planted', crop: 'tomato', stage: 2, watered: true },
-  '8-8': { state: 'tilled', crop: null, stage: 0, watered: false },
-};
-
-const createInitialGrid = (): TileData[] =>
-  createEmptyGrid().map((t) => ({ ...t, ...STARTER_TILES[t.id] }));
-
-const createInitialAnimals = (): FarmAnimal[] => [
-  {
-    id: 'ani_chicken_1',
-    species: 'chicken',
-    name: 'Gà Chip',
-    fedToday: false,
-    hasProduct: true,
-    affection: 45,
-    x: -10.8,
-    z: 6.2,
-  },
-  {
-    id: 'ani_sheep_1',
-    species: 'sheep',
-    name: 'Cừu Bông',
-    fedToday: false,
-    hasProduct: true,
-    affection: 55,
-    x: -9.0,
-    z: 7.4,
-  },
-  {
-    id: 'ani_cow_1',
-    species: 'cow',
-    name: 'Bò Mộc Châu',
-    fedToday: false,
-    hasProduct: false,
-    affection: 65,
-    x: -11.5,
-    z: 8.5,
-  },
-];
-
 const generateUid = () =>
   'farmer_' + Math.random().toString(36).substring(2, 9);
 
 const cosmeticById = (id: string) => COSMETICS.find((c) => c.id === id);
-
-const isPaidWearable = (id: string) => {
-  const item = cosmeticById(id);
-  return !!item && item.category !== 'decor' && (item.priceGold > 0 || item.priceGems > 0);
-};
-
-// Achievement progress implied by an older save (things bought, days played)
-const achievementProgressFrom = (ownedCosmetics: string[], day: number) => ({
-  a_fashion: ownedCosmetics.filter(isPaidWearable).length,
-  a_decor: ownedCosmetics.filter((id) => cosmeticById(id)?.category === 'decor').length,
-  a_days: day - 1,
-});
 
 const publicZonesVisited = (visited: WorldId[]) =>
   visited.filter((w) => w !== 'farm').length;
@@ -304,53 +210,24 @@ export const useGameStore = create<GameState>()(
       };
 
       return {
+        ...createNewGameSave(),
         playerId: generateUid(),
-        playerName: 'Nông Dân ' + Math.floor(100 + Math.random() * 899),
         userProfile: null,
+        cloudLink: null,
+        cloudDirty: false,
+        cloudSyncing: false,
+        cloudError: null,
+        cloudConflict: null,
         networkMode: 'local',
         useGlbModels: false,
 
-        gold: 810,
-        gems: 130,
-        energy: 98,
         maxEnergy: 100,
-        water: 10,
         maxWater: 10,
-        day: 1,
         timePhaseIndex: 0,
         currentWorld: 'farm',
-        visitedWorlds: ['farm'],
         activeTool: 'hoe',
-        tiles: createInitialGrid(),
-        ownedPlots: [...STARTER_PLOTS],
         selectedPlot: null,
-        seeds: { carrot: 6, wheat: 4, tomato: 3, pumpkin: 2 },
-        harvested: { carrot: 2, wheat: 1, tomato: 0, pumpkin: 0 },
-        shippingBin: { ...EMPTY_CROPS },
-        breadCount: 2,
-
-        animals: createInitialAnimals(),
-        animalFeed: 8,
-        animalProducts: { egg: 1, wool: 0, milk: 0 },
-
-        cosmetics: {
-          hat: 'straw_hat',
-          outfit: 'farmer_blue',
-          wing: 'none_wing',
-          pet: 'shiba_inu',
-        },
-        ownedCosmetics: [
-          'none_hat',
-          'straw_hat',
-          'farmer_blue',
-          'none_wing',
-          'none_pet',
-          'shiba_inu',
-        ],
-        decorPlacements: {},
         placingDecor: null,
-        quests: createInitialQuests(1),
-        dailyDay: 1,
         activeModal: null,
         lastDaySummary: null,
         floatingLabels: [],
@@ -379,61 +256,98 @@ export const useGameStore = create<GameState>()(
 
         setPlayerName: (name) => set({ playerName: name.trim() || 'Nông Dân' }),
 
-        loginWithGoogleProfile: (profile) => {
-          soundFX.questClaim();
+        linkCloudAccount: (profile) => {
+          const { playerName } = get();
           set({
             userProfile: profile,
             playerId: profile.id,
-            playerName: profile.name,
-            activeModal: null,
+            // A farmer still going by the random starter name takes their Google name
+            playerName: /^Nông Dân \d+$/.test(playerName) ? profile.name : playerName,
+            cloudConflict: null,
           });
-          get().showToast(
-            `✅ Đã đăng nhập Google: ${profile.name}`,
-            'text-emerald-300'
-          );
-          get().syncToCloud();
         },
 
-        logoutGoogleProfile: () => {
-          set({ userProfile: null, activeModal: null });
+        applyCloudSave: (profile, cloud) => {
+          const save = saveFromCloud(cloud.data, cloud.version);
+          const [x, z] = worldSpawn('farm', save.ownedPlots);
+          set({
+            ...save,
+            userProfile: profile,
+            playerId: profile.id,
+            cloudLink: { userId: profile.id, lastSyncedAt: cloud.savedAt },
+            cloudDirty: false,
+            cloudError: null,
+            cloudConflict: null,
+            currentWorld: 'farm',
+            playerPos: { x, z, rotY: Math.PI, actionTime: 0 },
+            activeModal: null,
+            placingDecor: null,
+            selectedPlot: null,
+            lastDaySummary: null,
+            tooltip: null,
+          });
+          get().showToast(`☁️ Đã tải nông trại từ Cloud (Ngày ${save.day})`, 'text-sky-300');
+        },
+
+        openCloudConflict: (profile, cloud) =>
+          set({ cloudConflict: { profile, cloud }, activeModal: 'cloudConflict', tooltip: null }),
+
+        resolveCloudConflict: async (keep) => {
+          const conflict = get().cloudConflict;
+          if (!conflict) return;
+          if (keep === 'cloud') {
+            get().applyCloudSave(conflict.profile, conflict.cloud);
+            return;
+          }
+          get().linkCloudAccount(conflict.profile);
+          set({ activeModal: null });
+          await get().syncToCloud(true);
+        },
+
+        syncToCloud: async (manual = false) => {
+          const s = get();
+          const profile = s.userProfile;
+          if (!profile || s.cloudSyncing) return;
+          const save = pickSaveData(s);
+          const savedAt = Date.now();
+          set({ cloudSyncing: true });
+          try {
+            await uploadCloudSave(profile, save, savedAt);
+          } catch (err) {
+            const firstFailure = !get().cloudError;
+            set({
+              cloudSyncing: false,
+              cloudError: err instanceof Error ? err.message : String(err),
+            });
+            if (manual || firstFailure) {
+              get().showToast('⚠️ Đồng bộ Cloud thất bại, sẽ thử lại sau.', 'text-red-400');
+            }
+            return;
+          }
+          set((cur) => ({
+            cloudSyncing: false,
+            cloudError: null,
+            cloudLink: { userId: profile.id, lastSyncedAt: savedAt },
+            // Changes made while the upload was on its way still need syncing
+            cloudDirty: SAVE_KEYS.some((key) => cur[key] !== save[key]),
+          }));
+          if (manual) get().showToast('☁️ Đã đồng bộ lên Cloud!', 'text-sky-300');
+        },
+
+        logoutCloud: async () => {
+          get().endCloudSession();
+          await signOutCloud();
           get().showToast('👋 Đã đăng xuất khỏi tài khoản Google.', 'text-sky-300');
         },
 
-        syncToCloud: async () => {
-          const s = get();
-          if (!s.userProfile) return;
-          const ok = await syncGameToSupabaseCloud(
-            s.userProfile.id,
-            s.userProfile.email,
-            s.userProfile.name,
-            s.userProfile.avatarUrl,
-            {
-              gold: s.gold,
-              gems: s.gems,
-              day: s.day,
-              tiles: s.tiles,
-              ownedPlots: s.ownedPlots,
-              seeds: s.seeds,
-              harvested: s.harvested,
-              animals: s.animals,
-              animalFeed: s.animalFeed,
-              animalProducts: s.animalProducts,
-              cosmetics: s.cosmetics,
-              ownedCosmetics: s.ownedCosmetics,
-              decorPlacements: s.decorPlacements,
-              quests: s.quests,
-            }
-          );
-          set({
-            userProfile: {
-              ...s.userProfile,
-              lastSyncedAt: Date.now(),
-            },
-          });
-          if (ok) {
-            s.showToast('☁️ Đã đồng bộ lên Supabase Cloud!', 'text-sky-300');
-          }
-        },
+        // The farm stays on this device, still remembered as synced with that account
+        endCloudSession: () =>
+          set((s) => ({
+            userProfile: null,
+            cloudConflict: null,
+            cloudError: null,
+            activeModal: s.activeModal === 'cloudConflict' ? null : s.activeModal,
+          })),
 
         setNetworkMode: (mode) => set({ networkMode: mode }),
 
@@ -1421,56 +1335,31 @@ export const useGameStore = create<GameState>()(
     },
     {
       name: 'sunny-farm-3d-v3',
-      version: 1,
+      version: SAVE_VERSION,
       partialize: (state) => ({
+        ...pickSaveData(state),
         playerId: state.playerId,
-        playerName: state.playerName,
-        userProfile: state.userProfile,
         useGlbModels: state.useGlbModels,
-        gold: state.gold,
-        gems: state.gems,
-        energy: state.energy,
-        water: state.water,
-        day: state.day,
-        visitedWorlds: state.visitedWorlds,
-        tiles: state.tiles,
-        ownedPlots: state.ownedPlots,
-        seeds: state.seeds,
-        harvested: state.harvested,
-        shippingBin: state.shippingBin,
-        breadCount: state.breadCount,
-        animals: state.animals,
-        animalFeed: state.animalFeed,
-        animalProducts: state.animalProducts,
-        cosmetics: state.cosmetics,
-        ownedCosmetics: state.ownedCosmetics,
-        decorPlacements: state.decorPlacements,
-        quests: state.quests,
-        dailyDay: state.dailyDay,
+        cloudLink: state.cloudLink,
+        cloudDirty: state.cloudDirty,
       }),
-      migrate: (persisted, version) => {
-        const saved = persisted as Partial<GameState>;
-        if (version >= 1) return saved as GameState;
-
-        // v0 saves: an 8×8 field and one-off quests. Centre the old field in the
-        // 16×16 grid, place owned decor at its old spots and switch to the new quest system.
-        const tiles = createEmptyGrid();
-        (saved.tiles ?? []).forEach((t) => {
-          const r = t.r + PLOT_TILES;
-          const c = t.c + PLOT_TILES;
-          tiles[r * GRID_SIZE + c] = { ...t, id: `${r}-${c}`, r, c };
-        });
-        const owned = saved.ownedCosmetics ?? [];
-        const day = saved.day ?? 1;
-        return {
-          ...saved,
-          tiles,
-          ownedPlots: [...STARTER_PLOTS],
-          decorPlacements: defaultDecorPlacements(owned),
-          dailyDay: day,
-          quests: createInitialQuests(day, achievementProgressFrom(owned, day)),
-        } as GameState;
-      },
+      migrate: (persisted, version) =>
+        migrateSave(persisted as Record<string, unknown>, version) as unknown as GameState,
+      // The signed-in account always comes from the Supabase session, never from an old save
+      merge: (persisted, current) => ({
+        ...current,
+        ...(persisted as Partial<GameState>),
+        userProfile: null,
+      }),
     }
   )
 );
+
+// A farm that changes after a cloud sync needs uploading again (lib/cloudSync does it in the
+// background). Loading or syncing a save sets `cloudLink` in the same update: that is bookkeeping, not play.
+useGameStore.subscribe((state, prev) => {
+  if (state.cloudDirty || state.cloudLink !== prev.cloudLink) return;
+  if (SAVE_KEYS.some((key) => state[key] !== prev[key])) {
+    useGameStore.setState({ cloudDirty: true });
+  }
+});

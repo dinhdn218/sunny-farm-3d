@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerSync } from '@/lib/multiplayer';
+import { useCloudSync } from '@/lib/cloudSync';
 import { TopBar } from '@/components/hud/TopBar';
 import { QuestTracker } from '@/components/hud/QuestTracker';
 import { ChatBox } from '@/components/hud/ChatBox';
@@ -20,6 +21,7 @@ import { RanchModal } from '@/components/hud/modals/RanchModal';
 import { AuthModal } from '@/components/hud/modals/AuthModal';
 import { DaySummaryModal } from '@/components/hud/modals/DaySummaryModal';
 import { ExpandModal } from '@/components/hud/modals/ExpandModal';
+import { CloudConflictModal } from '@/components/hud/modals/CloudConflictModal';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -31,6 +33,7 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
 
   useMultiplayerSync();
+  useCloudSync();
 
   // The store is persisted in localStorage, so the HUD renders client-side only to avoid hydration mismatches
   useEffect(() => {
@@ -66,6 +69,7 @@ export default function HomePage() {
       {activeModal === 'auth' && <AuthModal />}
       {activeModal === 'summary' && <DaySummaryModal />}
       {activeModal === 'expand' && <ExpandModal />}
+      {activeModal === 'cloudConflict' && <CloudConflictModal />}
     </main>
   );
 }

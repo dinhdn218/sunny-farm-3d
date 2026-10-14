@@ -25,6 +25,8 @@ export function TopBar() {
   const shippingBin = useGameStore((s) => s.shippingBin);
   const animalProducts = useGameStore((s) => s.animalProducts);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
+  const signedIn = useGameStore((s) => !!s.userProfile);
+  const cloudError = useGameStore((s) => !!s.cloudError);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const cycleTimeOfDay = useGameStore((s) => s.cycleTimeOfDay);
   const nextDay = useGameStore((s) => s.nextDay);
@@ -204,9 +206,17 @@ export function TopBar() {
         <button
           onClick={() => setActiveModal('auth')}
           title="Danh sách người chơi & Hồ sơ"
-          className="game-btn flex items-center gap-1 rounded-xl border-2 border-slate-950 bg-slate-800 px-2.5 py-2 text-xs font-extrabold text-amber-200 hover:bg-slate-700 sm:text-sm"
+          className="game-btn relative flex items-center gap-1 rounded-xl border-2 border-slate-950 bg-slate-800 px-2.5 py-2 text-xs font-extrabold text-amber-200 hover:bg-slate-700 sm:text-sm"
         >
           <i className="fa-solid fa-users" />
+          {signedIn && (
+            <span
+              title={cloudError ? 'Đồng bộ Cloud lỗi' : 'Đã đăng nhập Cloud'}
+              className={`absolute -right-1 -top-1 h-3 w-3 rounded-full border-2 border-white ${
+                cloudError ? 'bg-red-500' : 'bg-emerald-400'
+              }`}
+            />
+          )}
         </button>
 
         <button
