@@ -10,12 +10,13 @@ export function interactable(
   return {
     onClick: (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
-      // Ignore the click that ends a camera drag
-      if (e.delta > 8) return;
+      // Ignore the click that ends a camera drag, and clicks while a decoration is being placed
+      if (e.delta > 8 || useGameStore.getState().placingDecor) return;
       onClick();
     },
     onPointerMove: (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
+      if (useGameStore.getState().placingDecor) return;
       useGameStore.getState().setTooltip({
         title,
         desc,

@@ -1,20 +1,33 @@
 'use client';
 
+import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
+import { BASE_ISLAND_RADIUS, islandShape } from '@/lib/farmLayout';
 
-// Shared floating island: zone-coloured ground, rocky cliff and the surrounding sea
+// Shared floating island: zone-coloured ground, rocky cliff and the surrounding sea.
+// On the farm the island stretches into an ellipse as land plots are bought.
 export function BaseIsland() {
   const currentWorld = useGameStore((s) => s.currentWorld);
+  const ownedPlots = useGameStore((s) => s.ownedPlots);
+  const shape = useMemo(
+    () => islandShape(currentWorld, ownedPlots),
+    [currentWorld, ownedPlots]
+  );
+  const scale: [number, number, number] = [
+    shape.rx / BASE_ISLAND_RADIUS,
+    1,
+    shape.rz / BASE_ISLAND_RADIUS,
+  ];
 
   return (
     <group>
-      <mesh receiveShadow position={[0, -1.2, 0]}>
-        <cylinderGeometry args={[18.5, 16.0, 2.4, 28]} />
+      <mesh receiveShadow position={[shape.cx, -1.2, shape.cz]} scale={scale}>
+        <cylinderGeometry args={[BASE_ISLAND_RADIUS, 16.0, 2.4, 28]} />
         <meshLambertMaterial color={WORLDS[currentWorld].groundColor} />
       </mesh>
-      <mesh position={[0, -3.9, 0]}>
+      <mesh position={[shape.cx, -3.9, shape.cz]} scale={scale}>
         <cylinderGeometry args={[15.8, 11.5, 3.4, 22]} />
         <meshLambertMaterial color="#78716c" />
       </mesh>

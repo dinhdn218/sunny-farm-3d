@@ -2,6 +2,14 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
+import { QuestCategory } from '@/types/game';
+import { activeMainQuest, isClaimable } from '@/lib/quests';
+
+const CATEGORY_TAG: Record<QuestCategory, string> = {
+  main: '📖',
+  daily: '📅',
+  achievement: '🏆',
+};
 
 export function QuestTracker() {
   const quests = useGameStore((s) => s.quests);
@@ -12,7 +20,15 @@ export function QuestTracker() {
   const eatPopcornOrSnack = useGameStore((s) => s.eatPopcornOrSnack);
   const triggerEmote = useGameStore((s) => s.triggerEmote);
 
-  const activeQuests = quests.filter((q) => !q.claimed).slice(0, 3);
+  // Rewards waiting first, then the current story quest, then today's dailies
+  const mainQuest = activeMainQuest(quests);
+  const shownQuests = [
+    ...quests.filter(isClaimable),
+    ...(mainQuest ? [mainQuest] : []),
+    ...quests.filter((q) => q.category === 'daily' && !q.claimed),
+  ]
+    .filter((q, i, list) => list.findIndex((other) => other.id === q.id) === i)
+    .slice(0, 3);
   const worldCfg = WORLDS[currentWorld];
 
   return (
@@ -32,27 +48,28 @@ export function QuestTracker() {
         </div>
 
         <div className="space-y-2 text-xs">
-          {activeQuests.length === 0 ? (
+          {shownQuests.length === 0 ? (
             <div className="font-bold text-emerald-300">
               🎉 Bạn đã hoàn thành xuất sắc mọi nhiệm vụ!
             </div>
           ) : (
-            activeQuests.map((q) => {
-              const ready = q.progress >= q.target;
+            shownQuests.map((q) => {
+              const ready = isClaimable(q);
               const pct = Math.min(100, (q.progress / q.target) * 100);
               return (
                 <div
                   key={q.id}
                   className="rounded-xl border border-white/10 bg-slate-800/80 p-2"
                 >
-                  <div className="flex items-center justify-between font-extrabold">
-                    <span className="text-amber-200">
+                  <div className="flex items-center justify-between gap-1 font-extrabold">
+                    <span className="truncate text-amber-200">
+                      <span className="mr-1 text-[10px]">{CATEGORY_TAG[q.category]}</span>
                       {q.icon} {q.title}
                     </span>
                     <span
-                      className={`text-[10px] ${ready ? 'text-lime-300' : 'text-slate-300'}`}
+                      className={`shrink-0 text-[10px] ${ready ? 'text-lime-300' : 'text-slate-300'}`}
                     >
-                      {q.progress}/{q.target}
+                      {Math.min(q.progress, q.target)}/{q.target}
                     </span>
                   </div>
                   <div className="my-1 h-1.5 w-full overflow-hidden rounded-full bg-slate-950">

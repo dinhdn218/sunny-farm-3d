@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { camControl, touchMove } from '@/lib/controls';
+import { WALK_MARGIN, insideIsland, islandShape } from '@/lib/farmLayout';
 import { ToolId } from '@/types/game';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
@@ -57,6 +58,13 @@ export function Player() {
       keys.current[e.code] = true;
       const store = useGameStore.getState();
 
+      // While a decoration is being placed, R rotates it and Esc cancels
+      if (store.placingDecor && (e.code === 'KeyR' || e.code === 'Escape')) {
+        if (e.code === 'KeyR') store.rotatePlacingDecor();
+        else store.cancelPlacingDecor();
+        return;
+      }
+
       const tool = HOTBAR_KEYS[e.code];
       if (tool) {
         store.setActiveTool(tool);
@@ -85,7 +93,7 @@ export function Player() {
     const group = groupRef.current;
     if (!group) return;
     const dt = Math.min(delta, 0.1);
-    const pos = useGameStore.getState().playerPos;
+    const { playerPos: pos, currentWorld, ownedPlots } = useGameStore.getState();
     const k = keys.current;
 
     let moveX = touchMove.x;
@@ -109,7 +117,8 @@ export function Player() {
 
       const nextX = pos.x + worldX * 6.0 * dt;
       const nextZ = pos.z + worldZ * 6.0 * dt;
-      if (Math.hypot(nextX, nextZ) < 15.2) {
+      // Stay on the island (which grows when farm land is bought)
+      if (insideIsland(nextX, nextZ, islandShape(currentWorld, ownedPlots), WALK_MARGIN)) {
         pos.x = nextX;
         pos.z = nextZ;
       }

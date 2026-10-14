@@ -1,88 +1,165 @@
-import { QuestItem } from '@/types/game';
+import { CropId, QuestType } from '@/types/game';
 
-export const INITIAL_QUESTS: QuestItem[] = [
+export interface QuestDef {
+  id: string;
+  title: string;
+  desc: string;
+  icon: string;
+  type: QuestType;
+  target: number;
+  rewardGold: number;
+  rewardGems: number;
+  crop?: CropId;
+  chapter?: string;
+}
+
+export interface AchievementDef {
+  id: string;
+  title: string;
+  icon: string;
+  type: QuestType;
+  // `{n}` is replaced by the current tier's target
+  desc: string;
+  tiers: { target: number; rewardGold: number; rewardGems: number }[];
+}
+
+// Story chain: one quest is active at a time, the next unlocks when its reward is claimed
+export const MAIN_QUESTS: QuestDef[] = [
+  { id: 'm_till', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Khởi Đầu Nhà Nông', desc: 'Dùng Cuốc (phím 1) xới 5 ô đất trống.', icon: '⛏️', type: 'till', target: 5, rewardGold: 60, rewardGems: 3 },
+  { id: 'm_plant', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Gieo Mầm Hy Vọng', desc: 'Gieo 5 hạt giống bất kỳ lên đất đã xới.', icon: '🌱', type: 'plant', target: 5, rewardGold: 70, rewardGems: 3 },
+  { id: 'm_water', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Dòng Nước Mát Lành', desc: 'Tưới nước cho 5 ô đất (phím 2).', icon: '💧', type: 'water', target: 5, rewardGold: 80, rewardGems: 4 },
+  { id: 'm_sleep', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Giấc Ngủ Ngon', desc: 'Bấm Qua Ngày để cây trồng lớn lên.', icon: '🛌', type: 'sleep', target: 1, rewardGold: 60, rewardGems: 3 },
+  { id: 'm_harvest', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Vụ Mùa Đầu Tiên', desc: 'Thu hoạch 5 nông sản chín.', icon: '🧺', type: 'harvest', target: 5, rewardGold: 120, rewardGems: 6 },
+  { id: 'm_earn', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Thương Lái Tập Sự', desc: 'Bán nông sản thu về 300 Vàng.', icon: '🪙', type: 'earn_gold', target: 300, rewardGold: 100, rewardGems: 6 },
+  { id: 'm_feed', chapter: 'Chương 2 · Chăn Nuôi', title: 'Người Bạn Gia Súc', desc: 'Cho vật nuôi ăn 3 lần ở Chuồng Trại.', icon: '🐔', type: 'feed_animal', target: 3, rewardGold: 120, rewardGems: 6 },
+  { id: 'm_collect', chapter: 'Chương 2 · Chăn Nuôi', title: 'Quà Sáng Từ Chuồng', desc: 'Thu 3 sản phẩm Trứng, Lông Cừu hoặc Sữa.', icon: '🥚', type: 'collect_animal', target: 3, rewardGold: 150, rewardGems: 8 },
+  { id: 'm_buy_animal', chapter: 'Chương 2 · Chăn Nuôi', title: 'Đàn Gia Súc Mới', desc: 'Mua thêm 1 vật nuôi ở Chuồng Trại.', icon: '🐄', type: 'buy_animal', target: 1, rewardGold: 150, rewardGems: 8 },
+  { id: 'm_plot', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Địa Chủ Tập Sự', desc: 'Mở khóa 1 lô đất mới (nút 🏗️ Mở Rộng).', icon: '🗺️', type: 'buy_plot', target: 1, rewardGold: 200, rewardGems: 10 },
+  { id: 'm_plant_more', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Cánh Đồng Bát Ngát', desc: 'Gieo thêm 15 hạt giống.', icon: '🌾', type: 'plant', target: 15, rewardGold: 180, rewardGems: 8 },
+  { id: 'm_pumpkin', chapter: 'Chương 3 · Mở Rộng Đất', title: 'Bí Ngô Khổng Lồ', desc: 'Thu hoạch 3 Bí Ngô.', icon: '🎃', type: 'harvest', crop: 'pumpkin', target: 3, rewardGold: 250, rewardGems: 12 },
+  { id: 'm_fashion', chapter: 'Chương 4 · Phong Cách', title: 'Tín Đồ Thời Trang', desc: 'Mua 1 món thời trang mới.', icon: '👗', type: 'buy_cosmetic', target: 1, rewardGold: 150, rewardGems: 10 },
+  { id: 'm_decor', chapter: 'Chương 4 · Phong Cách', title: 'Kiến Trúc Sư Nông Trại', desc: 'Đặt 1 đồ trang trí ra nông trại.', icon: '🏡', type: 'place_decor', target: 1, rewardGold: 200, rewardGems: 12 },
+  { id: 'm_visit', chapter: 'Chương 5 · Du Ngoạn', title: 'Nhà Du Hành', desc: 'Ghé thăm đủ 4 khu vực công cộng.', icon: '✈️', type: 'visit_worlds', target: 4, rewardGold: 200, rewardGems: 12 },
+  { id: 'm_cinema', chapter: 'Chương 5 · Du Ngoạn', title: 'Khán Giả Điện Ảnh', desc: 'Đổi kênh phim ở Rạp Chiếu Phim 3 lần.', icon: '🎬', type: 'cinema_channel', target: 3, rewardGold: 150, rewardGems: 10 },
+  { id: 'm_plots', chapter: 'Chương 6 · Đại Điền Chủ', title: 'Đại Điền Chủ', desc: 'Mở khóa thêm 4 lô đất.', icon: '👑', type: 'buy_plot', target: 4, rewardGold: 600, rewardGems: 30 },
+  { id: 'm_tycoon', chapter: 'Chương 6 · Đại Điền Chủ', title: 'Triệu Phú Nông Trại', desc: 'Bán hàng thu về tổng cộng 5.000 Vàng.', icon: '💰', type: 'earn_gold', target: 5000, rewardGold: 800, rewardGems: 40 },
+];
+
+// Three of these are drawn each day and replaced when you sleep
+export const DAILY_POOL: QuestDef[] = [
+  { id: 'd_carrot', title: 'Đơn Hàng Cà Rốt', desc: 'Thu hoạch 4 Cà Rốt.', icon: '🥕', type: 'harvest', crop: 'carrot', target: 4, rewardGold: 120, rewardGems: 4 },
+  { id: 'd_wheat', title: 'Đơn Hàng Lúa Mì', desc: 'Thu hoạch 4 Lúa Mì.', icon: '🌾', type: 'harvest', crop: 'wheat', target: 4, rewardGold: 140, rewardGems: 4 },
+  { id: 'd_tomato', title: 'Đơn Hàng Cà Chua', desc: 'Thu hoạch 3 Cà Chua.', icon: '🍅', type: 'harvest', crop: 'tomato', target: 3, rewardGold: 140, rewardGems: 5 },
+  { id: 'd_water', title: 'Tưới Tiêu Chăm Chỉ', desc: 'Tưới nước 8 ô đất.', icon: '💧', type: 'water', target: 8, rewardGold: 90, rewardGems: 3 },
+  { id: 'd_till', title: 'Xới Đất Mùa Mới', desc: 'Xới 6 ô đất trống.', icon: '⛏️', type: 'till', target: 6, rewardGold: 80, rewardGems: 3 },
+  { id: 'd_plant', title: 'Gieo Hạt Đầu Ngày', desc: 'Gieo 6 hạt giống.', icon: '🌱', type: 'plant', target: 6, rewardGold: 90, rewardGems: 3 },
+  { id: 'd_feed', title: 'Chăm Sóc Vật Nuôi', desc: 'Cho vật nuôi ăn 3 lần.', icon: '🐔', type: 'feed_animal', target: 3, rewardGold: 100, rewardGems: 4 },
+  { id: 'd_collect', title: 'Sản Phẩm Tươi Ngon', desc: 'Thu 2 sản phẩm chăn nuôi.', icon: '🥛', type: 'collect_animal', target: 2, rewardGold: 110, rewardGems: 4 },
+  { id: 'd_earn', title: 'Buôn Bán Phát Đạt', desc: 'Bán hàng thu về 250 Vàng.', icon: '🪙', type: 'earn_gold', target: 250, rewardGold: 120, rewardGems: 5 },
+  { id: 'd_chat', title: 'Giao Lưu Cư Dân', desc: 'Gửi 2 tin nhắn hoặc thả cảm xúc.', icon: '💬', type: 'chat', target: 2, rewardGold: 70, rewardGems: 3 },
+  { id: 'd_visit', title: 'Dạo Chơi Thành Phố', desc: 'Dịch chuyển đến 2 khu vực công cộng.', icon: '✈️', type: 'visit_world', target: 2, rewardGold: 90, rewardGems: 4 },
+  { id: 'd_cinema', title: 'Suất Chiếu Trong Ngày', desc: 'Đổi kênh phim ở Rạp 1 lần.', icon: '🎬', type: 'cinema_channel', target: 1, rewardGold: 80, rewardGems: 3 },
+  { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì hoặc Bắp Rang Bơ 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
+];
+
+export const DAILY_QUEST_COUNT = 3;
+
+// Long-term goals with three tiers each (cumulative progress)
+export const ACHIEVEMENTS: AchievementDef[] = [
   {
-    id: 'q_till_5',
-    title: 'Khởi Đầu Nhà Nông',
-    desc: 'Dùng Cuốc xới tơi 5 ô đất trống tại Nông trại.',
-    icon: '⛏️',
-    type: 'till',
-    target: 5,
-    progress: 0,
-    claimed: false,
-    rewardGold: 80,
-    rewardGems: 5,
-  },
-  {
-    id: 'q_water_5',
-    title: 'Dòng Nước Mát Lành',
-    desc: 'Tưới nước cho 5 ô đất đã xới hoặc đã gieo hạt.',
-    icon: '💧',
-    type: 'water',
-    target: 5,
-    progress: 0,
-    claimed: false,
-    rewardGold: 90,
-    rewardGems: 5,
-  },
-  {
-    id: 'q_feed_3',
-    title: 'Người Bạn Gia Súc',
-    desc: 'Cho Gà, Cừu hoặc Bò Sữa ăn 3 lần tại Chuồng Trại.',
-    icon: '🐄',
-    type: 'feed_animal',
-    target: 3,
-    progress: 0,
-    claimed: false,
-    rewardGold: 140,
-    rewardGems: 8,
-  },
-  {
-    id: 'q_harvest_3',
-    title: 'Vụ Mùa Đầu Tiên',
-    desc: 'Thu hoạch thành công 3 nông sản chín (Giai đoạn 3).',
+    id: 'a_harvest',
+    title: 'Bàn Tay Vàng',
     icon: '🧺',
     type: 'harvest',
-    target: 3,
-    progress: 0,
-    claimed: false,
-    rewardGold: 180,
-    rewardGems: 12,
+    desc: 'Thu hoạch tổng cộng {n} nông sản.',
+    tiers: [
+      { target: 10, rewardGold: 100, rewardGems: 5 },
+      { target: 50, rewardGold: 300, rewardGems: 15 },
+      { target: 200, rewardGold: 800, rewardGems: 40 },
+    ],
   },
   {
-    id: 'q_visit_3',
-    title: 'Nhà Du Hành Thế Giới',
-    desc: 'Mở Bản đồ Thế giới (phím M) và ghé thăm 3 khu vực khác nhau.',
+    id: 'a_gold',
+    title: 'Triệu Phú Nông Thôn',
+    icon: '💰',
+    type: 'earn_gold',
+    desc: 'Bán hàng thu về tổng cộng {n} Vàng.',
+    tiers: [
+      { target: 1000, rewardGold: 100, rewardGems: 8 },
+      { target: 5000, rewardGold: 300, rewardGems: 20 },
+      { target: 20000, rewardGold: 1000, rewardGems: 50 },
+    ],
+  },
+  {
+    id: 'a_plots',
+    title: 'Địa Chủ Mở Cõi',
     icon: '🗺️',
-    type: 'visit_worlds',
-    target: 3,
-    progress: 1,
-    claimed: false,
-    rewardGold: 150,
-    rewardGems: 10,
+    type: 'buy_plot',
+    desc: 'Mở khóa {n} lô đất mới.',
+    tiers: [
+      { target: 2, rewardGold: 200, rewardGems: 10 },
+      { target: 6, rewardGold: 500, rewardGems: 25 },
+      { target: 12, rewardGold: 1200, rewardGems: 60 },
+    ],
   },
   {
-    id: 'q_chat_2',
-    title: 'Kết Nối Cư Dân',
-    desc: 'Gửi 2 tin nhắn hoặc thả cảm xúc (Emote) giao lưu cùng mọi người.',
-    icon: '💬',
-    type: 'chat',
-    target: 2,
-    progress: 0,
-    claimed: false,
-    rewardGold: 100,
-    rewardGems: 8,
+    id: 'a_ranch',
+    title: 'Chủ Trại Chăn Nuôi',
+    icon: '🐄',
+    type: 'collect_animal',
+    desc: 'Thu {n} sản phẩm chăn nuôi.',
+    tiers: [
+      { target: 5, rewardGold: 100, rewardGems: 5 },
+      { target: 25, rewardGold: 300, rewardGems: 15 },
+      { target: 100, rewardGold: 800, rewardGems: 40 },
+    ],
   },
   {
-    id: 'q_cosmetic_1',
-    title: 'Tín Đồ Thời Trang',
-    desc: 'Sở hữu 1 món đồ Thời trang, Thú cưng hoặc Trang trí trong Shop.',
+    id: 'a_fashion',
+    title: 'Biểu Tượng Thời Trang',
     icon: '👗',
     type: 'buy_cosmetic',
-    target: 1,
-    progress: 0,
-    claimed: false,
-    rewardGold: 220,
-    rewardGems: 15,
+    desc: 'Sở hữu {n} món thời trang mua thêm.',
+    tiers: [
+      { target: 1, rewardGold: 80, rewardGems: 5 },
+      { target: 5, rewardGold: 250, rewardGems: 15 },
+      { target: 12, rewardGold: 600, rewardGems: 35 },
+    ],
+  },
+  {
+    id: 'a_decor',
+    title: 'Nhà Thiết Kế Cảnh Quan',
+    icon: '🏡',
+    type: 'buy_decor',
+    desc: 'Sở hữu {n} đồ trang trí nông trại.',
+    tiers: [
+      { target: 1, rewardGold: 100, rewardGems: 5 },
+      { target: 3, rewardGold: 250, rewardGems: 15 },
+      { target: 5, rewardGold: 500, rewardGems: 30 },
+    ],
+  },
+  {
+    id: 'a_days',
+    title: 'Nông Dân Kiên Trì',
+    icon: '📅',
+    type: 'sleep',
+    desc: 'Trải qua {n} ngày ở nông trại.',
+    tiers: [
+      { target: 3, rewardGold: 100, rewardGems: 5 },
+      { target: 10, rewardGold: 300, rewardGems: 15 },
+      { target: 30, rewardGold: 1000, rewardGems: 50 },
+    ],
+  },
+  {
+    id: 'a_social',
+    title: 'Ngôi Sao Giao Lưu',
+    icon: '💬',
+    type: 'chat',
+    desc: 'Gửi {n} tin nhắn hoặc cảm xúc.',
+    tiers: [
+      { target: 5, rewardGold: 60, rewardGems: 3 },
+      { target: 25, rewardGold: 200, rewardGems: 10 },
+      { target: 100, rewardGold: 500, rewardGems: 25 },
+    ],
   },
 ];

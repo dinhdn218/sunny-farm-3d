@@ -53,6 +53,10 @@ export function DaySummaryModal() {
           </div>
         </div>
 
+        <p className="mb-4 text-xs font-bold text-sky-800">
+          📅 Nhiệm vụ hằng ngày mới đã sẵn sàng trong Bảng Nhiệm Vụ!
+        </p>
+
         <button
           onClick={() => setActiveModal(null)}
           className="game-btn w-full rounded-2xl border-2 border-emerald-900 bg-emerald-600 py-3 text-base font-black text-white hover:bg-emerald-500"

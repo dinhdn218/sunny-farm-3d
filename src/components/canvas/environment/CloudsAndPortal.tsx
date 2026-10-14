@@ -4,7 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
-import { WORLDS } from '@/config/worlds';
+import { worldPortal } from '@/lib/farmLayout';
 import { interactable } from '@/lib/interact';
 
 const CLOUD_PUFFS: [number, number, number, number][] = [
@@ -63,8 +63,9 @@ function Clouds() {
 function Portal() {
   const ringRef = useRef<THREE.Mesh>(null);
   const currentWorld = useGameStore((s) => s.currentWorld);
+  const ownedPlots = useGameStore((s) => s.ownedPlots);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const [px, pz] = WORLDS[currentWorld].portalPos;
+  const [px, pz] = worldPortal(currentWorld, ownedPlots);
   const handlers = interactable('Cổng Dịch Chuyển Thế Giới (Mở Bản Đồ)', () =>
     setActiveModal('map')
   );

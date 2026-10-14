@@ -10,7 +10,14 @@ import { useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { SafeGLTFModel } from './GLTFModel';
 
-export function AnimalMesh({ animal }: { animal: FarmAnimal }) {
+export function AnimalMesh({
+  animal,
+  offset = [0, 0],
+}: {
+  animal: FarmAnimal;
+  // Shift of the ranch when the farm has been expanded
+  offset?: [number, number];
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const interactAnimal = useGameStore((s) => s.interactAnimal);
   const useGlbModels = useGameStore((s) => s.useGlbModels);
@@ -31,8 +38,8 @@ export function AnimalMesh({ animal }: { animal: FarmAnimal }) {
     if (!groupRef.current) return;
     const t = state.clock.getElapsedTime();
     const seed = animal.id.charCodeAt(animal.id.length - 1) || 1;
-    const wanderX = animal.x + Math.sin(t * 0.5 + seed) * 1.1;
-    const wanderZ = animal.z + Math.cos(t * 0.4 + seed) * 0.9;
+    const wanderX = animal.x + offset[0] + Math.sin(t * 0.5 + seed) * 1.1;
+    const wanderZ = animal.z + offset[1] + Math.cos(t * 0.4 + seed) * 0.9;
     const hopY = Math.abs(Math.sin(t * 3.5 + seed)) * 0.08;
 
     groupRef.current.position.set(wanderX, hopY, wanderZ);

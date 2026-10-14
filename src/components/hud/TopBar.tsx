@@ -28,6 +28,7 @@ export function TopBar() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const cycleTimeOfDay = useGameStore((s) => s.cycleTimeOfDay);
   const nextDay = useGameStore((s) => s.nextDay);
+  const openExpand = useGameStore((s) => s.openExpand);
 
   const [muted, setMuted] = useState(soundFX.muted);
   const worldCfg = WORLDS[currentWorld];
@@ -155,6 +156,14 @@ export function TopBar() {
           className="game-btn flex items-center gap-1.5 rounded-xl border-2 border-emerald-900 bg-emerald-600 px-2.5 py-2 text-xs font-extrabold text-white hover:bg-emerald-500 sm:text-sm"
         >
           <span>🌱</span> <span className="hidden md:inline">Hạt Giống</span>
+        </button>
+
+        <button
+          onClick={() => openExpand()}
+          title="Mở Rộng Nông Trại"
+          className="game-btn flex items-center gap-1.5 rounded-xl border-2 border-lime-900 bg-lime-600 px-2.5 py-2 text-xs font-extrabold text-white hover:bg-lime-500 sm:text-sm"
+        >
+          <span>🏗️</span> <span className="hidden md:inline">Mở Rộng</span>
         </button>
 
         <button

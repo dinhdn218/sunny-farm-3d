@@ -1,5 +1,6 @@
 import { CosmeticItem } from '@/types/game';
 
+// Each item has its own 3D model (see AvatarMesh / DecorModel); prices are the Next.js version's economy
 export const COSMETICS: CosmeticItem[] = [
   {
     id: 'straw_hat',
@@ -8,7 +9,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '👒',
     priceGold: 0,
     priceGems: 0,
-    description: 'Chiếc nón rơm mộc mạc che nắng.',
+    description: 'Nón rơm vành rộng, thắt nơ đỏ và cài hoa hồng.',
   },
   {
     id: 'crown',
@@ -17,7 +18,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '👑',
     priceGold: 300,
     priceGems: 15,
-    description: 'Vương miện vàng đính ngọc quý phái.',
+    description: 'Vương miện 5 cánh vàng, đính hồng ngọc và lam ngọc.',
   },
   {
     id: 'cat_ears',
@@ -26,7 +27,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🐱',
     priceGold: 180,
     priceGems: 10,
-    description: 'Băng đô tai mèo hồng siêu đáng yêu.',
+    description: 'Băng đô tai mèo hồng có lót tai mềm mại.',
   },
   {
     id: 'cowboy_hat',
@@ -35,7 +36,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🤠',
     priceGold: 110,
     priceGems: 0,
-    description: 'Phong cách lãng tử thảo nguyên.',
+    description: 'Mũ da nâu vành cong, đai vàng lãng tử thảo nguyên.',
   },
   {
     id: 'wizard_hat',
@@ -44,7 +45,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🧙',
     priceGold: 240,
     priceGems: 12,
-    description: 'Chiếc mũ phép thuật huyền bí.',
+    description: 'Mũ chóp gập đầu, rắc đầy sao vàng phép thuật.',
   },
   {
     id: 'halo',
@@ -53,7 +54,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '😇',
     priceGold: 450,
     priceGems: 25,
-    description: 'Vòng sáng lơ lửng trên đầu.',
+    description: 'Vòng sáng lơ lửng bồng bềnh trên đầu.',
   },
   {
     id: 'none_hat',
@@ -71,10 +72,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🧑‍🌾',
     priceGold: 0,
     priceGems: 0,
-    shirtColor: '#ef4444',
-    overallColor: '#2563eb',
-    pantsColor: '#1d4ed8',
-    description: 'Trang phục làm vườn truyền thống.',
+    description: 'Áo đỏ, quần yếm jean có túi, dây đeo và ủng da.',
   },
   {
     id: 'casual_hoodie',
@@ -83,10 +81,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🧥',
     priceGold: 80,
     priceGems: 0,
-    shirtColor: '#10b981',
-    overallColor: '#059669',
-    pantsColor: '#1e293b',
-    description: 'Áo Hoodie xanh mint trẻ trung dạo phố.',
+    description: 'Hoodie mint có mũ trùm, túi kangaroo và giày sneaker.',
   },
   {
     id: 'beach_vibe',
@@ -95,10 +90,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🏝️',
     priceGold: 150,
     priceGems: 5,
-    shirtColor: '#f97316',
-    overallColor: '#facc15',
-    pantsColor: '#0ea5e9',
-    description: 'Rực rỡ sắc màu mùa hè sôi động.',
+    description: 'Sơ mi Hawaii in hoa, quần đùi, kính râm và dép tông.',
   },
   {
     id: 'sakura_pink',
@@ -107,10 +99,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🌸',
     priceGold: 160,
     priceGems: 8,
-    shirtColor: '#f472b6',
-    overallColor: '#fbcfe8',
-    pantsColor: '#db2777',
-    description: 'Ngọt ngào nổi bật giữa công viên hoa.',
+    description: 'Váy xòe ren trắng, tay bồng, nơ hồng và giày búp bê.',
   },
   {
     id: 'royal_gold',
@@ -119,10 +108,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🤴',
     priceGold: 350,
     priceGems: 18,
-    shirtColor: '#7c3aed',
-    overallColor: '#facc15',
-    pantsColor: '#312e81',
-    description: 'Sang trọng bậc nhất trên sàn diễn.',
+    description: 'Áo choàng đỏ, viền vàng, cầu vai và dải băng hoàng tộc.',
   },
   {
     id: 'cyber_neon',
@@ -131,10 +117,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🚀',
     priceGold: 420,
     priceGems: 20,
-    shirtColor: '#06b6d4',
-    overallColor: '#ec4899',
-    pantsColor: '#0f172a',
-    description: 'Phát sáng phong cách tương lai.',
+    description: 'Giáp đen viền neon phát sáng, kính visor và lõi năng lượng.',
   },
   {
     id: 'none_wing',
@@ -152,8 +135,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🎒',
     priceGold: 80,
     priceGems: 0,
-    color: '#d97706',
-    description: 'Balo nhỏ xinh đeo sau lưng.',
+    description: 'Balo cam có nắp, túi trước và quai đeo.',
   },
   {
     id: 'angel_wings',
@@ -162,8 +144,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🪽',
     priceGold: 380,
     priceGems: 20,
-    color: '#ffffff',
-    description: 'Đôi cánh trắng vỗ nhẹ nhàng sau lưng.',
+    description: 'Đôi cánh nhiều tầng lông vũ trắng, đầu cánh xanh nhạt.',
   },
   {
     id: 'fairy_wings',
@@ -172,8 +153,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🦋',
     priceGold: 320,
     priceGems: 15,
-    color: '#f472b6',
-    description: 'Cánh bướm hồng tím lấp lánh.',
+    description: 'Cánh bướm trong suốt tím hồng, chấm sáng lấp lánh.',
   },
   {
     id: 'demon_wings',
@@ -182,8 +162,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🦇',
     priceGold: 450,
     priceGems: 25,
-    color: '#dc2626',
-    description: 'Đôi cánh uy lực mang sắc đỏ đen huyền bí.',
+    description: 'Cánh dơi màng đỏ thẫm, khung xương đen có móng vuốt.',
   },
   {
     id: 'shiba_inu',
@@ -192,9 +171,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🐕',
     priceGold: 350,
     priceGems: 18,
-    color: '#f59e0b',
-    accentColor: '#fef3c7',
-    description: 'Chú chó Shiba dễ thương chạy lon ton theo bạn khắp mọi nơi!',
+    description: 'Chó Shiba vàng ngực trắng, đuôi cuộn, chạy lon ton theo bạn!',
   },
   {
     id: 'robo_cat',
@@ -203,9 +180,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🤖',
     priceGold: 480,
     priceGems: 25,
-    color: '#38bdf8',
-    accentColor: '#e2e8f0',
-    description: 'Thú cưng công nghệ cao phát sáng chạy theo sau chủ nhân.',
+    description: 'Mèo robot mắt neon, ăng-ten phát sáng, bay bằng động cơ phản lực.',
   },
   {
     id: 'none_pet',
@@ -223,7 +198,8 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🎃',
     priceGold: 90,
     priceGems: 0,
-    description: 'Đứng canh gác góc ruộng nông trại.',
+    footprint: 0.9,
+    description: 'Đầu bí ngô, áo ca rô và nón rơm canh gác ruộng.',
   },
   {
     id: 'decor_windmill',
@@ -232,7 +208,8 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🌬️',
     priceGold: 400,
     priceGems: 15,
-    description: 'Cối xay gió khổng lồ với cánh quạt quay đều.',
+    footprint: 1.7,
+    description: 'Tháp đá mái đỏ, cánh buồm quay đều theo gió.',
   },
   {
     id: 'decor_fountain',
@@ -241,7 +218,8 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '⛲',
     priceGold: 320,
     priceGems: 12,
-    description: 'Đài phun nước mát lành bên hiên nhà.',
+    footprint: 2.2,
+    description: 'Đài phun 3 tầng, nước chảy tràn lấp lánh.',
   },
   {
     id: 'decor_sakura_grove',
@@ -250,7 +228,8 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🌸',
     priceGold: 140,
     priceGems: 0,
-    description: 'Trồng thêm những gốc hoa anh đào hồng rực.',
+    footprint: 2.7,
+    description: '3 gốc anh đào hồng, cánh hoa rơi phủ thảm.',
   },
   {
     id: 'decor_gold_statue',
@@ -259,6 +238,7 @@ export const COSMETICS: CosmeticItem[] = [
     icon: '🏆',
     priceGold: 600,
     priceGems: 30,
-    description: 'Biểu tượng nông dân tỷ phú lấp lánh.',
+    footprint: 1.0,
+    description: 'Cúp vàng hai quai trên bệ đá, ngôi sao xoay lấp lánh.',
   },
 ];

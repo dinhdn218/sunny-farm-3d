@@ -19,6 +19,7 @@ import { InventoryModal } from '@/components/hud/modals/InventoryModal';
 import { RanchModal } from '@/components/hud/modals/RanchModal';
 import { AuthModal } from '@/components/hud/modals/AuthModal';
 import { DaySummaryModal } from '@/components/hud/modals/DaySummaryModal';
+import { ExpandModal } from '@/components/hud/modals/ExpandModal';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -64,6 +65,7 @@ export default function HomePage() {
       {activeModal === 'ranch' && <RanchModal />}
       {activeModal === 'auth' && <AuthModal />}
       {activeModal === 'summary' && <DaySummaryModal />}
+      {activeModal === 'expand' && <ExpandModal />}
     </main>
   );
 }

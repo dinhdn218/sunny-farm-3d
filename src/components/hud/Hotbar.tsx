@@ -1,6 +1,7 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
+import { COSMETICS } from '@/config/cosmetics';
 import { CropId, ToolId } from '@/types/game';
 
 interface HotbarSlot {
@@ -33,10 +34,16 @@ export function Hotbar() {
   const seeds = useGameStore((s) => s.seeds);
   const breadCount = useGameStore((s) => s.breadCount);
   const animalFeed = useGameStore((s) => s.animalFeed);
+  const placingDecor = useGameStore((s) => s.placingDecor);
+  const rotatePlacingDecor = useGameStore((s) => s.rotatePlacingDecor);
+  const cancelPlacingDecor = useGameStore((s) => s.cancelPlacingDecor);
 
   if (currentWorld !== 'farm') return null;
 
   const active = SLOTS.find((s) => s.id === activeTool) ?? SLOTS[0];
+  const placingItem = placingDecor
+    ? COSMETICS.find((c) => c.id === placingDecor.id)
+    : undefined;
   const countFor = (slot: HotbarSlot) => {
     if (slot.crop) return seeds[slot.crop] || 0;
     if (slot.id === 'bread') return breadCount;
@@ -46,19 +53,39 @@ export function Hotbar() {
 
   return (
     <footer className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2">
-      <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-amber-400/70 bg-amber-950/90 px-3.5 py-1 text-xs font-extrabold text-amber-100 shadow-lg">
-        <span>
-          {active.icon} {active.name}: {active.desc}
-        </span>
-        {active.id === 'water' && (
+      {placingItem ? (
+        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-lime-300/80 bg-emerald-950/90 px-3.5 py-1 text-xs font-extrabold text-lime-100 shadow-lg">
+          <span>
+            🏗️ Đang đặt {placingItem.icon} {placingItem.name}: Click chuột để đặt • R xoay • Esc hủy
+          </span>
           <button
-            onClick={refillWater}
-            className="ml-1 rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
+            onClick={rotatePlacingDecor}
+            className="rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
           >
-            💧 Múc Đầy Nước
+            ↻ Xoay
           </button>
-        )}
-      </div>
+          <button
+            onClick={cancelPlacingDecor}
+            className="rounded-lg bg-rose-500 px-2 py-0.5 text-xs font-black text-white hover:bg-rose-400"
+          >
+            ✕ Hủy
+          </button>
+        </div>
+      ) : (
+        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-amber-400/70 bg-amber-950/90 px-3.5 py-1 text-xs font-extrabold text-amber-100 shadow-lg">
+          <span>
+            {active.icon} {active.name}: {active.desc}
+          </span>
+          {active.id === 'water' && (
+            <button
+              onClick={refillWater}
+              className="ml-1 rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
+            >
+              💧 Múc Đầy Nước
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="wood-panel pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
         {SLOTS.map((slot) => {

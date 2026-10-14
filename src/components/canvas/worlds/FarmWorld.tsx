@@ -1,30 +1,46 @@
 'use client';
 
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { memo, useCallback, useMemo, useState } from 'react';
+import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { CROPS } from '@/config/crops';
-import { GRID_SIZE, TILE_SIZE, tileToWorld } from '@/config/farm';
-import { TileData } from '@/types/game';
+import { COSMETICS } from '@/config/cosmetics';
+import {
+  PLOT_SIZE,
+  TILE_SIZE,
+  isPlotPurchasable,
+  plotCenter,
+  plotKey,
+  plotOfTile,
+  plotPrice,
+  tileToWorld,
+} from '@/config/farm';
+import {
+  BARN_OFFSET,
+  ExpansionSide,
+  FARM_SITES,
+  FARM_TREES,
+  expansionSigns,
+  farmBands,
+  fieldRect,
+  ranchOffset,
+  stretchPoint,
+} from '@/lib/farmLayout';
+import { DecorPlacement, TileData } from '@/types/game';
 import { interactable } from '@/lib/interact';
 import { CropMesh } from '../models/CropMesh';
 import { AnimalMesh } from '../models/AnimalMesh';
-import { Fountain, Tree, TreeType } from '../environment/Props';
+import { DecorModel } from '../models/DecorModel';
+import { Tree } from '../environment/Props';
+import { DecorPlacer } from '../DecorPlacer';
 
-const FARM_TREES: [number, number, number, TreeType][] = [
-  [-11, -7, 1.1, 'pine'],
-  [-12, 2, 1.0, 'oak'],
-  [11.5, 4, 1.05, 'pine'],
-  [10, -8, 1.2, 'oak'],
-];
-
-// The HTML version's third grove tree sits where the ranch pasture is, so it moves east
-const SAKURA_GROVE: [number, number, number][] = [
-  [8.5, -5.5, 1.15],
-  [9.2, 5.8, 1.1],
-  [12.6, -1.4, 1.05],
-];
+const SIDE_NAMES: Record<ExpansionSide, string> = {
+  west: 'Tây',
+  east: 'Đông',
+  north: 'Bắc',
+  south: 'Nam',
+};
 
 function tileTooltip(tile: TileData) {
   const coords = `(${tile.c + 1}, ${tile.r + 1})`;
@@ -65,11 +81,13 @@ const FarmTile = memo(function FarmTile({
         receiveShadow
         onClick={(e) => {
           e.stopPropagation();
-          if (e.delta > 8) return;
-          useGameStore.getState().interactTile(tile.r, tile.c);
+          const store = useGameStore.getState();
+          if (e.delta > 8 || store.placingDecor) return;
+          store.interactTile(tile.r, tile.c);
         }}
         onPointerMove={(e) => {
           e.stopPropagation();
+          if (useGameStore.getState().placingDecor) return;
           onHover(tile.id);
           useGameStore.getState().setTooltip({
             ...tileTooltip(tile),
@@ -103,13 +121,158 @@ const FarmTile = memo(function FarmTile({
   );
 });
 
+// Deterministic weeds and rocks so every wild plot looks a little different
+function wildScatter(px: number, pz: number) {
+  let seed = px * 31 + pz * 17 + 7;
+  const random = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+  return Array.from({ length: 9 }, (_, i) => ({
+    x: (random() - 0.5) * (PLOT_SIZE - 1),
+    z: (random() - 0.5) * (PLOT_SIZE - 1),
+    scale: 0.7 + random() * 0.6,
+    rock: i < 2,
+  }));
+}
+
+// Unowned land inside the field: overgrown, with a for-sale signboard
+const LockedPlot = memo(function LockedPlot({
+  px,
+  pz,
+  purchasable,
+  price,
+}: {
+  px: number;
+  pz: number;
+  purchasable: boolean;
+  price: number;
+}) {
+  const key = plotKey(px, pz);
+  const { x, z } = plotCenter(px, pz);
+  const scatter = useMemo(() => wildScatter(px, pz), [px, pz]);
+  const handlers = interactable(
+    `🔒 Lô đất hoang (${px + 1}, ${pz + 1})`,
+    () => useGameStore.getState().openExpand(key),
+    purchasable ? `Click để mở khóa: ${price} Vàng` : 'Cần mở khóa lô đất liền kề trước'
+  );
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh receiveShadow position={[0, 0.1, 0]} {...handlers}>
+        <boxGeometry args={[PLOT_SIZE - 0.08, 0.12, PLOT_SIZE - 0.08]} />
+        <meshLambertMaterial color="#4d7c0f" />
+      </mesh>
+      {scatter.map((p, i) =>
+        p.rock ? (
+          <mesh key={i} position={[p.x, 0.22, p.z]} scale={p.scale}>
+            <dodecahedronGeometry args={[0.22, 0]} />
+            <meshLambertMaterial color="#a8a29e" />
+          </mesh>
+        ) : (
+          <mesh key={i} position={[p.x, 0.3, p.z]} scale={p.scale}>
+            <coneGeometry args={[0.16, 0.36, 5]} />
+            <meshLambertMaterial color="#3f6212" />
+          </mesh>
+        )
+      )}
+      <mesh castShadow position={[0, 0.55, 0.9]}>
+        <cylinderGeometry args={[0.06, 0.07, 1.1, 6]} />
+        <meshLambertMaterial color="#78350f" />
+      </mesh>
+      <mesh castShadow position={[0, 1.05, 0.9]} {...handlers}>
+        <boxGeometry args={[1.0, 0.52, 0.08]} />
+        <meshLambertMaterial color={purchasable ? '#d97706' : '#78716c'} />
+      </mesh>
+      <Html position={[0, 1.65, 0.9]} zIndexRange={[15, 0]}>
+        <div
+          className={`player-tag w-max rounded-full border px-2.5 py-0.5 text-[11px] font-black shadow ${
+            purchasable
+              ? 'border-white bg-amber-400 text-amber-950'
+              : 'border-white/30 bg-slate-900/85 text-slate-300'
+          }`}
+        >
+          {purchasable ? `🔓 ${price}🪙` : '🔒 Khóa'}
+        </div>
+      </Html>
+    </group>
+  );
+});
+
+function ExpansionSign({
+  side,
+  x,
+  z,
+  onOpen,
+}: {
+  side: ExpansionSide;
+  x: number;
+  z: number;
+  onOpen: () => void;
+}) {
+  const handlers = interactable(
+    `🏗️ Mở rộng phía ${SIDE_NAMES[side]}`,
+    onOpen,
+    'Click để xem các lô đất có thể mua'
+  );
+
+  return (
+    <group position={[x, 0, z]}>
+      <mesh castShadow position={[0, 0.6, 0]}>
+        <cylinderGeometry args={[0.07, 0.08, 1.2, 6]} />
+        <meshLambertMaterial color="#78350f" />
+      </mesh>
+      <mesh castShadow position={[0, 1.15, 0]} {...handlers}>
+        <boxGeometry args={[1.1, 0.6, 0.1]} />
+        <meshLambertMaterial color="#16a34a" />
+      </mesh>
+      <mesh position={[0, 1.15, 0.06]}>
+        <boxGeometry args={[0.46, 0.12, 0.02]} />
+        <meshBasicMaterial color="#fef08a" />
+      </mesh>
+      <mesh position={[0, 1.15, 0.06]}>
+        <boxGeometry args={[0.12, 0.42, 0.02]} />
+        <meshBasicMaterial color="#fef08a" />
+      </mesh>
+      <Html position={[0, 1.75, 0]} zIndexRange={[15, 0]}>
+        <div className="player-tag w-max rounded-full border border-white bg-emerald-600 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
+          ➕ Mở Rộng Đất
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function PlacedDecor({ id, placement }: { id: string; placement: DecorPlacement }) {
+  const item = COSMETICS.find((c) => c.id === id);
+  const handlers = interactable(
+    `${item?.icon} ${item?.name}`,
+    () => useGameStore.getState().startPlacingDecor(id),
+    'Click để di chuyển • Cất kho trong Thời Trang & Decor'
+  );
+
+  return (
+    <group
+      position={[placement.x, 0, placement.z]}
+      rotation={[0, placement.rotY, 0]}
+      {...handlers}
+    >
+      <DecorModel id={id} />
+    </group>
+  );
+}
+
 export function FarmWorld() {
   const tiles = useGameStore((s) => s.tiles);
   const animals = useGameStore((s) => s.animals);
+  const ownedPlots = useGameStore((s) => s.ownedPlots);
   const ownedCosmetics = useGameStore((s) => s.ownedCosmetics);
+  const decorPlacements = useGameStore((s) => s.decorPlacements);
+  const placingDecor = useGameStore((s) => s.placingDecor);
   const refillWater = useGameStore((s) => s.refillWater);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const nextDay = useGameStore((s) => s.nextDay);
+  const openExpand = useGameStore((s) => s.openExpand);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const onHover = useCallback((id: string | null) => setHoveredId(id), []);
@@ -117,40 +280,73 @@ export function FarmWorld() {
     () => new THREE.BoxGeometry(TILE_SIZE * 0.96, 0.22, TILE_SIZE * 0.96),
     []
   );
-  const windmillBladesRef = useRef<THREE.Group>(null);
-  const statueStarRef = useRef<THREE.Mesh>(null);
 
-  useFrame((_, delta) => {
-    const dt = Math.min(delta, 0.1);
-    if (windmillBladesRef.current) windmillBladesRef.current.rotation.z += 1.5 * dt;
-    if (statueStarRef.current) statueStarRef.current.rotation.y += 2.5 * dt;
-  });
+  const bands = useMemo(() => farmBands(ownedPlots), [ownedPlots]);
+  const field = useMemo(() => fieldRect(ownedPlots), [ownedPlots]);
+  const signs = useMemo(() => expansionSigns(ownedPlots), [ownedPlots]);
+  const ownedTiles = useMemo(() => {
+    const owned = new Set(ownedPlots);
+    return tiles.filter((t) => owned.has(plotOfTile(t.r, t.c)));
+  }, [tiles, ownedPlots]);
+  const lockedPlots = useMemo(() => {
+    const list: { px: number; pz: number; purchasable: boolean }[] = [];
+    for (let pz = field.minPz; pz <= field.maxPz; pz++) {
+      for (let px = field.minPx; px <= field.maxPx; px++) {
+        const key = plotKey(px, pz);
+        if (!ownedPlots.includes(key)) {
+          list.push({ px, pz, purchasable: isPlotPurchasable(key, ownedPlots) });
+        }
+      }
+    }
+    return list;
+  }, [field, ownedPlots]);
+  const price = plotPrice(ownedPlots.length);
+
+  // Buildings keep their place relative to the field edges, so new land pushes them outward
+  const at = ([x, z]: [number, number]) => stretchPoint(x, z, bands);
+  const [houseX, houseZ] = at(FARM_SITES.house);
+  const [binX, binZ] = at(FARM_SITES.shippingBin);
+  const [shopX, shopZ] = at(FARM_SITES.seedShop);
+  const [wellX, wellZ] = at(FARM_SITES.well);
+  const [ranchDx, ranchDz] = ranchOffset(ownedPlots);
 
   const hovered = hoveredId ? tiles.find((t) => t.id === hoveredId) : undefined;
   const hoverPos = hovered ? tileToWorld(hovered.r, hovered.c) : null;
-  const has = (id: string) => ownedCosmetics.includes(id);
 
   const house = interactable('Nhà Nông Trại (Ngủ qua ngày)', nextDay);
-  const shippingBin = interactable('Rương Bán Hàng', () =>
-    setActiveModal('inventory')
-  );
+  const shippingBin = interactable('Rương Bán Hàng', () => setActiveModal('inventory'));
   const seedShop = interactable('Cửa Hàng Hạt Giống', () => setActiveModal('shop'));
   const well = interactable('Giếng Nước (Múc đầy bình tưới)', refillWater);
-  const barn = interactable('Chuồng Trại Chăn Nuôi (Phím R)', () =>
-    setActiveModal('ranch')
-  );
+  const barn = interactable('Chuồng Trại Chăn Nuôi (Phím R)', () => setActiveModal('ranch'));
+
+  // A signboard pre-selects the first plot you can buy on its side
+  const openFromSign = (side: ExpansionSide) => {
+    const candidates: string[] = [];
+    if (side === 'west' || side === 'east') {
+      const px = side === 'west' ? field.minPx - 1 : field.maxPx + 1;
+      for (let pz = field.minPz; pz <= field.maxPz; pz++) candidates.push(plotKey(px, pz));
+    } else {
+      const pz = side === 'north' ? field.minPz - 1 : field.maxPz + 1;
+      for (let px = field.minPx; px <= field.maxPx; px++) candidates.push(plotKey(px, pz));
+    }
+    openExpand(candidates.find((k) => isPlotPurchasable(k, ownedPlots)) ?? null);
+  };
 
   return (
     <group>
-      <mesh receiveShadow position={[0, 0.01, 0]}>
-        <boxGeometry
-          args={[GRID_SIZE * TILE_SIZE + 0.9, 0.12, GRID_SIZE * TILE_SIZE + 0.9]}
-        />
+      <mesh
+        receiveShadow
+        position={[(field.minX + field.maxX) / 2, 0.01, (field.minZ + field.maxZ) / 2]}
+      >
+        <boxGeometry args={[field.maxX - field.minX, 0.12, field.maxZ - field.minZ]} />
         <meshLambertMaterial color="#78350f" />
       </mesh>
 
-      {tiles.map((tile) => (
+      {ownedTiles.map((tile) => (
         <FarmTile key={tile.id} tile={tile} onHover={onHover} />
+      ))}
+      {lockedPlots.map((p) => (
+        <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} />
       ))}
 
       {hoverPos && (
@@ -160,8 +356,12 @@ export function FarmWorld() {
         </lineSegments>
       )}
 
+      {signs.map((s) => (
+        <ExpansionSign key={s.side} {...s} onOpen={() => openFromSign(s.side)} />
+      ))}
+
       {/* Farmhouse (click: sleep to the next day) */}
-      <group position={[-5.4, 0, -8.5]}>
+      <group position={[houseX, 0, houseZ]}>
         <mesh castShadow position={[0, 1.2, 0]} {...house}>
           <boxGeometry args={[3.6, 2.4, 3.0]} />
           <meshLambertMaterial color="#fef3c7" />
@@ -176,13 +376,13 @@ export function FarmWorld() {
         </mesh>
       </group>
 
-      <mesh position={[-2.1, 0.5, -7.4]} {...shippingBin}>
+      <mesh position={[binX, 0.5, binZ]} {...shippingBin}>
         <boxGeometry args={[1.35, 1.0, 0.95]} />
         <meshLambertMaterial color="#dc2626" />
       </mesh>
 
       {/* Seed stall */}
-      <group position={[4.5, 0, -8.0]}>
+      <group position={[shopX, 0, shopZ]}>
         <mesh position={[0, 0.52, 0]} {...seedShop}>
           <boxGeometry args={[2.6, 1.05, 1.4]} />
           <meshLambertMaterial color="#92400e" />
@@ -194,7 +394,7 @@ export function FarmWorld() {
       </group>
 
       {/* Water well */}
-      <group position={[7.6, 0, 0]}>
+      <group position={[wellX, 0, wellZ]}>
         <mesh position={[0, 0.475, 0]} {...well}>
           <cylinderGeometry args={[1.1, 1.2, 0.95, 12]} />
           <meshLambertMaterial color="#64748b" />
@@ -205,12 +405,13 @@ export function FarmWorld() {
         </mesh>
       </group>
 
-      {FARM_TREES.map(([x, z, scale, type]) => (
-        <Tree key={`${x}_${z}`} x={x} z={z} scale={scale} type={type} />
-      ))}
+      {FARM_TREES.map((t) => {
+        const [x, z] = at([t.x, t.z]);
+        return <Tree key={`${t.x}_${t.z}`} x={x} z={z} scale={t.scale} type={t.type} />;
+      })}
 
-      {/* Livestock pasture & barn */}
-      <group position={[-10.5, 0, 6.8]}>
+      {/* Livestock pasture & barn (moves as one piece) */}
+      <group position={[FARM_SITES.ranch[0] + ranchDx, 0, FARM_SITES.ranch[1] + ranchDz]}>
         <mesh receiveShadow position={[0, 0.03, 0]}>
           <boxGeometry args={[6.2, 0.06, 5.4]} />
           <meshLambertMaterial color="#4ade80" />
@@ -226,7 +427,7 @@ export function FarmWorld() {
             <meshLambertMaterial color="#92400e" />
           </mesh>
         ))}
-        <group position={[1.5, 0, -3.9]}>
+        <group position={[BARN_OFFSET[0], 0, BARN_OFFSET[1]]}>
           <mesh castShadow receiveShadow position={[0, 1.35, 0]} {...barn}>
             <boxGeometry args={[3.4, 2.7, 2.6]} />
             <meshLambertMaterial color="#dc2626" />
@@ -244,75 +445,17 @@ export function FarmWorld() {
       </group>
 
       {animals.map((animal) => (
-        <AnimalMesh key={animal.id} animal={animal} />
+        <AnimalMesh key={animal.id} animal={animal} offset={[ranchDx, ranchDz]} />
       ))}
 
-      {has('decor_scarecrow') && (
-        <group position={[-6.8, 0, 0]}>
-          <mesh position={[0, 0.9, 0]}>
-            <cylinderGeometry args={[0.08, 0.08, 1.8, 6]} />
-            <meshLambertMaterial color="#78350f" />
-          </mesh>
-          <mesh position={[0, 1.25, 0]}>
-            <boxGeometry args={[1.3, 0.12, 0.12]} />
-            <meshLambertMaterial color="#92400e" />
-          </mesh>
-          <mesh position={[0, 1.1, 0]}>
-            <coneGeometry args={[0.42, 0.8, 7]} />
-            <meshLambertMaterial color="#d97706" />
-          </mesh>
-          <mesh position={[0, 1.65, 0]}>
-            <sphereGeometry args={[0.28, 8, 8]} />
-            <meshLambertMaterial color="#f97316" />
-          </mesh>
-        </group>
-      )}
-
-      {has('decor_windmill') && (
-        <group position={[-9.2, 0, -4.2]}>
-          <mesh castShadow position={[0, 2.25, 0]}>
-            <cylinderGeometry args={[1.1, 1.6, 4.5, 8]} />
-            <meshLambertMaterial color="#b45309" />
-          </mesh>
-          <mesh position={[0, 5.1, 0]}>
-            <coneGeometry args={[1.25, 1.2, 8]} />
-            <meshLambertMaterial color="#78350f" />
-          </mesh>
-          <group ref={windmillBladesRef} position={[0, 3.8, 1.25]}>
-            {[0, 1, 2, 3].map((i) => (
-              <mesh key={i} rotation={[0, 0, (i * Math.PI) / 2]}>
-                <boxGeometry args={[0.35, 2.6, 0.08]} />
-                <meshLambertMaterial color="#fef3c7" />
-              </mesh>
-            ))}
-          </group>
-        </group>
-      )}
-
-      {/* The HTML version's fountain spot is under the pasture, so it sits by the east trees */}
-      {has('decor_fountain') && <Fountain x={8.6} z={8.4} scale={0.9} />}
-
-      {has('decor_sakura_grove') &&
-        SAKURA_GROVE.map(([x, z, scale]) => (
-          <Tree key={`${x}_${z}`} x={x} z={z} scale={scale} type="sakura" />
+      {/* Player-placed decorations (hidden while being moved: the ghost shows instead) */}
+      {Object.entries(decorPlacements)
+        .filter(([id]) => ownedCosmetics.includes(id) && placingDecor?.id !== id)
+        .map(([id, placement]) => (
+          <PlacedDecor key={id} id={id} placement={placement} />
         ))}
 
-      {has('decor_gold_statue') && (
-        <group position={[5.8, 0, 5.8]}>
-          <mesh position={[0, 0.4, 0]}>
-            <boxGeometry args={[1.2, 0.8, 1.2]} />
-            <meshLambertMaterial color="#475569" />
-          </mesh>
-          <mesh position={[0, 1.35, 0]}>
-            <cylinderGeometry args={[0.55, 0.25, 1.1, 10]} />
-            <meshLambertMaterial color="#facc15" />
-          </mesh>
-          <mesh ref={statueStarRef} position={[0, 2.3, 0]}>
-            <octahedronGeometry args={[0.4, 0]} />
-            <meshBasicMaterial color="#fef08a" />
-          </mesh>
-        </group>
-      )}
+      <DecorPlacer />
     </group>
   );
 }

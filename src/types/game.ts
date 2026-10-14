@@ -3,6 +3,7 @@ export type TileState = 'empty' | 'tilled' | 'planted';
 export type CropId = 'carrot' | 'wheat' | 'tomato' | 'pumpkin';
 export type AnimalSpecies = 'chicken' | 'sheep' | 'cow';
 export type AnimalProductId = 'egg' | 'wool' | 'milk';
+export type TreeType = 'pine' | 'oak' | 'sakura' | 'palm';
 
 export type ToolId =
   | 'hoe'
@@ -101,14 +102,8 @@ export interface CosmeticItem {
   priceGold: number;
   priceGems: number;
   description: string;
-  // Wings / back items and pet fur
-  color?: string;
-  // Pet snout & tail
-  accentColor?: string;
-  // Outfits: arms, torso and legs
-  shirtColor?: string;
-  overallColor?: string;
-  pantsColor?: string;
+  // Decor only: radius kept clear around the item when placing it on the farm
+  footprint?: number;
 }
 
 export interface PlayerCosmetics {
@@ -118,18 +113,37 @@ export interface PlayerCosmetics {
   pet: string;
 }
 
+export interface DecorPlacement {
+  x: number;
+  z: number;
+  rotY: number;
+}
+
 export type QuestType =
   | 'till'
+  | 'plant'
   | 'water'
   | 'harvest'
+  | 'sleep'
+  | 'earn_gold'
+  | 'eat'
+  | 'visit_world'
   | 'visit_worlds'
+  | 'cinema_channel'
   | 'chat'
   | 'buy_cosmetic'
+  | 'buy_decor'
+  | 'place_decor'
   | 'feed_animal'
-  | 'collect_animal';
+  | 'collect_animal'
+  | 'buy_animal'
+  | 'buy_plot';
+
+export type QuestCategory = 'main' | 'daily' | 'achievement';
 
 export interface QuestItem {
   id: string;
+  category: QuestCategory;
   title: string;
   desc: string;
   icon: string;
@@ -139,6 +153,13 @@ export interface QuestItem {
   claimed: boolean;
   rewardGold: number;
   rewardGems: number;
+  // Only events for this crop count
+  crop?: CropId;
+  // Story chapter label (main quests)
+  chapter?: string;
+  // Achievements: current tier (0-based) out of `tiers`
+  tier?: number;
+  tiers?: number;
 }
 
 export interface RemotePlayer {
