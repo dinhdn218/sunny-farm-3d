@@ -24,6 +24,13 @@ export const RECIPES: Record<RecipeId, RecipeConfig> = {
     seconds: 120,
   },
   flan: { id: 'flan', machine: 'machine_kitchen', inputs: { egg: 1, milk: 1 }, output: { id: 'flan', count: 1 }, seconds: 120 },
+  fish_stew: {
+    id: 'fish_stew',
+    machine: 'machine_kitchen',
+    inputs: { mackerel: 1, tomato: 1 },
+    output: { id: 'fish_stew', count: 1 },
+    seconds: 120,
+  },
   cheese: { id: 'cheese', machine: 'machine_cheese', inputs: { milk: 1 }, output: { id: 'cheese', count: 1 }, seconds: 120 },
   wool_scarf: {
     id: 'wool_scarf',
@@ -50,8 +57,8 @@ export const MACHINES: Record<MachineId, MachineConfig> = {
     icon: '🍳',
     price: 350,
     footprint: 1.1,
-    description: 'Bếp củi nấu nước ép, sốt cà chua và bánh flan.',
-    recipes: ['carrot_juice', 'tomato_sauce', 'flan'],
+    description: 'Bếp củi nấu nước ép, sốt cà chua, bánh flan và cá kho tộ.',
+    recipes: ['carrot_juice', 'tomato_sauce', 'flan', 'fish_stew'],
   },
   machine_cheese: {
     id: 'machine_cheese',

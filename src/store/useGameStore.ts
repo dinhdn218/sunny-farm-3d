@@ -7,6 +7,7 @@ import {
   ChatMessage,
   CropId,
   FarmAnimal,
+  FishingSession,
   FloatingLabel,
   HoverTooltip,
   ItemConfig,
@@ -26,6 +27,14 @@ import { ANIMALS } from '@/config/animals';
 import { COSMETICS } from '@/config/cosmetics';
 import { ITEMS } from '@/config/items';
 import { MACHINES, RECIPES, isMachineId } from '@/config/machines';
+import {
+  BITE_MS,
+  BOBBER_POS,
+  CATCHES,
+  FISHING_ENERGY,
+  FISHING_SPOT,
+  TREASURE_REWARD,
+} from '@/config/fish';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import {
@@ -62,6 +71,7 @@ import {
   takeItems,
 } from '@/lib/inventory';
 import { marketPrice } from '@/lib/market';
+import { rollCatch, rollSize } from '@/lib/fishing';
 import { formatCountdown } from '@/lib/format';
 import { createNewGameSave } from '@/lib/newGame';
 import {
@@ -125,9 +135,12 @@ interface GameState extends SaveData {
     | 'cloudConflict'
     | 'workshop'
     | 'market'
+    | 'fishJournal'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
+  // The current cast at the Beach fishing jetty (not saved)
+  fishing: FishingSession | null;
   lastDaySummary: DaySummaryData | null;
   floatingLabels: FloatingLabel[];
   tooltip: HoverTooltip | null;
@@ -178,6 +191,13 @@ interface GameState extends SaveData {
   buyMachine: (id: MachineId) => void;
   startRecipe: (recipeId: RecipeId) => void;
   collectMachine: (id: MachineId) => void;
+
+  startFishing: () => void;
+  fishBite: () => void;
+  hookFish: () => void;
+  landCatch: () => void;
+  loseFish: () => void;
+  endFishing: () => void;
 
   openExpand: (plot?: string | null) => void;
   selectPlot: (plot: string) => void;
@@ -263,6 +283,7 @@ export const useGameStore = create<GameState>()(
         placingDecor: null,
         activeModal: null,
         workshopMachine: null,
+        fishing: null,
         lastDaySummary: null,
         floatingLabels: [],
         tooltip: null,
@@ -438,6 +459,7 @@ export const useGameStore = create<GameState>()(
             activeModal: null,
             tooltip: null,
             placingDecor: null,
+            fishing: null,
           });
 
           if (world !== 'farm') get().incrementQuest('visit_world', 1);
@@ -921,6 +943,105 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('craft', 1);
         },
 
+        // Cast from the Beach jetty; what bites is decided now and depends on the time of day
+        startFishing: () => {
+          const { currentWorld, energy, timePhaseIndex, playerPos, fishing } = get();
+          // A cast already in progress is finished first (re-casting is offered on the result card)
+          if (fishing && fishing.stage !== 'result') return;
+          if (currentWorld !== 'beach') {
+            get().showToast('🎣 Hãy đến Bãi Biển để câu cá!', 'text-amber-300');
+            return;
+          }
+          if (energy < FISHING_ENERGY) {
+            soundFX.error();
+            get().showToast('⚡ Không đủ thể lực để quăng cần!', 'text-red-400');
+            return;
+          }
+          const catchId = rollCatch(TIME_PHASES[timePhaseIndex].id);
+          playerPos.x = FISHING_SPOT.x;
+          playerPos.z = FISHING_SPOT.z;
+          playerPos.rotY = FISHING_SPOT.rotY;
+          playerPos.actionTime = Date.now();
+          soundFX.cast();
+          set({
+            energy: energy - FISHING_ENERGY,
+            activeModal: null,
+            tooltip: null,
+            fishing: {
+              stage: 'waiting',
+              catchId,
+              size: rollSize(catchId),
+              until: Date.now() + 1500 + Math.random() * 3000,
+            },
+          });
+        },
+
+        fishBite: () => {
+          const { fishing } = get();
+          if (fishing?.stage !== 'waiting') return;
+          soundFX.splash();
+          spawnParticles(BOBBER_POS[0], BOBBER_POS[1] + 0.2, BOBBER_POS[2], 0xbae6fd, 16);
+          set({ fishing: { ...fishing, stage: 'bite', until: Date.now() + BITE_MS } });
+        },
+
+        // Strike while the float is down: junk comes straight up, fish start the reeling fight
+        hookFish: () => {
+          const { fishing, playerPos } = get();
+          if (fishing?.stage !== 'bite') return;
+          playerPos.actionTime = Date.now();
+          if (CATCHES[fishing.catchId].difficulty === 0) {
+            get().landCatch();
+            return;
+          }
+          set({ fishing: { ...fishing, stage: 'reeling' } });
+        },
+
+        landCatch: () => {
+          const { fishing, items, fishLog, gold, gems, playerPos } = get();
+          if (fishing?.stage !== 'reeling' && fishing?.stage !== 'bite') return;
+          const cfg = CATCHES[fishing.catchId];
+          soundFX.harvest();
+          spawnParticles(playerPos.x, 0.9, playerPos.z, 0x38bdf8, 22);
+
+          if (fishing.catchId === 'treasure') {
+            set({
+              gold: gold + TREASURE_REWARD.gold,
+              gems: gems + TREASURE_REWARD.gems,
+              fishing: { ...fishing, stage: 'result', escaped: false, firstOfKind: false },
+            });
+            get().showToast(
+              `🎁 Rương kho báu: +${TREASURE_REWARD.gold}🪙 +${TREASURE_REWARD.gems}💎!`,
+              'text-yellow-300'
+            );
+            return;
+          }
+
+          const id = fishing.catchId;
+          const logged = fishLog[id];
+          set({
+            items: addItems(items, { [id]: 1 }),
+            fishLog: {
+              ...fishLog,
+              [id]: {
+                caught: (logged?.caught ?? 0) + 1,
+                best: Math.max(logged?.best ?? 0, fishing.size),
+              },
+            },
+            fishing: { ...fishing, stage: 'result', escaped: false, firstOfKind: !logged },
+          });
+          get().showToast(`${cfg.icon} +1 ${cfg.name} (${fishing.size} cm)!`, 'text-sky-300');
+          if (cfg.rarity !== 'junk') get().incrementQuest('fish', 1);
+        },
+
+        loseFish: () => {
+          const { fishing } = get();
+          if (fishing?.stage !== 'reeling' && fishing?.stage !== 'bite') return;
+          soundFX.error();
+          set({ fishing: { ...fishing, stage: 'result', escaped: true } });
+        },
+
+        endFishing: () => set({ fishing: null }),
+
         openExpand: (plot = null) =>
           set({ activeModal: 'expand', selectedPlot: plot, tooltip: null }),
 
@@ -1283,6 +1404,7 @@ export const useGameStore = create<GameState>()(
             ],
             dailyDay: day + 1,
             placingDecor: null,
+            fishing: null,
             lastDaySummary: {
               day,
               soldItems,

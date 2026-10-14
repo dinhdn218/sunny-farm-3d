@@ -9,9 +9,23 @@ export type ArtisanId =
   | 'flan'
   | 'cheese'
   | 'wool_scarf'
-  | 'pumpkin_pie';
+  | 'pumpkin_pie'
+  | 'fish_stew';
+export type FishId =
+  | 'anchovy'
+  | 'clownfish'
+  | 'pufferfish'
+  | 'mackerel'
+  | 'crab'
+  | 'squid'
+  | 'tuna'
+  | 'octopus'
+  | 'moonfish'
+  | 'old_boot';
+// Anything that can come up on the fishing line: a fish (or junk) for the bag, or a treasure chest
+export type CatchId = FishId | 'treasure';
 // Everything that goes in the bag and can be sold
-export type ItemId = CropId | AnimalProductId | ArtisanId;
+export type ItemId = CropId | AnimalProductId | ArtisanId | FishId;
 export type ItemCounts = Partial<Record<ItemId, number>>;
 export type TreeType = 'pine' | 'oak' | 'sakura' | 'palm';
 
@@ -23,7 +37,10 @@ export type RecipeId =
   | 'tomato_sauce'
   | 'flan'
   | 'cheese'
-  | 'wool_scarf';
+  | 'wool_scarf'
+  | 'fish_stew';
+
+export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
 export type ToolId =
   | 'hoe'
@@ -74,7 +91,34 @@ export interface ItemConfig {
   name: string;
   icon: string;
   sellPrice: number;
-  kind: 'crop' | 'animal' | 'artisan';
+  kind: 'crop' | 'animal' | 'artisan' | 'fish';
+}
+
+export interface CatchConfig {
+  id: CatchId;
+  name: string;
+  icon: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary' | 'junk' | 'treasure';
+  // Times of day it bites (empty: any time)
+  phases: TimePhaseId[];
+  // Relative chance among what bites at that time
+  weight: number;
+  // 0 comes up without a fight; harder fish dart about more and leave a narrower catch zone
+  difficulty: number;
+  // Length range in cm (fish only)
+  size?: [number, number];
+  sellPrice: number;
+}
+
+// One cast of the line: wait for a bite, strike in time, then reel the fish in
+export interface FishingSession {
+  stage: 'waiting' | 'bite' | 'reeling' | 'result';
+  catchId: CatchId;
+  size: number;
+  // waiting: when the fish bites; bite: when it lets go
+  until: number;
+  escaped?: boolean;
+  firstOfKind?: boolean;
 }
 
 export interface RecipeConfig {
@@ -136,7 +180,7 @@ export interface WorldConfig {
 }
 
 export interface TimePhase {
-  id: string;
+  id: TimePhaseId;
   label: string;
   sky: string;
   fog: string;
@@ -193,7 +237,8 @@ export type QuestType =
   | 'buy_plot'
   | 'buy_machine'
   | 'craft'
-  | 'market_sell';
+  | 'market_sell'
+  | 'fish';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement';
 
@@ -242,6 +287,8 @@ export interface SaveData {
   machines: Partial<Record<MachineId, { job: MachineJob | null }>>;
   // Day the free daily popcorn was last eaten
   lastFreeSnackDay: number;
+  // Fishing journal: how many of each kind were caught and the biggest one (cm)
+  fishLog: Partial<Record<FishId, { caught: number; best: number }>>;
   cosmetics: PlayerCosmetics;
   ownedCosmetics: string[];
   // Decor and machines placed on the farm

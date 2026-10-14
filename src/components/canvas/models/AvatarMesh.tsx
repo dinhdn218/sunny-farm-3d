@@ -564,7 +564,24 @@ function RoboCat() {
   );
 }
 
-function HeldTool({ tool }: { tool: ToolId }) {
+// What the right hand holds: a farm tool, or the fishing rod at the Beach jetty
+export type HeldItem = ToolId | 'rod';
+
+function HeldTool({ tool }: { tool: HeldItem }) {
+  if (tool === 'rod') {
+    return (
+      <group rotation={[-0.75, 0, 0]}>
+        <mesh position={[0, 0, 0.75]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.018, 0.035, 1.6, 6]} />
+          <meshLambertMaterial color="#78350f" />
+        </mesh>
+        <mesh position={[0.06, -0.02, 0.12]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[0.06, 0.06, 0.06, 10]} />
+          <meshLambertMaterial color="#475569" />
+        </mesh>
+      </group>
+    );
+  }
   if (tool === 'hoe') {
     return (
       <group>
@@ -609,7 +626,7 @@ function HeldTool({ tool }: { tool: ToolId }) {
 interface AvatarMeshProps {
   cosmetics: PlayerCosmetics;
   motion?: AvatarMotion;
-  tool?: ToolId | null;
+  tool?: HeldItem | null;
 }
 
 // Blocky character rig from the HTML version; every outfit, hat, back item and pet has its own model

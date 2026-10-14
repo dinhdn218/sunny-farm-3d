@@ -30,6 +30,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   animalFeed: true,
   machines: true,
   lastFreeSnackDay: true,
+  fishLog: true,
   cosmetics: true,
   ownedCosmetics: true,
   decorPlacements: true,

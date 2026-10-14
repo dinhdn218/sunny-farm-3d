@@ -44,6 +44,7 @@ export const MAIN_QUESTS: QuestDef[] = [
   { id: 'm_decor', chapter: 'Chương 5 · Phong Cách', title: 'Kiến Trúc Sư Nông Trại', desc: 'Đặt 1 đồ trang trí ra nông trại.', icon: '🏡', type: 'place_decor', target: 1, rewardGold: 200, rewardGems: 12 },
   { id: 'm_visit', chapter: 'Chương 6 · Du Ngoạn', title: 'Nhà Du Hành', desc: 'Ghé thăm đủ 4 khu vực công cộng.', icon: '✈️', type: 'visit_worlds', target: 4, rewardGold: 200, rewardGems: 12 },
   { id: 'm_cinema', chapter: 'Chương 6 · Du Ngoạn', title: 'Khán Giả Điện Ảnh', desc: 'Đổi kênh phim ở Rạp Chiếu Phim 3 lần.', icon: '🎬', type: 'cinema_channel', target: 3, rewardGold: 150, rewardGems: 10 },
+  { id: 'm_fish', chapter: 'Chương 6 · Du Ngoạn', title: 'Ngư Dân Tập Sự', desc: 'Câu được 3 con cá ở Cầu Câu Cá (Bãi Biển).', icon: '🎣', type: 'fish', target: 3, rewardGold: 150, rewardGems: 10 },
   { id: 'm_plots', chapter: 'Chương 7 · Đại Điền Chủ', title: 'Đại Điền Chủ', desc: 'Mở khóa thêm 4 lô đất.', icon: '👑', type: 'buy_plot', target: 4, rewardGold: 600, rewardGems: 30 },
   { id: 'm_tycoon', chapter: 'Chương 7 · Đại Điền Chủ', title: 'Triệu Phú Nông Trại', desc: 'Bán hàng thu về tổng cộng 5.000 Vàng.', icon: '💰', type: 'earn_gold', target: 5000, rewardGold: 800, rewardGems: 40 },
 ];
@@ -65,6 +66,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì hoặc Bắp Rang Bơ 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
   { id: 'd_craft', title: 'Bếp Núc Bận Rộn', desc: 'Chế biến xong 2 mẻ hàng ở Xưởng.', icon: '🍳', type: 'craft', target: 2, rewardGold: 110, rewardGems: 4 },
   { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
+  { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
 ];
 
 export const DAILY_QUEST_COUNT = 3;
@@ -129,6 +131,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       { target: 5, rewardGold: 100, rewardGems: 5 },
       { target: 25, rewardGold: 300, rewardGems: 15 },
       { target: 100, rewardGold: 800, rewardGems: 40 },
+    ],
+  },
+  {
+    id: 'a_fish',
+    title: 'Vua Câu Cá',
+    icon: '🎣',
+    type: 'fish',
+    desc: 'Câu được tổng cộng {n} con cá.',
+    tiers: [
+      { target: 10, rewardGold: 100, rewardGems: 5 },
+      { target: 50, rewardGold: 300, rewardGems: 15 },
+      { target: 200, rewardGold: 800, rewardGems: 40 },
     ],
   },
   {

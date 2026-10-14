@@ -87,6 +87,15 @@ class SoundSynthesizer {
     });
   }
 
+  public cast() {
+    this.playTone(620, 'sine', 0.22, 0.1, 220);
+  }
+
+  public splash() {
+    this.playTone(260, 'triangle', 0.18, 0.16, 90);
+    setTimeout(() => this.playTone(520, 'sine', 0.1, 0.1, 300), 60);
+  }
+
   public teleport() {
     this.playTone(280, 'sine', 0.28, 0.14, 860);
   }

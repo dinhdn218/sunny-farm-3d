@@ -43,6 +43,7 @@ export function Player() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const localChatMsg = useGameStore((s) => s.localChatMsg);
   const localEmote = useGameStore((s) => s.localEmote);
+  const fishing = useGameStore((s) => !!s.fishing);
 
   useEffect(() => {
     if (localEmote) {
@@ -60,6 +61,11 @@ export function Player() {
       const store = useGameStore.getState();
       // The save-conflict dialog must be answered before anything else opens
       if (store.activeModal === 'cloudConflict') return;
+      // While fishing, Space belongs to the fishing overlay and Esc reels the line in
+      if (store.fishing) {
+        if (e.code === 'Escape') store.endFishing();
+        return;
+      }
 
       // While a decoration is being placed, R rotates it and Esc cancels
       if (store.placingDecor && (e.code === 'KeyR' || e.code === 'Escape')) {
@@ -96,15 +102,18 @@ export function Player() {
     const group = groupRef.current;
     if (!group) return;
     const dt = Math.min(delta, 0.1);
-    const { playerPos: pos, currentWorld, ownedPlots } = useGameStore.getState();
+    const { playerPos: pos, currentWorld, ownedPlots, fishing } = useGameStore.getState();
     const k = keys.current;
 
-    let moveX = touchMove.x;
-    let moveZ = touchMove.z;
-    if (k.KeyW || k.ArrowUp) moveZ -= 1;
-    if (k.KeyS || k.ArrowDown) moveZ += 1;
-    if (k.KeyA || k.ArrowLeft) moveX -= 1;
-    if (k.KeyD || k.ArrowRight) moveX += 1;
+    // The player stays put on the jetty while the line is out
+    let moveX = fishing ? 0 : touchMove.x;
+    let moveZ = fishing ? 0 : touchMove.z;
+    if (!fishing) {
+      if (k.KeyW || k.ArrowUp) moveZ -= 1;
+      if (k.KeyS || k.ArrowDown) moveZ += 1;
+      if (k.KeyA || k.ArrowLeft) moveX -= 1;
+      if (k.KeyD || k.ArrowRight) moveX += 1;
+    }
 
     let y = 0.08;
     if (moveX !== 0 || moveZ !== 0) {
@@ -161,7 +170,7 @@ export function Player() {
       <AvatarMesh
         cosmetics={cosmetics}
         motion={motion}
-        tool={currentWorld === 'farm' ? activeTool : null}
+        tool={fishing ? 'rod' : currentWorld === 'farm' ? activeTool : null}
       />
       <PlayerTag name={playerName} chatText={localChatMsg} isSelf />
     </group>

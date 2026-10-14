@@ -1,6 +1,7 @@
-import { AnimalSpecies, ArtisanId, CropId, ItemConfig, ItemId } from '@/types/game';
+import { AnimalSpecies, ArtisanId, CropId, FishId, ItemConfig, ItemId } from '@/types/game';
 import { CROPS } from './crops';
 import { ANIMALS } from './animals';
+import { CATCH_LIST } from './fish';
 
 // Goods made in the workshop; worth about 1.4–1.6× their ingredients
 export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
@@ -10,7 +11,16 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   cheese: { id: 'cheese', name: 'Phô Mai', icon: '🧀', sellPrice: 260, kind: 'artisan' },
   wool_scarf: { id: 'wool_scarf', name: 'Khăn Len', icon: '🧣', sellPrice: 300, kind: 'artisan' },
   pumpkin_pie: { id: 'pumpkin_pie', name: 'Bánh Bí Ngô', icon: '🥧', sellPrice: 480, kind: 'artisan' },
+  fish_stew: { id: 'fish_stew', name: 'Cá Kho Tộ', icon: '🍲', sellPrice: 230, kind: 'artisan' },
 };
+
+// Everything off the fishing line except treasure chests, which are opened on the spot
+const fishItems = Object.fromEntries(
+  CATCH_LIST.filter((c) => c.id !== 'treasure').map((c) => [
+    c.id,
+    { id: c.id, name: c.name, icon: c.icon, sellPrice: c.sellPrice, kind: 'fish' },
+  ])
+) as Record<FishId, ItemConfig>;
 
 const cropItems = Object.fromEntries(
   (Object.keys(CROPS) as CropId[]).map((id) => {
@@ -32,6 +42,7 @@ const animalItems = Object.fromEntries(
 export const ITEMS = {
   ...cropItems,
   ...animalItems,
+  ...fishItems,
   ...ARTISAN_GOODS,
 } as Record<ItemId, ItemConfig>;
 

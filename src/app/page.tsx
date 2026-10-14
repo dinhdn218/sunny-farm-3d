@@ -24,6 +24,8 @@ import { ExpandModal } from '@/components/hud/modals/ExpandModal';
 import { CloudConflictModal } from '@/components/hud/modals/CloudConflictModal';
 import { WorkshopModal } from '@/components/hud/modals/WorkshopModal';
 import { MarketModal } from '@/components/hud/modals/MarketModal';
+import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
+import { FishingOverlay } from '@/components/hud/FishingOverlay';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -61,6 +63,7 @@ export default function HomePage() {
       <ChatBox />
       <MobileDpad />
       <Hotbar />
+      <FishingOverlay />
 
       {activeModal === 'map' && <WorldMapModal />}
       {activeModal === 'quests' && <QuestModal />}
@@ -74,6 +77,7 @@ export default function HomePage() {
       {activeModal === 'cloudConflict' && <CloudConflictModal />}
       {activeModal === 'workshop' && <WorkshopModal />}
       {activeModal === 'market' && <MarketModal />}
+      {activeModal === 'fishJournal' && <FishJournalModal />}
     </main>
   );
 }

@@ -88,6 +88,7 @@ export function createNewGameSave(): SaveData {
     animalFeed: 8,
     machines: {},
     lastFreeSnackDay: 0,
+    fishLog: {},
     cosmetics: {
       hat: 'straw_hat',
       outfit: 'farmer_blue',

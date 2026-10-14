@@ -5,6 +5,14 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { camControl } from '@/lib/controls';
+import { BOBBER_POS, FISHING_SPOT } from '@/config/fish';
+
+// While fishing the view centres between the angler and the float so both stay in sight
+const FISHING_VIEW = new THREE.Vector3(
+  (FISHING_SPOT.x + BOBBER_POS[0]) / 2,
+  0.6,
+  (FISHING_SPOT.z + BOBBER_POS[2]) / 2
+);
 
 // Follow-orbit camera from the HTML version: right/middle (or Shift+left) drag to orbit, wheel to zoom
 export function CameraRig() {
@@ -64,9 +72,11 @@ export function CameraRig() {
   }, [camera, gl]);
 
   useFrame(() => {
-    const { playerPos } = useGameStore.getState();
+    const { playerPos, fishing } = useGameStore.getState();
     const { target, radius, phi, theta } = camControl;
-    target.lerp(followPoint.set(playerPos.x * 0.5, 0.6, playerPos.z * 0.5), 0.08);
+    if (fishing) followPoint.copy(FISHING_VIEW);
+    else followPoint.set(playerPos.x * 0.5, 0.6, playerPos.z * 0.5);
+    target.lerp(followPoint, 0.08);
     camera.position.set(
       target.x + radius * Math.sin(phi) * Math.sin(theta),
       target.y + radius * Math.cos(phi),

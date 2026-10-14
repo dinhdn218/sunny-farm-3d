@@ -20,6 +20,8 @@ export function QuestTracker() {
   const eatPopcornOrSnack = useGameStore((s) => s.eatPopcornOrSnack);
   const triggerEmote = useGameStore((s) => s.triggerEmote);
   const snackFree = useGameStore((s) => s.lastFreeSnackDay !== s.day);
+  const startFishing = useGameStore((s) => s.startFishing);
+  const fishing = useGameStore((s) => !!s.fishing);
 
   // Rewards waiting first, then the current story quest, then today's dailies
   const mainQuest = activeMainQuest(quests);
@@ -141,6 +143,31 @@ export function QuestTracker() {
                 className="game-btn w-full rounded-xl bg-purple-600 py-1.5 text-xs font-black text-white hover:bg-purple-500"
               >
                 ✨ Tạo Dáng Trên Sàn Runway
+              </button>
+            </>
+          ) : currentWorld === 'beach' ? (
+            <>
+              <div className="mb-1.5 text-xs font-black text-sky-300">
+                {worldCfg.icon} {worldCfg.name}
+              </div>
+              <button
+                onClick={startFishing}
+                disabled={fishing}
+                className="game-btn mb-1.5 w-full rounded-xl bg-sky-600 py-1.5 text-xs font-black text-white hover:bg-sky-500 disabled:bg-slate-500"
+              >
+                🎣 Câu Cá ở Cầu Phía Bắc (-4⚡)
+              </button>
+              <button
+                onClick={() => setActiveModal('fishJournal')}
+                className="game-btn mb-1.5 w-full rounded-xl bg-amber-600 py-1.5 text-xs font-black text-white hover:bg-amber-500"
+              >
+                📖 Sổ Tay Câu Cá
+              </button>
+              <button
+                onClick={() => setActiveModal('map')}
+                className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500"
+              >
+                🏡 Về Lại Nông Trại Của Tôi
               </button>
             </>
           ) : (
