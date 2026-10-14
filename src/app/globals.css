@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+
+/* Ported 1:1 from the original HTML build; kept before utilities so Tailwind classes win ties like they did with the CDN */
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--font-nunito), 'Nunito', sans-serif;
+}
+body,
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #0f172a;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.wood-panel {
+  background: linear-gradient(180deg, #854d0e 0%, #713f12 100%);
+  border: 3px solid #422006;
+  box-shadow: 0 6px 0 #422006, 0 10px 20px rgba(0, 0, 0, 0.45),
+    inset 0 2px 0 rgba(255, 255, 255, 0.25);
+}
+.parchment-panel {
+  background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%);
+  border: 3px solid #a16207;
+  box-shadow: 0 4px 0 #713f12, inset 0 2px 0 rgba(255, 255, 255, 0.75);
+  color: #422006;
+}
+.glass-panel {
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+}
+.game-btn {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35), inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+.game-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+}
+.game-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+}
+.hotbar-slot {
+  transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  background: rgba(254, 249, 195, 0.94);
+  border: 3px solid #92400e;
+  box-shadow: 0 4px 0 #451a03;
+}
+.hotbar-slot:hover {
+  transform: translateY(-4px);
+}
+.hotbar-slot.active {
+  background: linear-gradient(180deg, #fde047 0%, #facc15 100%);
+  border-color: #ffffff;
+  transform: translateY(-7px) scale(1.06);
+  box-shadow: 0 7px 0 #854d0e, 0 0 16px rgba(250, 204, 21, 0.85);
+}
+@keyframes floatUpFade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.85);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -6px) scale(1.04);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -46px) scale(0.95);
+  }
+}
+.floating-label {
+  position: absolute;
+  pointer-events: none;
+  z-index: 40;
+  animation: floatUpFade 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.85), 0 0 2px #000;
+  white-space: nowrap;
+}
+.player-tag {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+  z-index: 15;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #b45309;
+  border-radius: 8px;
+}
+
+@tailwind utilities;

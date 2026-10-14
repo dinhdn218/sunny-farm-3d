@@ -1,0 +1,96 @@
+'use client';
+
+import { useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
+import { useGameStore } from '@/store/useGameStore';
+import { NpcPreset, npcPresetsFor } from '@/config/npcs';
+import { AvatarMesh, createMotion } from './models/AvatarMesh';
+import { PlayerTag } from './PlayerTag';
+
+// Wandering resident with periodic speech bubbles (the HTML version's simulated online players)
+function SimulatedResident({ preset, index }: { preset: NpcPreset; index: number }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const motion = useRef(createMotion(0.5)).current;
+  const [sim] = useState(() => {
+    const x = (Math.random() - 0.5) * 10;
+    const z = (Math.random() - 0.5) * 8;
+    return {
+      x,
+      z,
+      targetX: x,
+      targetZ: z,
+      rotY: 0,
+      waitTimer: 1 + Math.random() * 3,
+      chatTimer: 3 + index * 3.5,
+      chatUntil: 0,
+    };
+  });
+  const [chatText, setChatText] = useState('');
+
+  useFrame((_, delta) => {
+    const group = groupRef.current;
+    if (!group) return;
+    const dt = Math.min(delta, 0.1);
+    const now = performance.now();
+
+    const dx = sim.targetX - sim.x;
+    const dz = sim.targetZ - sim.z;
+    const dist = Math.hypot(dx, dz);
+    let y = 0.08;
+    if (dist > 0.2) {
+      sim.x += (dx / dist) * 2.4 * dt;
+      sim.z += (dz / dist) * 2.4 * dt;
+      sim.rotY = Math.atan2(dx, dz);
+      motion.moving = true;
+      motion.walkTime += dt * 9;
+      y = 0.08 + Math.abs(Math.sin(motion.walkTime)) * 0.06;
+    } else {
+      motion.moving = false;
+      sim.waitTimer -= dt;
+      if (sim.waitTimer <= 0) {
+        sim.waitTimer = 2.5 + Math.random() * 4;
+        sim.targetX = (Math.random() - 0.5) * 12;
+        sim.targetZ = (Math.random() - 0.5) * 10;
+      }
+    }
+
+    sim.chatTimer -= dt;
+    if (sim.chatTimer <= 0) {
+      sim.chatTimer = 9 + Math.random() * 10;
+      sim.chatUntil = now + 4200;
+      setChatText(
+        preset.phrases[Math.floor(Math.random() * preset.phrases.length)]
+      );
+    } else if (chatText && now > sim.chatUntil) {
+      setChatText('');
+    }
+
+    group.position.set(sim.x, y, sim.z);
+    group.rotation.y = sim.rotY;
+  });
+
+  return (
+    <group ref={groupRef} position={[sim.x, 0.08, sim.z]}>
+      <AvatarMesh cosmetics={preset.cosmetics} motion={motion} />
+      <PlayerTag name={preset.name} chatText={chatText} />
+    </group>
+  );
+}
+
+export function SimulatedPlayers() {
+  const currentWorld = useGameStore((s) => s.currentWorld);
+  const presets = useMemo(() => npcPresetsFor(currentWorld), [currentWorld]);
+
+  return (
+    <group>
+      {presets.map((preset, i) => (
+        <SimulatedResident
+          key={`${currentWorld}-${i}`}
+          preset={preset}
+          index={i}
+        />
+      ))}
+    </group>
+  );
+}
