@@ -11,23 +11,33 @@ const sequence = (...values: number[]) => {
 describe('rollCatch', () => {
   it('only brings up what bites at this time of day', () => {
     for (let r = 0; r < 1; r += 0.01) {
-      const id = rollCatch('morning', () => r);
+      const id = rollCatch('morning', 'sea', () => r);
       const phases = CATCHES[id].phases;
       expect(phases.length === 0 || phases.includes('morning')).toBe(true);
     }
   });
 
   it('can bring up the night-only legendary fish at night but never in the morning', () => {
-    const night = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('night', () => i / 1000)));
-    const morning = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('morning', () => i / 1000)));
+    const night = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('night', 'sea', () => i / 1000)));
+    const morning = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('morning', 'sea', () => i / 1000)));
     expect(night.has('moonfish')).toBe(true);
     expect(morning.has('moonfish')).toBe(false);
+  });
+
+  it('keeps sea fish in the sea and pond fish in the pond', () => {
+    for (let r = 0; r < 1; r += 0.01) {
+      expect(CATCHES[rollCatch('night', 'pond', () => r)].waters).toContain('pond');
+      expect(CATCHES[rollCatch('night', 'sea', () => r)].waters).toContain('sea');
+    }
+    const pond = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('night', 'pond', () => i / 1000)));
+    expect(pond.has('dragon_carp')).toBe(true);
+    expect(pond.has('moonfish')).toBe(false);
   });
 
   it('brings up common fish far more often than rare ones', () => {
     const counts: Record<string, number> = {};
     for (let i = 0; i < 1000; i++) {
-      const id = rollCatch('noon', () => i / 1000);
+      const id = rollCatch('noon', 'sea', () => i / 1000);
       counts[id] = (counts[id] ?? 0) + 1;
     }
     expect(counts.anchovy).toBeGreaterThan(counts.tuna * 3);

@@ -18,6 +18,8 @@ export function ChatBox() {
   const triggerEmote = useGameStore((s) => s.triggerEmote);
   const [text, setText] = useState('');
   const [minimized, setMinimized] = useState(false);
+  // Phones start with just a chat button so the zone's panels and the D-pad stay clear
+  const [tucked, setTucked] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
   const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -31,6 +33,19 @@ export function ChatBox() {
     sendChat(text);
     setText('');
   };
+
+  if (tucked) {
+    return (
+      <aside className="pointer-events-auto fixed bottom-24 right-3 z-20">
+        <button
+          onClick={() => setTucked(false)}
+          className="glass-panel game-btn rounded-2xl px-3 py-2 text-xs font-black text-emerald-300"
+        >
+          <i className="fa-solid fa-comments" /> Chat
+        </button>
+      </aside>
+    );
+  }
 
   return (
     <aside className="pointer-events-auto fixed bottom-24 right-3 z-20 flex w-72 flex-col gap-1.5 sm:w-80">
@@ -51,12 +66,21 @@ export function ChatBox() {
           <span className="flex items-center gap-1.5 text-xs font-black text-emerald-300">
             <i className="fa-solid fa-comments" /> Kênh Chat Thế Giới
           </span>
-          <button
-            onClick={() => setMinimized(!minimized)}
-            className="text-[10px] font-bold text-slate-300 hover:text-white"
-          >
-            {minimized ? 'Mở rộng' : 'Thu gọn'}
-          </button>
+          <span className="flex items-center gap-2">
+            <button
+              onClick={() => setMinimized(!minimized)}
+              className="text-[10px] font-bold text-slate-300 hover:text-white"
+            >
+              {minimized ? 'Mở rộng' : 'Thu gọn'}
+            </button>
+            <button
+              onClick={() => setTucked(true)}
+              aria-label="Ẩn khung chat"
+              className="text-xs font-black text-slate-300 hover:text-white sm:hidden"
+            >
+              ✕
+            </button>
+          </span>
         </div>
 
         {!minimized && (

@@ -4,7 +4,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { ANIMALS, MAX_ANIMALS } from '@/config/animals';
 import { ITEMS } from '@/config/items';
 import { isWet, weatherOf } from '@/lib/seasons';
-import { shibaFind } from '@/lib/pets';
+import { petMorningGift, shibaFind } from '@/lib/pets';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
@@ -141,5 +141,20 @@ describe('collecting from a close friend', () => {
 
   it('always gives one below 80%', () => {
     expect(collectWith(79, 0)).toBe(1);
+  });
+});
+
+describe('bunny, sea turtle and panda', () => {
+  it('bring their morning gift home overnight and say so in the day summary', () => {
+    for (const pet of ['bunny_pet', 'sea_turtle', 'panda']) {
+      useGameStore.setState(initialState, true);
+      withPet(pet);
+      useGameStore.setState({ day: 9, items: {}, animalFeed: 0, shippingBin: {} });
+      const gift = petMorningGift(pet, 10)!;
+      store().nextDay();
+      expect(store().items).toEqual(gift.items ?? {});
+      expect(store().animalFeed).toBe(gift.feed ?? 0);
+      expect(store().lastDaySummary?.petNote).toBe(gift.label);
+    }
   });
 });

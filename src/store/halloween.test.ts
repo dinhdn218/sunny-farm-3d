@@ -63,7 +63,7 @@ describe('candy', () => {
       candy: 0,
       timePhaseIndex: NIGHT,
       quests: [questOf('night_fish')],
-      fishing: { stage: 'reeling', catchId: 'squid', size: 30, until: 0 },
+      fishing: { spot: 'beach', stage: 'reeling', catchId: 'squid', size: 30, until: 0 },
     });
     store().landCatch();
     expect(store().candy).toBe(2);
@@ -74,7 +74,7 @@ describe('candy', () => {
     useGameStore.setState({
       candy: 0,
       timePhaseIndex: 0,
-      fishing: { stage: 'reeling', catchId: 'anchovy', size: 8, until: 0 },
+      fishing: { spot: 'beach', stage: 'reeling', catchId: 'anchovy', size: 8, until: 0 },
     });
     store().landCatch();
     expect(store().candy).toBe(0);

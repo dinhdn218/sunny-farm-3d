@@ -1,4 +1,4 @@
-export type WorldId = 'farm' | 'park' | 'beach' | 'mall' | 'cinema';
+export type WorldId = 'farm' | 'park' | 'beach' | 'mall' | 'cinema' | 'casino';
 export type TileState = 'empty' | 'tilled' | 'planted';
 export type CropId = 'carrot' | 'wheat' | 'tomato' | 'pumpkin';
 export type AnimalSpecies = 'chicken' | 'sheep' | 'cow' | 'duck' | 'pig';
@@ -12,6 +12,12 @@ export type ArtisanId =
   | 'pumpkin_pie'
   | 'fish_stew';
 export type FishId =
+  | 'carp'
+  | 'tilapia'
+  | 'catfish'
+  | 'snakehead'
+  | 'koi'
+  | 'dragon_carp'
   | 'anchovy'
   | 'clownfish'
   | 'pufferfish'
@@ -24,8 +30,12 @@ export type FishId =
   | 'old_boot';
 // Anything that can come up on the fishing line: a fish (or junk) for the bag, or a treasure chest
 export type CatchId = FishId | 'treasure';
+// Found on the sand at the Beach
+export type ForageId = 'shell' | 'starfish' | 'coral' | 'pearl';
 // Everything that goes in the bag and can be sold
-export type ItemId = CropId | AnimalProductId | ArtisanId | FishId;
+export type ItemId = CropId | AnimalProductId | ArtisanId | FishId | ForageId;
+// Where a line can be cast: the sea off the Beach jetty or the lotus pond in the Park
+export type FishingSpotId = 'beach' | 'park';
 export type ItemCounts = Partial<Record<ItemId, number>>;
 export type TreeType = 'pine' | 'oak' | 'sakura' | 'palm';
 
@@ -97,7 +107,7 @@ export interface ItemConfig {
   name: string;
   icon: string;
   sellPrice: number;
-  kind: 'crop' | 'animal' | 'artisan' | 'fish';
+  kind: 'crop' | 'animal' | 'artisan' | 'fish' | 'forage';
 }
 
 export interface CatchConfig {
@@ -114,10 +124,13 @@ export interface CatchConfig {
   // Length range in cm (fish only)
   size?: [number, number];
   sellPrice: number;
+  // Salt water off the jetty, fresh water in the pond (junk and treasure turn up in both)
+  waters: ('sea' | 'pond')[];
 }
 
 // One cast of the line: wait for a bite, strike in time, then reel the fish in
 export interface FishingSession {
+  spot: FishingSpotId;
   stage: 'waiting' | 'bite' | 'reeling' | 'result';
   catchId: CatchId;
   size: number;
@@ -183,6 +196,8 @@ export interface WorldConfig {
   icon: string;
   description: string;
   groundColor: string;
+  // Radius of the island (the farm's grows further as land is bought)
+  islandRadius: number;
   spawn: [number, number];
   portalPos: [number, number];
 }
@@ -252,7 +267,10 @@ export type QuestType =
   | 'market_sell'
   | 'fish'
   | 'night_fish'
-  | 'event_shop';
+  | 'event_shop'
+  | 'card_game'
+  | 'card_win'
+  | 'forage';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
@@ -313,6 +331,11 @@ export interface SaveData {
   machines: Partial<Record<MachineId, { job: MachineJob | null }>>;
   // Day the free daily popcorn was last eaten
   lastFreeSnackDay: number;
+  // Calendar date of the casino's free lucky-wheel spin (one a day)
+  lastWheelDate: string | null;
+  // Beach finds picked up today (spot numbers), and the day they belong to
+  beachDay: number;
+  beachTaken: number[];
   // Fishing journal: how many of each kind were caught and the biggest one (cm)
   fishLog: Partial<Record<FishId, { caught: number; best: number }>>;
   // Farmer experience; the level is derived from it (lib/leveling)
@@ -374,4 +397,16 @@ export interface HoverTooltip {
   desc: string;
   x: number;
   y: number;
+}
+
+// Something clicked on the farm: the player walks over and does the job there (not saved)
+export interface WalkGoal {
+  x: number;
+  z: number;
+  // Close enough once the player is this far from (x, z), centre to centre
+  reach: number;
+  // The job, done on arrival
+  act: () => void;
+  // Where it is now, for something that moves around (a wandering animal)
+  track?: () => { x: number; z: number } | null | undefined;
 }

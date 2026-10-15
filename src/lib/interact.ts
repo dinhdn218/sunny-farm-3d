@@ -12,6 +12,8 @@ export function interactable(
       e.stopPropagation();
       // Ignore the click that ends a camera drag, and clicks while a decoration is being placed
       if (e.delta > 8 || useGameStore.getState().placingDecor) return;
+      // A new click takes over from whatever the player was walking to
+      useGameStore.getState().cancelWalk();
       onClick();
     },
     onPointerMove: (e: ThreeEvent<PointerEvent>) => {

@@ -36,6 +36,7 @@ import {
 } from '@/lib/farmLayout';
 import { DecorPlacement, MachineId, MachineJob, TileData } from '@/types/game';
 import { interactable } from '@/lib/interact';
+import { REACH, STAND_GAP } from '@/lib/walk';
 import { CropMesh } from '../models/CropMesh';
 import { AnimalMesh } from '../models/AnimalMesh';
 import { DecorModel } from '../models/DecorModel';
@@ -140,8 +141,18 @@ const FarmTile = memo(function FarmTile({
           e.stopPropagation();
           const store = useGameStore.getState();
           if (e.delta > 8 || store.placingDecor) return;
-          if (store.placingSprinkler) store.placeSprinkler(tile.r, tile.c);
-          else store.interactTile(tile.r, tile.c);
+          // Walk over first; a click made while placing a sprinkler places it on arrival
+          const placing = store.placingSprinkler;
+          store.walkTo({
+            x,
+            z,
+            reach: REACH.tile,
+            act: () => {
+              const s = useGameStore.getState();
+              if (placing) s.placeSprinkler(tile.r, tile.c);
+              else s.interactTile(tile.r, tile.c);
+            },
+          });
         }}
         onPointerMove={(e) => {
           e.stopPropagation();
@@ -366,12 +377,18 @@ function PlacedMachine({
   const cfg = MACHINES[id];
   const handlers = interactable(
     `${cfg.icon} ${cfg.name}`,
-    () => {
-      const store = useGameStore.getState();
-      const current = store.machines[id]?.job;
-      if (current && Date.now() >= current.readyAt) store.collectMachine(id);
-      else store.openWorkshop(id);
-    },
+    () =>
+      useGameStore.getState().walkTo({
+        x: placement.x,
+        z: placement.z,
+        reach: cfg.footprint + STAND_GAP,
+        act: () => {
+          const store = useGameStore.getState();
+          const current = store.machines[id]?.job;
+          if (current && Date.now() >= current.readyAt) store.collectMachine(id);
+          else store.openWorkshop(id);
+        },
+      }),
     job ? 'Click để xem mẻ đang làm hoặc thu hàng' : 'Click để chọn món chế biến'
   );
 
@@ -397,7 +414,8 @@ export function FarmWorld() {
   const activeTool = useGameStore((s) => s.activeTool);
   const toolTiers = useGameStore((s) => s.toolTiers);
   const look = useGameStore((s) => SEASON_LOOK[seasonOf(s.day)]);
-  const refillWater = useGameStore((s) => s.refillWater);
+  const fetchWater = useGameStore((s) => s.fetchWater);
+  const walkTo = useGameStore((s) => s.walkTo);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const nextDay = useGameStore((s) => s.nextDay);
   const openExpand = useGameStore((s) => s.openExpand);
@@ -453,11 +471,28 @@ export function FarmWorld() {
         .map(([r, c]) => tileToWorld(r, c))
     : [];
 
-  const house = interactable('Nhà Nông Trại (Ngủ qua ngày)', nextDay);
-  const shippingBin = interactable('Rương Bán Hàng', () => setActiveModal('inventory'));
-  const seedShop = interactable('Cửa Hàng Hạt Giống', () => setActiveModal('shop'));
-  const well = interactable('Giếng Nước (Múc đầy bình tưới)', refillWater);
-  const barn = interactable('Chuồng Trại Chăn Nuôi (Phím R)', () => setActiveModal('ranch'));
+  // The player walks over before using a building
+  const goTo = (x: number, z: number, reach: number, act: () => void) => () =>
+    walkTo({ x, z, reach, act });
+  const barnX = FARM_SITES.ranch[0] + ranchDx + BARN_OFFSET[0];
+  const barnZ = FARM_SITES.ranch[1] + ranchDz + BARN_OFFSET[1];
+  const house = interactable(
+    'Nhà Nông Trại (Ngủ qua ngày)',
+    goTo(houseX, houseZ, REACH.house, nextDay)
+  );
+  const shippingBin = interactable(
+    'Rương Bán Hàng',
+    goTo(binX, binZ, REACH.shippingBin, () => setActiveModal('inventory'))
+  );
+  const seedShop = interactable(
+    'Cửa Hàng Hạt Giống',
+    goTo(shopX, shopZ, REACH.seedShop, () => setActiveModal('shop'))
+  );
+  const well = interactable('Giếng Nước (Múc đầy bình tưới)', fetchWater);
+  const barn = interactable(
+    'Chuồng Trại Chăn Nuôi (Phím R)',
+    goTo(barnX, barnZ, REACH.barn, () => setActiveModal('ranch'))
+  );
 
   // A signboard pre-selects the first plot you can buy on its side
   const openFromSign = (side: ExpansionSide) => {

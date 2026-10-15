@@ -54,6 +54,8 @@ export const MUSIC_THEMES: Record<ThemeId, MusicTheme> = {
   mall: { bpm: 116, root: 58, scale: MAJOR, chords: [I, vi, ii, V], bass: [0, 1, 2, 3], density: 0.5, lead: 'square', pluck: true, stabs: true },
   // Slow, cinematic D minor
   cinema: { bpm: 76, root: 62, scale: MINOR, chords: [i, VI, III, VII], bass: [0, 2], density: 0.3, lead: 'sawtooth', pluck: false, stabs: false },
+  // Lounge jazz in E♭: walking bass and off-beat comping round a ii–V–I
+  casino: { bpm: 96, root: 63, scale: MAJOR, chords: [ii, V, I, vi], bass: [0, 1, 2, 3], density: 0.4, lead: 'triangle', pluck: true, stabs: true },
   // A soft lullaby
   night: { bpm: 66, root: 60, scale: PENTATONIC, chords: [I, iii, IV, I], bass: [0], density: 0.2, lead: 'sine', pluck: false, stabs: false },
   // Lễ Hội Bí Ngô nights: a creepy waltz-like shuffle in A minor

@@ -6,6 +6,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerSync } from '@/lib/multiplayer';
 import { useCloudSync } from '@/lib/cloudSync';
 import { useBackgroundMusic } from '@/lib/music';
+import { useCasinoSync } from '@/lib/casinoNet';
 import { TopBar } from '@/components/hud/TopBar';
 import { QuestTracker } from '@/components/hud/QuestTracker';
 import { ChatBox } from '@/components/hud/ChatBox';
@@ -31,6 +32,9 @@ import { FishingOverlay } from '@/components/hud/FishingOverlay';
 import { PhotoOverlay } from '@/components/hud/PhotoOverlay';
 import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
 import { CandyShopModal } from '@/components/hud/modals/CandyShopModal';
+import { LuckyWheelModal } from '@/components/hud/modals/LuckyWheelModal';
+import { ClawModal } from '@/components/hud/modals/ClawModal';
+import { TienLenTable } from '@/components/hud/casino/TienLenTable';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 
 // WebGL canvas only exists in the browser
@@ -44,6 +48,7 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
 
   useMultiplayerSync();
+  useCasinoSync();
   useCloudSync();
   useBackgroundMusic();
 
@@ -104,6 +109,9 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       {activeModal === 'fishJournal' && <FishJournalModal />}
       {activeModal === 'dailyGift' && <DailyGiftModal />}
       {activeModal === 'candyShop' && <CandyShopModal />}
+      {activeModal === 'luckyWheel' && <LuckyWheelModal />}
+      {activeModal === 'claw' && <ClawModal />}
+      <TienLenTable />
     </>
   );
 }

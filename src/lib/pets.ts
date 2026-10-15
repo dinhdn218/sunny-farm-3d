@@ -1,5 +1,6 @@
-import { CropId, TileData, TimePhaseId } from '@/types/game';
+import { CropId, ForageId, ItemCounts, TileData, TimePhaseId } from '@/types/game';
 import { CROPS, CROP_LIST } from '@/config/crops';
+import { FORAGE_ITEMS } from '@/config/forage';
 import { seeded } from '@/lib/random';
 
 // What the Shiba digs up overnight
@@ -50,5 +51,32 @@ export function shibaFindLabel(find: ShibaFind) {
       return '🐕 Shiba tha về 1 Bánh Mì 🥖';
     case 'gems':
       return `🐕 Shiba đào được ${find.amount} Kim Cương 💎!`;
+  }
+}
+
+// What the bunny, the sea turtle and the panda bring home on the morning of `day` (fixed per day)
+export interface PetGift {
+  items?: ItemCounts;
+  feed?: number;
+  label: string;
+}
+
+export function petMorningGift(pet: string, day: number): PetGift | null {
+  const random = seeded(day * 104729 + pet.length * 31);
+  switch (pet) {
+    case 'bunny_pet': {
+      const count = random() < 0.35 ? 2 : 1;
+      return { items: { carrot: count }, label: `🐇 Thỏ Bông đào được ${count} Cà Rốt 🥕` };
+    }
+    case 'sea_turtle': {
+      const roll = random();
+      const find: ForageId = roll < 0.1 ? 'pearl' : roll < 0.45 ? 'starfish' : 'shell';
+      const item = FORAGE_ITEMS[find];
+      return { items: { [find]: 1 }, label: `🐢 Rùa Biển mang về 1 ${item.name} ${item.icon}` };
+    }
+    case 'panda':
+      return { feed: 2, label: '🐼 Gấu Trúc gom được 2 phần Thức Ăn Chăn Nuôi 🌾' };
+    default:
+      return null;
   }
 }

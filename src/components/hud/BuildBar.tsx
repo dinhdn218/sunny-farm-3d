@@ -43,7 +43,7 @@ export function BuildBar() {
         </button>
       </div>
 
-      <div className="wood-panel pointer-events-auto flex max-w-full items-start gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
+      <div className="bar-panel pointer-events-auto flex max-w-full items-start gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
         {BUILD_PIECE_LIST.map((piece) => {
           const count = stock[piece.id] ?? 0;
           return (

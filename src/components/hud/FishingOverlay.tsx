@@ -142,7 +142,7 @@ function ResultCard({ session }: { session: FishingSession }) {
       )}
       <div className="mt-3 flex justify-center gap-2">
         <button
-          onClick={startFishing}
+          onClick={() => startFishing(session.spot)}
           className="game-btn rounded-xl bg-sky-600 px-3 py-2 text-xs font-black text-white hover:bg-sky-500"
         >
           🎣 Câu Tiếp (-{FISHING_ENERGY}⚡)

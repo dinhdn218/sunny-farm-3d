@@ -1,11 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
+import { ThreeEvent } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { SEASON_LOOK } from '@/config/seasons';
-import { BASE_ISLAND_RADIUS, islandShape } from '@/lib/farmLayout';
+import { BASE_ISLAND_RADIUS, WALK_MARGIN, clampToIsland, islandShape } from '@/lib/farmLayout';
 import { seasonOf } from '@/lib/seasons';
 
 // Shared floating island: zone-coloured ground, rocky cliff and the surrounding sea.
@@ -31,14 +32,23 @@ export function BaseIsland() {
     shape.rz / BASE_ISLAND_RADIUS,
   ];
 
+  // Clicking open ground walks the player there; clicking the cliff or the sea, as far as the shore
+  const walkHere = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    const store = useGameStore.getState();
+    if (e.delta > 8 || store.placingDecor || store.fishing) return;
+    const [x, z] = clampToIsland(e.point.x, e.point.z, shape, WALK_MARGIN);
+    store.walkTo({ x, z, reach: 0.15, act: () => {} });
+  };
+
   return (
-    <group>
+    <group onClick={walkHere}>
       <mesh receiveShadow position={[shape.cx, -1.2, shape.cz]} scale={scale}>
-        <cylinderGeometry args={[BASE_ISLAND_RADIUS, 16.0, 2.4, 28]} />
+        <cylinderGeometry args={[BASE_ISLAND_RADIUS, 16.0, 2.4, 40]} />
         <meshLambertMaterial color={ground} />
       </mesh>
       <mesh position={[shape.cx, -3.9, shape.cz]} scale={scale}>
-        <cylinderGeometry args={[15.8, 11.5, 3.4, 22]} />
+        <cylinderGeometry args={[15.8, 11.5, 3.4, 32]} />
         <meshLambertMaterial color="#78716c" />
       </mesh>
       <mesh position={[0, -1.85, 0]}>

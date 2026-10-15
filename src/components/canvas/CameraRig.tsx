@@ -5,14 +5,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { camControl } from '@/lib/controls';
-import { BOBBER_POS, FISHING_SPOT } from '@/config/fish';
-
-// While fishing the view centres between the angler and the float so both stay in sight
-const FISHING_VIEW = new THREE.Vector3(
-  (FISHING_SPOT.x + BOBBER_POS[0]) / 2,
-  0.6,
-  (FISHING_SPOT.z + BOBBER_POS[2]) / 2
-);
+import { WALK_MARGIN, islandShape } from '@/lib/farmLayout';
+import { FISHING_SPOTS } from '@/config/fish';
 
 const NORMAL_VIEW = { minRadius: 8.5, maxRadius: 28, minPhi: 0.35, maxPhi: 1.35 };
 // Photo mode lets the camera come closer, pull further back and look from lower and higher
@@ -80,7 +74,7 @@ export function CameraRig() {
   }, [camera, gl]);
 
   useFrame(() => {
-    const { playerPos, fishing, photoMode } = useGameStore.getState();
+    const { playerPos, fishing, photoMode, currentWorld, ownedPlots } = useGameStore.getState();
     // Back from photo mode, the camera eases into its usual range
     if (!photoMode) {
       const { minRadius, maxRadius, minPhi, maxPhi } = NORMAL_VIEW;
@@ -88,8 +82,22 @@ export function CameraRig() {
       camControl.phi += (THREE.MathUtils.clamp(camControl.phi, minPhi, maxPhi) - camControl.phi) * 0.1;
     }
     const { target, radius, phi, theta } = camControl;
-    if (fishing) followPoint.copy(FISHING_VIEW);
-    else followPoint.set(playerPos.x * 0.5, 0.6, playerPos.z * 0.5);
+    if (fishing) {
+      // While fishing the view centres between the angler and the float so both stay in sight
+      const spot = FISHING_SPOTS[fishing.spot];
+      followPoint.set((spot.x + spot.bobber[0]) / 2, 0.6, (spot.z + spot.bobber[2]) / 2);
+    }
+    else {
+      // The view centres halfway to the player, closer on big islands, zoomed in or on narrow
+      // screens so they stay in sight
+      const shape = islandShape(currentWorld, ownedPlots);
+      const walkable = Math.max(shape.rx, shape.rz) - WALK_MARGIN;
+      const lens = camera as THREE.PerspectiveCamera;
+      const halfView = radius * Math.tan((lens.fov * Math.PI) / 360);
+      const room = 0.8 * halfView * Math.min(lens.aspect, 1.4);
+      const follow = Math.max(0.5, 1 - room / walkable);
+      followPoint.set(playerPos.x * follow, 0.6, playerPos.z * follow);
+    }
     target.lerp(followPoint, 0.08);
     camera.position.set(
       target.x + radius * Math.sin(phi) * Math.sin(theta),

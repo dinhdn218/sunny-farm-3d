@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { worldPortal } from '@/lib/farmLayout';
+import { WORLDS } from '@/config/worlds';
 import { interactable } from '@/lib/interact';
 
 const CLOUD_PUFFS: [number, number, number, number][] = [
@@ -15,16 +16,18 @@ const CLOUD_PUFFS: [number, number, number, number][] = [
 
 function Clouds() {
   const groupRefs = useRef<(THREE.Group | null)[]>([]);
+  // Spread over the zone's island (the public zones are bigger than the farm)
+  const spread = useGameStore((s) => WORLDS[s.currentWorld].islandRadius);
   const clouds = useMemo(
     () =>
-      Array.from({ length: 8 }, () => ({
-        x: (Math.random() - 0.5) * 38,
+      Array.from({ length: Math.round(spread * 0.45) }, () => ({
+        x: (Math.random() - 0.5) * spread * 2,
         y: 10.5 + Math.random() * 3.5,
-        z: (Math.random() - 0.5) * 30,
+        z: (Math.random() - 0.5) * spread * 1.6,
         scale: 0.75 + Math.random() * 0.5,
         speed: 0.35 + Math.random() * 0.35,
       })),
-    []
+    [spread]
   );
 
   useFrame((_, delta) => {
@@ -33,7 +36,7 @@ function Clouds() {
       const group = groupRefs.current[i];
       if (!group) return;
       group.position.x += cloud.speed * dt;
-      if (group.position.x > 25) group.position.x = -25;
+      if (group.position.x > spread + 6) group.position.x = -spread - 6;
     });
   });
 

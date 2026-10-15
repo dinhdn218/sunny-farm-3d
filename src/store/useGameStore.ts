@@ -9,6 +9,7 @@ import {
   CropId,
   FarmAnimal,
   FishingSession,
+  FishingSpotId,
   FloatingLabel,
   HoverTooltip,
   ItemConfig,
@@ -22,6 +23,7 @@ import {
   TileData,
   ToolId,
   UserProfile,
+  WalkGoal,
   Weather,
   WorldId,
 } from '@/types/game';
@@ -32,11 +34,11 @@ import { ITEMS } from '@/config/items';
 import { MACHINES, RECIPES, isMachineId } from '@/config/machines';
 import {
   BITE_MS,
-  BOBBER_POS,
   CATCHES,
   FISHING_ENERGY,
-  FISHING_SPOT,
+  FISHING_SPOTS,
   TREASURE_REWARD,
+  fishingSpotIn,
 } from '@/config/fish';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
@@ -50,10 +52,12 @@ import {
   worldToTile,
 } from '@/config/farm';
 import {
+  FARM_SITES,
   FarmBands,
   canPlaceBuildPiece,
   canPlaceDecor,
   farmBands,
+  farmPoint,
   placeableInfo,
   ranchOffset,
   stretchPoint,
@@ -80,7 +84,7 @@ import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
 import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
-import { roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
+import { petMorningGift, roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
 import { pieceAt, snapToCell } from '@/lib/build';
 import { BUILD_PIECES } from '@/config/build';
 import {
@@ -95,6 +99,10 @@ import {
   waterCapacity,
 } from '@/lib/tools';
 import { formatCountdown } from '@/lib/format';
+import { beachFinds } from '@/lib/forage';
+import { BEACH_SPOTS } from '@/config/forage';
+import { WHEEL_PRIZES, rollWheel } from '@/config/luckyWheel';
+import { CLAW_PRICE, CLAW_PRIZES } from '@/config/claw';
 import { createNewGameSave } from '@/lib/newGame';
 import {
   SAVE_KEYS,
@@ -107,6 +115,7 @@ import { CloudLink, CloudSave } from '@/lib/cloudSave';
 import { soundFX } from '@/lib/audio';
 import { spawnParticles } from '@/lib/effects';
 import { projectToScreen } from '@/lib/controls';
+import { REACH, inReach } from '@/lib/walk';
 import { signOutCloud, uploadCloudSave } from '@/lib/supabase';
 
 interface DaySummaryData {
@@ -176,6 +185,8 @@ interface GameState extends SaveData {
     | 'fishJournal'
     | 'dailyGift'
     | 'candyShop'
+    | 'luckyWheel'
+    | 'claw'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -187,6 +198,8 @@ interface GameState extends SaveData {
   cinemaChannel: number;
 
   playerPos: { x: number; z: number; rotY: number; actionTime: number };
+  // What the player is walking over to use (not saved)
+  walkGoal: WalkGoal | null;
   localChatMsg: string;
   localEmote: string;
   remotePlayers: Record<string, RemotePlayer>;
@@ -218,9 +231,16 @@ interface GameState extends SaveData {
   cycleCinemaChannel: () => void;
   eatPopcornOrSnack: (label: string, bonusEnergy: number) => void;
   refillWater: () => void;
+  // The watering can is filled at the well: walk there first
+  fetchWater: () => void;
   eatBread: () => void;
   interactTile: (r: number, c: number) => void;
   interactFront: () => void;
+  // Walk over to something and do the job there (straight away when already close enough)
+  walkTo: (goal: WalkGoal) => void;
+  // The player got there: face it and do the job
+  reachGoal: () => void;
+  cancelWalk: () => void;
   buySeed: (crop: CropId, amount?: number) => void;
   buyBread: () => void;
   buyToolUpgrade: (tool: UpgradableTool) => void;
@@ -240,7 +260,10 @@ interface GameState extends SaveData {
   startRecipe: (recipeId: RecipeId) => void;
   collectMachine: (id: MachineId) => void;
 
-  startFishing: () => void;
+  // Cast at a fishing spot (the one in the current zone when not given)
+  startFishing: (spot?: FishingSpotId) => void;
+  // Walk to the zone's fishing spot, then cast
+  goFishing: () => void;
   fishBite: () => void;
   hookFish: () => void;
   landCatch: () => void;
@@ -274,6 +297,17 @@ interface GameState extends SaveData {
   claimQuest: (questId: string) => void;
   claimDailyGift: () => void;
   buyCandyItem: (itemId: string) => void;
+  // Pick up one of today's finds on the Beach (a spot of config/forage)
+  collectBeachFind: (spot: number) => void;
+  // The casino's free daily spin: the slice it lands on (prizes paid at once), or null if already spun today
+  spinLuckyWheel: () => number | null;
+  // A coin in the cinema's claw machine; false if short of gold
+  payClaw: () => boolean;
+  winClawPrize: (prize: number) => void;
+  // A Tiến Lên game at the casino ended: gold won or lost, and where the player finished
+  casinoPayout: (gold: number, place: number) => void;
+  // Left a card game in the middle
+  casinoForfeit: (gold: number) => void;
   sendChat: (text: string) => void;
   triggerEmote: (emote: string, chatText?: string) => void;
   setRemotePlayers: (players: Record<string, RemotePlayer>) => void;
@@ -387,6 +421,7 @@ export const useGameStore = create<GameState>()(
           rotY: Math.PI,
           actionTime: 0,
         },
+        walkGoal: null,
         localChatMsg: '',
         localEmote: '',
         remotePlayers: {},
@@ -427,6 +462,7 @@ export const useGameStore = create<GameState>()(
             cloudConflict: null,
             currentWorld: 'farm',
             playerPos: { x, z, rotY: Math.PI, actionTime: 0 },
+            walkGoal: null,
             activeModal: null,
             placingDecor: null,
             selectedPlot: null,
@@ -506,7 +542,7 @@ export const useGameStore = create<GameState>()(
             if (s.photoMode) return { photoMode: false };
             // A cast, a placement or the save-conflict question has to finish first
             if (s.fishing || s.placingDecor || s.placingSprinkler || s.activeModal === 'cloudConflict') return s;
-            return { photoMode: true, activeModal: null, tooltip: null, buildMode: null };
+            return { photoMode: true, activeModal: null, tooltip: null, buildMode: null, walkGoal: null };
           }),
 
         toggleGlbModels: () => {
@@ -564,6 +600,7 @@ export const useGameStore = create<GameState>()(
             placingDecor: null,
             buildMode: null,
             fishing: null,
+            walkGoal: null,
           });
 
           if (world !== 'farm') get().incrementQuest('visit_world', 1);
@@ -633,6 +670,12 @@ export const useGameStore = create<GameState>()(
             0.8,
             playerPos.z,
           ]);
+        },
+
+        fetchWater: () => {
+          const { ownedPlots, refillWater } = get();
+          const [x, z] = farmPoint(FARM_SITES.well[0], FARM_SITES.well[1], ownedPlots);
+          get().walkTo({ x, z, reach: REACH.well, act: refillWater });
         },
 
         eatBread: () => {
@@ -876,7 +919,8 @@ export const useGameStore = create<GameState>()(
           }
         },
 
-        // Space / E / the mobile "LÀM" button: work the tile in front, or open the map at the portal
+        // Space / E / the mobile "LÀM" button: work the tile in front, draw water at the well,
+        // or open the map at the portal
         interactFront: () => {
           const { currentWorld, playerPos, ownedPlots } = get();
           const fx = playerPos.x + Math.sin(playerPos.rotY) * 1.25;
@@ -887,11 +931,36 @@ export const useGameStore = create<GameState>()(
               get().interactTile(tile.r, tile.c);
               return;
             }
+            const [wx, wz] = farmPoint(FARM_SITES.well[0], FARM_SITES.well[1], ownedPlots);
+            if (Math.hypot(playerPos.x - wx, playerPos.z - wz) < REACH.well + 0.5) {
+              get().refillWater();
+              return;
+            }
           }
           const [px, pz] = worldPortal(currentWorld, ownedPlots);
           if (Math.hypot(playerPos.x - px, playerPos.z - pz) < 2.6) {
             set({ activeModal: 'map' });
           }
+        },
+
+        walkTo: (goal) => {
+          set({ walkGoal: goal });
+          const { playerPos } = get();
+          if (inReach(playerPos.x, playerPos.z, goal)) get().reachGoal();
+        },
+
+        reachGoal: () => {
+          const { walkGoal: goal, playerPos } = get();
+          if (!goal) return;
+          const dx = goal.x - playerPos.x;
+          const dz = goal.z - playerPos.z;
+          if (Math.hypot(dx, dz) > 0.1) playerPos.rotY = Math.atan2(dx, dz);
+          set({ walkGoal: null });
+          goal.act();
+        },
+
+        cancelWalk: () => {
+          if (get().walkGoal) set({ walkGoal: null });
         },
 
         buySeed: (crop, amount = 1) => {
@@ -971,7 +1040,14 @@ export const useGameStore = create<GameState>()(
             get().showToast('🏡 Về Nông Trại để đặt Bình Phun!', 'text-amber-300');
             return;
           }
-          set({ placingSprinkler: true, placingDecor: null, buildMode: null, activeModal: null, tooltip: null });
+          set({
+            placingSprinkler: true,
+            placingDecor: null,
+            buildMode: null,
+            walkGoal: null,
+            activeModal: null,
+            tooltip: null,
+          });
         },
 
         cancelPlacingSprinkler: () => set({ placingSprinkler: false }),
@@ -1176,13 +1252,14 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('craft', 1);
         },
 
-        // Cast from the Beach jetty; what bites is decided now and depends on the time of day
-        startFishing: () => {
+        // Cast at the Beach jetty or the Park pond; what bites is decided now, by the waters and the time of day
+        startFishing: (spotId) => {
           const { currentWorld, energy, timePhaseIndex, playerPos, fishing } = get();
           // A cast already in progress is finished first (re-casting is offered on the result card)
           if (fishing && fishing.stage !== 'result') return;
-          if (currentWorld !== 'beach') {
-            get().showToast('🎣 Hãy đến Bãi Biển để câu cá!', 'text-amber-300');
+          const spot = spotId ? FISHING_SPOTS[spotId] : fishingSpotIn(currentWorld);
+          if (!spot || spot.world !== currentWorld) {
+            get().showToast('🎣 Hãy ra Cầu Câu ở Bãi Biển hoặc Hồ Sen ở Công Viên!', 'text-amber-300');
             return;
           }
           if (energy < FISHING_ENERGY) {
@@ -1190,17 +1267,19 @@ export const useGameStore = create<GameState>()(
             get().showToast('⚡ Không đủ thể lực để quăng cần!', 'text-red-400');
             return;
           }
-          const catchId = rollCatch(TIME_PHASES[timePhaseIndex].id);
-          playerPos.x = FISHING_SPOT.x;
-          playerPos.z = FISHING_SPOT.z;
-          playerPos.rotY = FISHING_SPOT.rotY;
+          const catchId = rollCatch(TIME_PHASES[timePhaseIndex].id, spot.waters);
+          playerPos.x = spot.x;
+          playerPos.z = spot.z;
+          playerPos.rotY = spot.rotY;
           playerPos.actionTime = Date.now();
           soundFX.cast();
           set({
             energy: energy - FISHING_ENERGY,
             activeModal: null,
             tooltip: null,
+            walkGoal: null,
             fishing: {
+              spot: spot.id,
               stage: 'waiting',
               catchId,
               size: rollSize(catchId),
@@ -1209,11 +1288,21 @@ export const useGameStore = create<GameState>()(
           });
         },
 
+        goFishing: () => {
+          const spot = fishingSpotIn(get().currentWorld);
+          if (!spot) {
+            get().startFishing();
+            return;
+          }
+          get().walkTo({ x: spot.x, z: spot.z, reach: 0.4, act: () => get().startFishing(spot.id) });
+        },
+
         fishBite: () => {
           const { fishing } = get();
           if (fishing?.stage !== 'waiting') return;
+          const [bx, by, bz] = FISHING_SPOTS[fishing.spot].bobber;
           soundFX.splash();
-          spawnParticles(BOBBER_POS[0], BOBBER_POS[1] + 0.2, BOBBER_POS[2], 0xbae6fd, 16);
+          spawnParticles(bx, by + 0.2, bz, 0xbae6fd, 16);
           set({ fishing: { ...fishing, stage: 'bite', until: Date.now() + BITE_MS } });
         },
 
@@ -1334,6 +1423,8 @@ export const useGameStore = create<GameState>()(
             buildPieces: nextPieces,
             selectedPlot: null,
             activeModal: null,
+            // Whatever the player was heading for may have moved with the new land
+            walkGoal: null,
           });
 
           const { px, pz } = parsePlotKey(plot);
@@ -1363,6 +1454,7 @@ export const useGameStore = create<GameState>()(
           set({
             placingDecor: { id, rotY: decorPlacements[id]?.rotY ?? 0 },
             buildMode: null,
+            walkGoal: null,
             activeModal: null,
             tooltip: null,
           });
@@ -1440,6 +1532,7 @@ export const useGameStore = create<GameState>()(
             buildMode: { kind, rotY: s.buildMode?.rotY ?? 0 },
             placingDecor: null,
             placingSprinkler: false,
+            walkGoal: null,
             activeModal: null,
             tooltip: null,
           }));
@@ -1647,7 +1740,8 @@ export const useGameStore = create<GameState>()(
         },
 
         nextDay: () => {
-          const { day, tiles, shippingBin, animals, machines, gold, gems, breadCount, seeds, cosmetics } = get();
+          const { day, tiles, shippingBin, animals, machines, gold, gems, breadCount, seeds, cosmetics, items, animalFeed } =
+            get();
 
           // The shipping bin sells overnight at full price; the bag is kept
           const soldItems = (Object.entries(shippingBin) as [ItemId, number][])
@@ -1710,11 +1804,12 @@ export const useGameStore = create<GameState>()(
           // The pet you walk with lends a hand overnight
           const cat = cosmetics.pet === 'robo_cat' ? roboCatWater(morningTiles) : null;
           const find = cosmetics.pet === 'shiba_inu' ? shibaFind(day + 1) : null;
+          const gift = petMorningGift(cosmetics.pet, day + 1);
           const petNote = find
             ? shibaFindLabel(find)
             : cat?.watered
             ? `🤖 Mèo Máy đã tưới giúp ${cat.watered} ô ruộng`
-            : null;
+            : gift?.label ?? null;
 
           let animalProductsReady = 0;
           const nextAnimals = animals.map((a) => {
@@ -1740,6 +1835,8 @@ export const useGameStore = create<GameState>()(
             gems: gems + (find?.kind === 'gems' ? find.amount : 0),
             breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0),
             seeds: find?.kind === 'seeds' ? { ...seeds, [find.crop]: (seeds[find.crop] ?? 0) + find.count } : seeds,
+            items: gift?.items ? addItems(items, gift.items) : items,
+            animalFeed: animalFeed + (gift?.feed ?? 0),
             tiles: cat ? cat.tiles : morningTiles,
             animals: nextAnimals,
             machines: nextMachines,
@@ -1752,6 +1849,7 @@ export const useGameStore = create<GameState>()(
             placingDecor: null,
             buildMode: null,
             fishing: null,
+            walkGoal: null,
             lastDaySummary: {
               day,
               soldItems,
@@ -1899,6 +1997,90 @@ export const useGameStore = create<GameState>()(
           );
           get().incrementQuest(isDecor ? 'buy_decor' : 'buy_cosmetic', 1);
           get().incrementQuest('event_shop', 1);
+        },
+
+        collectBeachFind: (spot) => {
+          const { currentWorld, day, beachDay, beachTaken, items, playerPos } = get();
+          if (currentWorld !== 'beach') return;
+          const taken = beachDay === day ? beachTaken : [];
+          const find = beachFinds(day).find((f) => f.spot === spot);
+          if (!find || taken.includes(spot)) return;
+          const cfg = ITEMS[find.item];
+          const [x, z] = BEACH_SPOTS[spot];
+          playerPos.actionTime = Date.now();
+          soundFX.harvest();
+          set({ items: addItems(items, { [find.item]: 1 }), beachDay: day, beachTaken: [...taken, spot] });
+          spawnParticles(x, 0.3, z, 0xfde68a, 14);
+          get().showToast(`${cfg.icon} +1 ${cfg.name}!`, 'text-yellow-300', [x, 0.6, z]);
+          get().incrementQuest('forage', 1);
+        },
+
+        spinLuckyWheel: () => {
+          const { lastWheelDate, gold, gems, breadCount, seeds } = get();
+          const today = localDateKey(new Date());
+          if (lastWheelDate === today) return null;
+          const index = rollWheel();
+          const prize = WHEEL_PRIZES[index];
+          const nextSeeds = { ...seeds };
+          (Object.entries(prize.seeds ?? {}) as [CropId, number][]).forEach(([crop, n]) => {
+            nextSeeds[crop] = (nextSeeds[crop] ?? 0) + n;
+          });
+          set({
+            lastWheelDate: today,
+            gold: gold + (prize.gold ?? 0),
+            gems: gems + (prize.gems ?? 0),
+            breadCount: breadCount + (prize.bread ?? 0),
+            seeds: nextSeeds,
+          });
+          return index;
+        },
+
+        payClaw: () => {
+          const { gold } = get();
+          if (gold < CLAW_PRICE) {
+            soundFX.error();
+            get().showToast(`Cần ${CLAW_PRICE} Vàng 🪙 cho một lượt gắp!`, 'text-red-400');
+            return false;
+          }
+          soundFX.coin();
+          set({ gold: gold - CLAW_PRICE });
+          return true;
+        },
+
+        winClawPrize: (index) => {
+          const prize = CLAW_PRIZES[index];
+          if (!prize) return;
+          const { gold, gems, breadCount, animalFeed, seeds } = get();
+          const nextSeeds = { ...seeds };
+          (Object.entries(prize.seeds ?? {}) as [CropId, number][]).forEach(([crop, n]) => {
+            nextSeeds[crop] = (nextSeeds[crop] ?? 0) + n;
+          });
+          soundFX.harvest();
+          set({
+            gold: gold + (prize.gold ?? 0),
+            gems: gems + (prize.gems ?? 0),
+            breadCount: breadCount + (prize.bread ?? 0),
+            animalFeed: animalFeed + (prize.feed ?? 0),
+            seeds: nextSeeds,
+          });
+          get().showToast(`${prize.toy} Gắp trúng: ${prize.label}!`, 'text-yellow-300');
+        },
+
+        casinoPayout: (gold, place) => {
+          set((s) => ({ gold: Math.max(0, s.gold + gold) }));
+          if (gold > 0) soundFX.questClaim();
+          get().showToast(
+            gold >= 0 ? `🃏 Tiến Lên: +${gold}🪙` : `🃏 Tiến Lên: −${-gold}🪙`,
+            gold >= 0 ? 'text-yellow-300' : 'text-red-400'
+          );
+          get().incrementQuest('card_game', 1);
+          if (place === 0) get().incrementQuest('card_win', 1);
+        },
+
+        casinoForfeit: (gold) => {
+          set((s) => ({ gold: Math.max(0, s.gold - gold) }));
+          soundFX.error();
+          get().showToast(`🚪 Bỏ bàn giữa ván: −${gold}🪙`, 'text-red-400');
         },
 
         // One gift per real calendar day, following the 7-day login streak

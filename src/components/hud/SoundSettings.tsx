@@ -69,7 +69,7 @@ export function SoundSettings() {
       <button
         onClick={() => setOpen(!open)}
         title="Âm thanh & nhạc nền"
-        className="game-btn flex h-9 w-9 items-center justify-center rounded-xl border-2 border-amber-950 bg-amber-800 text-sm text-amber-100 hover:bg-amber-700"
+        className="game-btn flex h-8 w-8 items-center justify-center rounded-xl border-2 border-teal-900 bg-teal-600 text-sm text-white hover:bg-teal-500 md:h-9 md:w-9"
       >
         <i className={`fa-solid ${silent ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
       </button>

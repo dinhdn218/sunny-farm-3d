@@ -4,8 +4,10 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
+import { useCasinoStore } from '@/store/useCasinoStore';
 import { camControl, touchMove } from '@/lib/controls';
 import { WALK_MARGIN, insideIsland, islandShape } from '@/lib/farmLayout';
+import { WALK_SPEED, walkStep } from '@/lib/walk';
 import { ToolId } from '@/types/game';
 import { levelInfo } from '@/lib/leveling';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
@@ -62,6 +64,8 @@ export function Player() {
       const focused = document.activeElement?.tagName;
       if (focused === 'INPUT' || focused === 'TEXTAREA') return;
 
+      // The card table window has the keyboard while it is open
+      if (useCasinoStore.getState().open) return;
       keys.current[e.code] = true;
       const store = useGameStore.getState();
       // The save-conflict dialog must be answered before anything else opens
@@ -101,7 +105,7 @@ export function Player() {
       const tool = HOTBAR_KEYS[e.code];
       if (tool) {
         store.setActiveTool(tool);
-      } else if (e.code === 'Space' || e.code === 'KeyE') {
+      } else if ((e.code === 'Space' || e.code === 'KeyE') && !store.activeModal) {
         e.preventDefault();
         store.interactFront();
       } else if (e.code in MODAL_KEYS) {
@@ -126,21 +130,32 @@ export function Player() {
     const group = groupRef.current;
     if (!group) return;
     const dt = Math.min(delta, 0.1);
-    const { playerPos: pos, currentWorld, ownedPlots, fishing } = useGameStore.getState();
+    const store = useGameStore.getState();
+    const { playerPos: pos, currentWorld, ownedPlots, fishing } = store;
     const k = keys.current;
 
-    // The player stays put on the jetty while the line is out
-    let moveX = fishing ? 0 : touchMove.x;
-    let moveZ = fishing ? 0 : touchMove.z;
-    if (!fishing) {
+    // The player stays put on the jetty while the line is out, and in their chair at a card table
+    const seated = !!useCasinoStore.getState().open;
+    const still = !!fishing || seated;
+    let moveX = still ? 0 : touchMove.x;
+    let moveZ = still ? 0 : touchMove.z;
+    if (!still) {
       if (k.KeyW || k.ArrowUp) moveZ -= 1;
       if (k.KeyS || k.ArrowDown) moveZ += 1;
       if (k.KeyA || k.ArrowLeft) moveX -= 1;
       if (k.KeyD || k.ArrowRight) moveX += 1;
     }
 
-    let y = 0.08;
+    let goal = store.walkGoal;
+    let nextX = pos.x;
+    let nextZ = pos.z;
+    let arrived = false;
     if (moveX !== 0 || moveZ !== 0) {
+      // Taking the controls calls off the walk to whatever was clicked
+      if (goal) {
+        store.cancelWalk();
+        goal = null;
+      }
       const len = Math.hypot(moveX, moveZ);
       moveX /= len;
       moveZ /= len;
@@ -148,17 +163,31 @@ export function Player() {
       // Movement is relative to the orbit camera's heading
       const sinT = Math.sin(camControl.theta);
       const cosT = Math.cos(camControl.theta);
-      const worldX = moveX * cosT + moveZ * sinT;
-      const worldZ = -moveX * sinT + moveZ * cosT;
+      nextX = pos.x + (moveX * cosT + moveZ * sinT) * WALK_SPEED * dt;
+      nextZ = pos.z + (-moveX * sinT + moveZ * cosT) * WALK_SPEED * dt;
+    } else if (goal && !still) {
+      // Something that wanders about (an animal) is followed
+      const at = goal.track?.();
+      if (at) {
+        goal.x = at.x;
+        goal.z = at.z;
+      }
+      ({ x: nextX, z: nextZ, arrived } = walkStep(pos.x, pos.z, goal, WALK_SPEED * dt));
+    }
 
-      const nextX = pos.x + worldX * 6.0 * dt;
-      const nextZ = pos.z + worldZ * 6.0 * dt;
+    let y = 0.08;
+    const stepX = nextX - pos.x;
+    const stepZ = nextZ - pos.z;
+    if (stepX !== 0 || stepZ !== 0) {
       // Stay on the island (which grows when farm land is bought)
       if (insideIsland(nextX, nextZ, islandShape(currentWorld, ownedPlots), WALK_MARGIN)) {
         pos.x = nextX;
         pos.z = nextZ;
+      } else if (goal) {
+        // The shore is as close as the player can get
+        arrived = true;
       }
-      pos.rotY = Math.atan2(worldX, worldZ);
+      pos.rotY = Math.atan2(stepX, stepZ);
       anim.current.spin = 0;
 
       motion.moving = true;
@@ -172,6 +201,7 @@ export function Player() {
         if (anim.current.emote === '💃') anim.current.spin += dt * 6.5;
       }
     }
+    if (arrived) store.reachGoal();
 
     // Swing the tool whenever a store action stamps a new actionTime
     if (pos.actionTime !== anim.current.lastAction) {

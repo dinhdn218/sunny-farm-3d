@@ -5,16 +5,17 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { NpcPreset, npcPresetsFor } from '@/config/npcs';
+import { WORLDS } from '@/config/worlds';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
 
 // Wandering resident with periodic speech bubbles (the HTML version's simulated online players)
-function SimulatedResident({ preset, index }: { preset: NpcPreset; index: number }) {
+function SimulatedResident({ preset, index, roam }: { preset: NpcPreset; index: number; roam: number }) {
   const groupRef = useRef<THREE.Group>(null);
   const motion = useRef(createMotion(0.5)).current;
   const [sim] = useState(() => {
-    const x = (Math.random() - 0.5) * 10;
-    const z = (Math.random() - 0.5) * 8;
+    const x = (Math.random() - 0.5) * roam;
+    const z = (Math.random() - 0.5) * roam * 0.8;
     return {
       x,
       z,
@@ -50,8 +51,8 @@ function SimulatedResident({ preset, index }: { preset: NpcPreset; index: number
       sim.waitTimer -= dt;
       if (sim.waitTimer <= 0) {
         sim.waitTimer = 2.5 + Math.random() * 4;
-        sim.targetX = (Math.random() - 0.5) * 12;
-        sim.targetZ = (Math.random() - 0.5) * 10;
+        sim.targetX = (Math.random() - 0.5) * roam * 1.2;
+        sim.targetZ = (Math.random() - 0.5) * roam;
       }
     }
 
@@ -81,6 +82,8 @@ function SimulatedResident({ preset, index }: { preset: NpcPreset; index: number
 export function SimulatedPlayers() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const presets = useMemo(() => npcPresetsFor(currentWorld), [currentWorld]);
+  // How far they stroll: across the middle of the zone's island
+  const roam = WORLDS[currentWorld].islandRadius * 0.55;
 
   return (
     <group>
@@ -89,6 +92,7 @@ export function SimulatedPlayers() {
           key={`${currentWorld}-${i}`}
           preset={preset}
           index={i}
+          roam={roam}
         />
       ))}
     </group>

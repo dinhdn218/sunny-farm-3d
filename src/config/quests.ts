@@ -67,7 +67,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì hoặc Bắp Rang Bơ 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
   { id: 'd_craft', title: 'Bếp Núc Bận Rộn', desc: 'Chế biến xong 2 mẻ hàng ở Xưởng.', icon: '🍳', type: 'craft', target: 2, rewardGold: 110, rewardGems: 4 },
   { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
-  { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
+  { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
 ];
 
 export const DAILY_QUEST_COUNT = 3;

@@ -50,7 +50,7 @@ export function Hotbar() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const activeTool = useGameStore((s) => s.activeTool);
   const setActiveTool = useGameStore((s) => s.setActiveTool);
-  const refillWater = useGameStore((s) => s.refillWater);
+  const fetchWater = useGameStore((s) => s.fetchWater);
   const seeds = useGameStore((s) => s.seeds);
   const breadCount = useGameStore((s) => s.breadCount);
   const animalFeed = useGameStore((s) => s.animalFeed);
@@ -104,22 +104,22 @@ export function Hotbar() {
           </button>
         </div>
       ) : (
-        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-amber-400/70 bg-amber-950/90 px-3.5 py-1 text-xs font-extrabold text-amber-100 shadow-lg">
+        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-teal-300/80 bg-teal-950/90 px-3.5 py-1 text-xs font-extrabold text-teal-50 shadow-lg">
           <span>
             {active.icon} {active.name}: {active.desc}
           </span>
           {active.id === 'water' && (
             <button
-              onClick={refillWater}
+              onClick={fetchWater}
               className="ml-1 rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
             >
-              💧 Múc Đầy Nước
+              💧 Ra Giếng Múc Nước
             </button>
           )}
         </div>
       )}
 
-      <div className="wood-panel pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
+      <div className="bar-panel pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
         {SLOTS.map((slot) => {
           const count = countFor(slot);
           return (

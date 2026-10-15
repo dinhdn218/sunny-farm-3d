@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
-import { CATCH_LIST, RARITY_LABEL } from '@/config/fish';
+import { CATCH_LIST, RARITY_LABEL, WATER_NAMES } from '@/config/fish';
 import { FishId, TimePhaseId } from '@/types/game';
 import { ModalShell } from './ModalShell';
 
@@ -23,7 +23,7 @@ export function FishJournalModal() {
     <ModalShell
       icon="📖"
       title="Sổ Tay Câu Cá"
-      subtitle={`Đã câu được ${found}/${SPECIES.length} loài • Đổi giờ trong ngày (nút 🌤️) để gặp loài khác`}
+      subtitle={`Đã câu được ${found}/${SPECIES.length} loài • Biển ở Bãi Biển, Hồ Sen ở Công Viên • đổi giờ (nút 🌤️) để gặp loài khác`}
     >
       <div className="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2">
         {SPECIES.map((c) => {
@@ -42,7 +42,7 @@ export function FishJournalModal() {
               <div>
                 <div className="text-sm font-black text-amber-950">{log ? c.name : '???'}</div>
                 <div className="text-[11px] font-bold text-amber-700">
-                  {RARITY_LABEL[c.rarity]} • Xuất hiện: {when}
+                  {RARITY_LABEL[c.rarity]} • {c.waters.map((w) => WATER_NAMES[w]).join(' & ')} • {when}
                 </div>
                 {log && (
                   <div className="text-[11px] font-black text-sky-800">

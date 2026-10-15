@@ -1,11 +1,11 @@
 'use client';
 
-import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
-import { WORLDS } from '@/config/worlds';
+import { useGameStore } from '@/store/useGameStore';
 import { QuestCategory } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
 import { isEventActive } from '@/lib/event';
 import { localDateKey } from '@/lib/dailyGift';
+import { ZonePanel } from './ZonePanel';
 
 const CATEGORY_TAG: Record<QuestCategory, string> = {
   main: '📖',
@@ -21,12 +21,6 @@ export function QuestTracker() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const cycleCinemaChannel = useGameStore((s) => s.cycleCinemaChannel);
-  const eatPopcornOrSnack = useGameStore((s) => s.eatPopcornOrSnack);
-  const triggerEmote = useGameStore((s) => s.triggerEmote);
-  const snackFree = useGameStore((s) => s.lastFreeSnackDay !== s.day);
-  const startFishing = useGameStore((s) => s.startFishing);
-  const fishing = useGameStore((s) => !!s.fishing);
 
   // Rewards waiting first, then the current story quest, then today's dailies
   const mainQuest = activeMainQuest(quests);
@@ -37,7 +31,6 @@ export function QuestTracker() {
   ]
     .filter((q, i, list) => list.findIndex((other) => other.id === q.id) === i)
     .slice(0, 3);
-  const worldCfg = WORLDS[currentWorld];
 
   return (
     <aside
@@ -64,13 +57,14 @@ export function QuestTracker() {
               🎉 Bạn đã hoàn thành xuất sắc mọi nhiệm vụ!
             </div>
           ) : (
-            shownQuests.map((q) => {
+            shownQuests.map((q, i) => {
               const ready = isClaimable(q);
               const pct = Math.min(100, (q.progress / q.target) * 100);
               return (
+                // Phones show only the first quest, keeping the zone panel clear of the D-pad
                 <div
                   key={q.id}
-                  className="rounded-xl border border-white/10 bg-slate-800/80 p-2"
+                  className={`rounded-xl border border-white/10 bg-slate-800/80 p-2 ${i > 0 ? 'hidden sm:block' : ''}`}
                 >
                   <div className="flex items-center justify-between gap-1 font-extrabold">
                     <span className="truncate text-amber-200">
@@ -107,100 +101,7 @@ export function QuestTracker() {
       </div>
 
       {/* Zone actions (hidden on the farm, where the hotbar takes over) */}
-      {currentWorld !== 'farm' && (
-        <div className="glass-panel pointer-events-auto rounded-2xl p-3 text-white">
-          {currentWorld === 'cinema' ? (
-            <>
-              <div className="mb-1.5 text-xs font-black text-amber-300">
-                🎬 Điều Khiển Rạp Phim 3D
-              </div>
-              <button
-                onClick={cycleCinemaChannel}
-                className="game-btn mb-1.5 w-full rounded-xl bg-pink-600 py-1.5 text-xs font-black text-white hover:bg-pink-500"
-              >
-                📺 Đổi Kênh Phim Đang Chiếu
-              </button>
-              <button
-                onClick={() => eatPopcornOrSnack('Bắp rang bơ', 30)}
-                className="game-btn w-full rounded-xl bg-amber-500 py-1.5 text-xs font-black text-amber-950 hover:bg-amber-400"
-              >
-                🍿 Ăn Bắp Rang Bơ (+30⚡ • {snackFree ? 'Miễn phí' : `🪙${SNACK_PRICE}`})
-              </button>
-            </>
-          ) : currentWorld === 'mall' ? (
-            <>
-              <div className="mb-1.5 text-xs font-black text-pink-300">
-                🛍️ Trung Tâm Thương Mại
-              </div>
-              <button
-                onClick={() => setActiveModal('market')}
-                className="game-btn mb-1.5 w-full rounded-xl bg-rose-500 py-1.5 text-xs font-black text-white hover:bg-rose-400"
-              >
-                🧺 Chợ Phiên Nông Sản
-              </button>
-              <button
-                onClick={() => setActiveModal('wardrobe')}
-                className="game-btn mb-1.5 w-full rounded-xl bg-pink-600 py-1.5 text-xs font-black text-white hover:bg-pink-500"
-              >
-                👗 Mở Tủ Đồ & Mua Sắm
-              </button>
-              <button
-                onClick={() =>
-                  triggerEmote('💃', 'Biểu diễn thời trang trên sàn Runway!')
-                }
-                className="game-btn w-full rounded-xl bg-purple-600 py-1.5 text-xs font-black text-white hover:bg-purple-500"
-              >
-                ✨ Tạo Dáng Trên Sàn Runway
-              </button>
-            </>
-          ) : currentWorld === 'beach' ? (
-            <>
-              <div className="mb-1.5 text-xs font-black text-sky-300">
-                {worldCfg.icon} {worldCfg.name}
-              </div>
-              <button
-                onClick={startFishing}
-                disabled={fishing}
-                className="game-btn mb-1.5 w-full rounded-xl bg-sky-600 py-1.5 text-xs font-black text-white hover:bg-sky-500 disabled:bg-slate-500"
-              >
-                🎣 Câu Cá ở Cầu Phía Bắc (-4⚡)
-              </button>
-              <button
-                onClick={() => setActiveModal('fishJournal')}
-                className="game-btn mb-1.5 w-full rounded-xl bg-amber-600 py-1.5 text-xs font-black text-white hover:bg-amber-500"
-              >
-                📖 Sổ Tay Câu Cá
-              </button>
-              <button
-                onClick={() => setActiveModal('map')}
-                className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500"
-              >
-                🏡 Về Lại Nông Trại Của Tôi
-              </button>
-            </>
-          ) : (
-            <>
-              <div className="mb-1.5 text-xs font-black text-sky-300">
-                {worldCfg.icon} {worldCfg.name}
-              </div>
-              {currentWorld === 'park' && festival && (
-                <button
-                  onClick={() => setActiveModal('candyShop')}
-                  className="game-btn mb-1.5 w-full rounded-xl bg-purple-600 py-1.5 text-xs font-black text-white hover:bg-purple-500"
-                >
-                  🍬 Tiệm Kẹo Ma Quái
-                </button>
-              )}
-              <button
-                onClick={() => setActiveModal('map')}
-                className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500"
-              >
-                🏡 Về Lại Nông Trại Của Tôi
-              </button>
-            </>
-          )}
-        </div>
-      )}
+      {currentWorld !== 'farm' && <ZonePanel />}
     </aside>
   );
 }

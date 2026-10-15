@@ -28,7 +28,7 @@ interface Rect {
 
 type Collider = { x: number; z: number; r: number } | Rect;
 
-export const BASE_ISLAND_RADIUS = 18.5;
+export const BASE_ISLAND_RADIUS = WORLDS.farm.islandRadius;
 // How far inside the island rim the player may walk
 export const WALK_MARGIN = 3.3;
 // Half-size of the starting 8×8 field incl. its border; anything beyond it slides outward when land is added
@@ -103,7 +103,8 @@ export function fieldRect(ownedPlots: string[]) {
 
 export function islandShape(world: WorldId, ownedPlots: string[]): IslandShape {
   if (world !== 'farm') {
-    return { cx: 0, cz: 0, rx: BASE_ISLAND_RADIUS, rz: BASE_ISLAND_RADIUS };
+    const r = WORLDS[world].islandRadius;
+    return { cx: 0, cz: 0, rx: r, rz: r };
   }
   const b = farmBands(ownedPlots);
   return {
@@ -118,6 +119,18 @@ export function insideIsland(x: number, z: number, shape: IslandShape, margin: n
   const dx = (x - shape.cx) / (shape.rx - margin);
   const dz = (z - shape.cz) / (shape.rz - margin);
   return dx * dx + dz * dz < 1;
+}
+
+// The point the player can walk to that is nearest (x, z): itself, or just inside the shore
+export function clampToIsland(x: number, z: number, shape: IslandShape, margin: number): [number, number] {
+  const ax = shape.rx - margin;
+  const az = shape.rz - margin;
+  const dx = (x - shape.cx) / ax;
+  const dz = (z - shape.cz) / az;
+  const d = Math.hypot(dx, dz);
+  if (d < 0.98) return [x, z];
+  const k = 0.98 / d;
+  return [shape.cx + dx * k * ax, shape.cz + dz * k * az];
 }
 
 export function worldSpawn(world: WorldId, ownedPlots: string[]): [number, number] {

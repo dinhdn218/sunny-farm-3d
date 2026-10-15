@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TileData } from '@/types/game';
 import { CROPS } from '@/config/crops';
-import { ROBO_CAT_TILES, reelZoneScale, roboCatWater, shibaFind } from '@/lib/pets';
+import { ROBO_CAT_TILES, petMorningGift, reelZoneScale, roboCatWater, shibaFind } from '@/lib/pets';
 
 const days = Array.from({ length: 400 }, (_, i) => i + 2);
 
@@ -85,5 +85,26 @@ describe('reelZoneScale', () => {
   it('leaves it alone by day or with another pet', () => {
     expect(reelZoneScale('bat_pet', 'noon')).toBe(1);
     expect(reelZoneScale('shiba_inu', 'night')).toBe(1);
+  });
+});
+
+describe('petMorningGift', () => {
+  it('is fixed for each day', () => {
+    for (const pet of ['bunny_pet', 'sea_turtle', 'panda']) {
+      expect(days.map((d) => petMorningGift(pet, d))).toEqual(days.map((d) => petMorningGift(pet, d)));
+    }
+  });
+
+  it('brings carrots, beach finds or animal feed, depending on the pet', () => {
+    const bunny = days.map((d) => petMorningGift('bunny_pet', d)?.items?.carrot ?? 0);
+    expect(bunny.every((n) => n === 1 || n === 2)).toBe(true);
+    const turtleFinds = new Set(days.flatMap((d) => Object.keys(petMorningGift('sea_turtle', d)?.items ?? {})));
+    expect(Array.from(turtleFinds).sort()).toEqual(['pearl', 'shell', 'starfish']);
+    expect(petMorningGift('panda', 5)?.feed).toBe(2);
+  });
+
+  it('gives nothing for pets with other talents', () => {
+    expect(petMorningGift('shiba_inu', 5)).toBeNull();
+    expect(petMorningGift('none_pet', 5)).toBeNull();
   });
 });

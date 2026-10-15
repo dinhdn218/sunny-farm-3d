@@ -139,6 +139,21 @@ class SoundSynthesizer {
   public error() {
     this.playTone(180, 'sawtooth', 0.18, 0.12, 120);
   }
+
+  // A card slapped down on the table
+  public card() {
+    this.playTone(1100, 'triangle', 0.04, 0.09, 520);
+  }
+
+  // A bomb chops a 2 (chặt heo)
+  public chop() {
+    this.playTone(110, 'square', 0.22, 0.16, 55);
+    setTimeout(() => this.playTone(880, 'sawtooth', 0.12, 0.1, 1320), 90);
+  }
+
+  public spin() {
+    this.playTone(700, 'square', 0.025, 0.05, 640);
+  }
 }
 
 export const soundFX = new SoundSynthesizer();

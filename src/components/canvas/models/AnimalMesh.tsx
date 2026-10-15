@@ -8,6 +8,7 @@ import { FarmAnimal } from '@/types/game';
 import { ANIMALS } from '@/config/animals';
 import { useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
+import { REACH } from '@/lib/walk';
 import { SafeGLTFModel } from './GLTFModel';
 
 export function AnimalMesh({
@@ -20,6 +21,7 @@ export function AnimalMesh({
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const interactAnimal = useGameStore((s) => s.interactAnimal);
+  const walkTo = useGameStore((s) => s.walkTo);
   const useGlbModels = useGameStore((s) => s.useGlbModels);
   const cfg = ANIMALS[animal.species];
 
@@ -30,7 +32,18 @@ export function AnimalMesh({
     : 'Click để cho ăn (-1 Thức ăn)';
   const handlers = interactable(
     `${cfg.icon} ${animal.name}`,
-    () => interactAnimal(animal.id),
+    () => {
+      const group = groupRef.current;
+      if (!group) return;
+      // The player walks up to the animal, following it as it wanders
+      walkTo({
+        x: group.position.x,
+        z: group.position.z,
+        reach: REACH.animal,
+        act: () => interactAnimal(animal.id),
+        track: () => groupRef.current?.position,
+      });
+    },
     hint
   );
 

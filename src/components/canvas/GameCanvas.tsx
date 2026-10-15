@@ -7,6 +7,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { TIME_PHASES } from '@/config/time';
 import { CameraRig } from './CameraRig';
 import { Player } from './Player';
+import { WalkMarker } from './WalkMarker';
 import { SimulatedPlayers } from './SimulatedPlayers';
 import { RemotePlayers } from './RemotePlayers';
 import { Particles } from './Particles';
@@ -17,12 +18,15 @@ import { ParkWorld } from './worlds/ParkWorld';
 import { BeachWorld } from './worlds/BeachWorld';
 import { MallWorld } from './worlds/MallWorld';
 import { CinemaWorld } from './worlds/CinemaWorld';
+import { CasinoWorld } from './worlds/CasinoWorld';
+import { FishingTackle } from './FishingTackle';
 import { HalloweenScene } from './environment/Halloween';
 import { WeatherEffects } from './environment/WeatherEffects';
 import { PhotoRig } from './PhotoRig';
 import { isEventActive } from '@/lib/event';
 import { localDateKey } from '@/lib/dailyGift';
 import { weatherOf } from '@/lib/seasons';
+import { islandShape } from '@/lib/farmLayout';
 import { Weather } from '@/types/game';
 
 // Overcast skies on wet days
@@ -49,15 +53,21 @@ function SkyAndLights() {
   const ambientIntensity = phase.ambientIntensity * (overcast ? 0.85 : 1);
   const fogDensity = overcast ? 0.022 : 0.014;
 
+  // The sun's shadows cover the whole island, which is bigger in the public zones
+  const shadowHalf = useGameStore((s) => {
+    const shape = islandShape(s.currentWorld, s.ownedPlots);
+    return Math.ceil(Math.max(shape.rx, shape.rz) + 2);
+  });
+
   useLayoutEffect(() => {
     const shadowCam = sunRef.current?.shadow.camera;
     if (!shadowCam) return;
-    shadowCam.left = -20;
-    shadowCam.right = 20;
-    shadowCam.top = 20;
-    shadowCam.bottom = -20;
+    shadowCam.left = -shadowHalf;
+    shadowCam.right = shadowHalf;
+    shadowCam.top = shadowHalf;
+    shadowCam.bottom = -shadowHalf;
     shadowCam.updateProjectionMatrix();
-  }, []);
+  }, [shadowHalf]);
 
   return (
     <>
@@ -118,10 +128,13 @@ export default function GameCanvas() {
         {currentWorld === 'beach' && <BeachWorld />}
         {currentWorld === 'mall' && <MallWorld />}
         {currentWorld === 'cinema' && <CinemaWorld />}
+        {currentWorld === 'casino' && <CasinoWorld />}
+        <FishingTackle />
         <HalloweenScene />
         <WeatherEffects />
 
         <Player />
+        <WalkMarker />
         <SimulatedPlayers />
         <RemotePlayers />
         <Particles />

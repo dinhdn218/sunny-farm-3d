@@ -2,6 +2,7 @@ import { AnimalSpecies, ArtisanId, CropId, FishId, ItemConfig, ItemId } from '@/
 import { CROPS } from './crops';
 import { ANIMALS } from './animals';
 import { CATCH_LIST } from './fish';
+import { FORAGE_ITEMS } from './forage';
 
 // Goods made in the workshop; worth about 1.4–1.6× their ingredients
 export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
@@ -39,10 +40,16 @@ const animalItems = Object.fromEntries(
   })
 ) as Record<ItemConfig['id'], ItemConfig>;
 
+// Beach finds, without their spawn weights
+const forageItems = Object.fromEntries(
+  Object.values(FORAGE_ITEMS).map(({ weight: _weight, ...item }) => [item.id, item])
+) as Record<ItemConfig['id'], ItemConfig>;
+
 export const ITEMS = {
   ...cropItems,
   ...animalItems,
   ...fishItems,
+  ...forageItems,
   ...ARTISAN_GOODS,
 } as Record<ItemId, ItemConfig>;
 

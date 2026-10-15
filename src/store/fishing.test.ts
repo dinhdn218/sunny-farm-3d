@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CatchId, QuestItem } from '@/types/game';
 import { useGameStore } from '@/store/useGameStore';
+import { CATCHES, FISHING_SPOTS } from '@/config/fish';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
@@ -26,7 +27,7 @@ const fishQuest = (): QuestItem => ({
 const onTheLine = (catchId: CatchId, size: number, stage: 'bite' | 'reeling' = 'reeling') =>
   useGameStore.setState({
     currentWorld: 'beach',
-    fishing: { stage, catchId, size, until: Date.now() + 1000 },
+    fishing: { spot: 'beach', stage, catchId, size, until: Date.now() + 1000 },
   });
 
 describe('casting', () => {
@@ -37,12 +38,28 @@ describe('casting', () => {
     expect(store().energy).toBe(50);
   });
 
-  it('walks the player onto the jetty and costs 4 energy', () => {
+  it('stands the player at the end of the jetty and costs 4 energy', () => {
     useGameStore.setState({ currentWorld: 'beach', energy: 50 });
     store().startFishing();
-    expect(store().fishing?.stage).toBe('waiting');
+    expect(store().fishing).toMatchObject({ stage: 'waiting', spot: 'beach' });
     expect(store().energy).toBe(46);
-    expect(store().playerPos).toMatchObject({ x: 3.5, z: -14.6 });
+    expect(store().playerPos).toMatchObject({ x: FISHING_SPOTS.beach.x, z: FISHING_SPOTS.beach.z });
+  });
+
+  it('casts into the Park pond for fresh-water fish', () => {
+    useGameStore.setState({ currentWorld: 'park', energy: 50 });
+    store().startFishing();
+    expect(store().fishing?.spot).toBe('park');
+    expect(CATCHES[store().fishing!.catchId].waters).toContain('pond');
+  });
+
+  it('walks to the zone’s fishing spot before casting', () => {
+    useGameStore.setState({ currentWorld: 'park', energy: 50, playerPos: { x: 0, z: 16, rotY: 0, actionTime: 0 } });
+    store().goFishing();
+    expect(store().fishing).toBeNull();
+    expect(store().walkGoal).toMatchObject({ x: FISHING_SPOTS.park.x, z: FISHING_SPOTS.park.z });
+    store().reachGoal();
+    expect(store().fishing?.spot).toBe('park');
   });
 
   it('needs the energy for a cast', () => {
@@ -61,13 +78,13 @@ describe('casting', () => {
   });
 
   it('lets the fish bite after the wait', () => {
-    useGameStore.setState({ fishing: { stage: 'waiting', catchId: 'anchovy', size: 8, until: 0 } });
+    useGameStore.setState({ fishing: { spot: 'beach', stage: 'waiting', catchId: 'anchovy', size: 8, until: 0 } });
     store().fishBite();
     expect(store().fishing?.stage).toBe('bite');
   });
 
   it('stops when the player leaves the Beach', () => {
-    useGameStore.setState({ currentWorld: 'beach', fishing: { stage: 'waiting', catchId: 'anchovy', size: 8, until: 0 } });
+    useGameStore.setState({ currentWorld: 'beach', fishing: { spot: 'beach', stage: 'waiting', catchId: 'anchovy', size: 8, until: 0 } });
     store().setWorld('park');
     expect(store().fishing).toBeNull();
   });

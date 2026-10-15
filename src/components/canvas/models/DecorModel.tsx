@@ -438,6 +438,327 @@ function Cauldron({ ghost }: { ghost?: boolean }) {
   );
 }
 
+// Country mailbox on a post, its red flag up
+function Mailbox({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      <Block size={[0.12, 1.0, 0.12]} at={[0, 0.5, 0]} color="#92400e" ghost={ghost} shadow />
+      <Block size={[0.36, 0.26, 0.52]} at={[0, 1.13, 0]} color="#2563eb" ghost={ghost} shadow />
+      <mesh position={[0, 1.26, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.18, 0.18, 0.52, 14, 1, false, Math.PI / 2, Math.PI]} />
+        <Mat color="#2563eb" ghost={ghost} />
+      </mesh>
+      <Block size={[0.18, 0.025, 0.01]} at={[0, 1.18, 0.265]} color="#1e293b" ghost={ghost} />
+      <Block size={[0.035, 0.32, 0.03]} at={[0.2, 1.3, 0.08]} color="#dc2626" ghost={ghost} />
+      <Block size={[0.14, 0.09, 0.02]} at={[0.26, 1.41, 0.08]} color="#dc2626" ghost={ghost} />
+    </group>
+  );
+}
+
+const BEE_COUNT = 4;
+
+// Beehive boxes on a stand, with bees buzzing round it
+function Beehive({ ghost }: { ghost?: boolean }) {
+  const beesRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    const t = performance.now() * 0.001;
+    beesRef.current?.children.forEach((bee, i) => {
+      const a = t * (1.6 + i * 0.3) + i * 1.7;
+      const r = 0.55 + (i % 2) * 0.15;
+      bee.position.set(Math.cos(a) * r, 0.9 + Math.sin(t * 3 + i) * 0.18, Math.sin(a) * r);
+      bee.rotation.y = -a - Math.PI / 2;
+    });
+  });
+
+  return (
+    <group>
+      {[-0.22, 0.22].flatMap((x) =>
+        [-0.22, 0.22].map((z) => (
+          <Block key={`${x}${z}`} size={[0.06, 0.3, 0.06]} at={[x, 0.15, z]} color="#78350f" ghost={ghost} />
+        ))
+      )}
+      <Block size={[0.56, 0.06, 0.56]} at={[0, 0.32, 0]} color="#78350f" ghost={ghost} />
+      <Block size={[0.48, 0.24, 0.48]} at={[0, 0.48, 0]} color="#facc15" ghost={ghost} shadow />
+      <Block size={[0.5, 0.03, 0.5]} at={[0, 0.61, 0]} color="#ca8a04" ghost={ghost} />
+      <Block size={[0.48, 0.24, 0.48]} at={[0, 0.74, 0]} color="#fde047" ghost={ghost} shadow />
+      <Block size={[0.5, 0.03, 0.5]} at={[0, 0.87, 0]} color="#ca8a04" ghost={ghost} />
+      <mesh castShadow={!ghost} position={[0, 0.99, 0]} rotation={[0, Math.PI / 4, 0]}>
+        <coneGeometry args={[0.42, 0.22, 4]} />
+        <Mat color="#b45309" ghost={ghost} />
+      </mesh>
+      <Block size={[0.16, 0.05, 0.02]} at={[0, 0.4, 0.245]} color="#1c1917" ghost={ghost} />
+      {!ghost && (
+        <group ref={beesRef}>
+          {Array.from({ length: BEE_COUNT }, (_, i) => (
+            <group key={i}>
+              <mesh scale={[1.3, 1, 1]}>
+                <sphereGeometry args={[0.045, 8, 6]} />
+                <meshLambertMaterial color="#facc15" />
+              </mesh>
+              <mesh>
+                <boxGeometry args={[0.02, 0.07, 0.07]} />
+                <meshLambertMaterial color="#1c1917" />
+              </mesh>
+              <mesh position={[0, 0.04, 0]}>
+                <boxGeometry args={[0.03, 0.01, 0.1]} />
+                <meshLambertMaterial color="#f8fafc" transparent opacity={0.7} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
+
+// A-frame swing, its seat rocking to and fro
+function Swing({ ghost }: { ghost?: boolean }) {
+  const seatRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (seatRef.current) seatRef.current.rotation.x = Math.sin(performance.now() * 0.0018) * 0.35;
+  });
+
+  return (
+    <group>
+      {[-0.95, 0.95].flatMap((x) =>
+        [-1, 1].map((side) => (
+          <Block
+            key={`${x}${side}`}
+            size={[0.1, 1.95, 0.1]}
+            at={[x, 0.95, side * 0.31]}
+            rot={[-side * 0.32, 0, 0]}
+            color="#92400e"
+            ghost={ghost}
+            shadow
+          />
+        ))
+      )}
+      <Block size={[2.1, 0.1, 0.1]} at={[0, 1.86, 0]} color="#78350f" ghost={ghost} shadow />
+      <group ref={seatRef} position={[0, 1.82, 0]}>
+        {[-0.3, 0.3].map((x) => (
+          <mesh key={x} position={[x, -0.62, 0]}>
+            <cylinderGeometry args={[0.015, 0.015, 1.24, 4]} />
+            <Mat color="#d6d3d1" ghost={ghost} />
+          </mesh>
+        ))}
+        <Block size={[0.75, 0.06, 0.3]} at={[0, -1.25, 0]} color="#dc2626" ghost={ghost} shadow />
+      </group>
+    </group>
+  );
+}
+
+const LANTERN_COLORS = ['#dc2626', '#facc15', '#ec4899', '#f97316', '#a855f7'];
+
+// A line of Hội An silk lanterns between two posts, glowing and swaying gently
+function HoiAnLanterns({ ghost }: { ghost?: boolean }) {
+  const lanternsRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    const t = performance.now() * 0.0015;
+    lanternsRef.current?.children.forEach((lantern, i) => {
+      lantern.rotation.z = Math.sin(t + i * 1.3) * 0.08;
+    });
+  });
+
+  return (
+    <group>
+      {[-1.05, 1.05].map((x) => (
+        <group key={x}>
+          <Block size={[0.12, 2.2, 0.12]} at={[x, 1.1, 0]} color="#78350f" ghost={ghost} shadow />
+          <Block size={[0.2, 0.08, 0.2]} at={[x, 2.22, 0]} color="#451a03" ghost={ghost} />
+        </group>
+      ))}
+      <Block size={[2.2, 0.05, 0.05]} at={[0, 2.1, 0]} color="#451a03" ghost={ghost} />
+      <group ref={lanternsRef}>
+        {LANTERN_COLORS.map((color, i) => (
+          <group key={color} position={[-0.8 + i * 0.4, 2.07, 0]}>
+            <mesh position={[0, -0.11, 0]}>
+              <cylinderGeometry args={[0.012, 0.012, 0.16, 4]} />
+              <Mat color="#451a03" ghost={ghost} />
+            </mesh>
+            <mesh position={[0, -0.24, 0]}>
+              <cylinderGeometry args={[0.07, 0.09, 0.05, 10]} />
+              <Mat color="#ca8a04" ghost={ghost} />
+            </mesh>
+            <mesh position={[0, -0.45, 0]} scale={[1, 1.3, 1]}>
+              <sphereGeometry args={[0.16, 14, 12]} />
+              <Mat color={color} ghost={ghost} glow />
+            </mesh>
+            <mesh position={[0, -0.66, 0]}>
+              <cylinderGeometry args={[0.09, 0.07, 0.05, 10]} />
+              <Mat color="#ca8a04" ghost={ghost} />
+            </mesh>
+            <mesh position={[0, -0.77, 0]}>
+              <cylinderGeometry args={[0.02, 0.004, 0.16, 4]} />
+              <Mat color={color} ghost={ghost} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    </group>
+  );
+}
+
+const ROSE_COLORS = ['#e11d48', '#16a34a', '#f472b6', '#fbcfe8'];
+// Roses and leaves climbing both posts and over the arch
+const ARCH_BLOOMS: { at: Vec3; color: string }[] = [
+  ...[0.35, 0.65, 0.95, 1.25, 1.52].flatMap((y, i) =>
+    [-1, 1].map((side) => ({
+      at: [side * 0.85, y, i % 2 ? 0.08 : -0.08] as Vec3,
+      color: ROSE_COLORS[(i + (side > 0 ? 1 : 0)) % ROSE_COLORS.length],
+    }))
+  ),
+  ...Array.from({ length: 11 }, (_, i) => {
+    const a = (i / 10) * Math.PI;
+    return {
+      at: [Math.cos(a) * 0.85, 1.6 + Math.sin(a) * 0.85, i % 2 ? 0.07 : -0.07] as Vec3,
+      color: ROSE_COLORS[i % ROSE_COLORS.length],
+    };
+  }),
+];
+
+function FlowerArch({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      {[-0.85, 0.85].map((x) => (
+        <group key={x}>
+          <Block size={[0.12, 1.6, 0.12]} at={[x, 0.8, 0]} color="#f8fafc" ghost={ghost} shadow />
+          <Block size={[0.4, 0.22, 0.4]} at={[x, 0.11, 0]} color="#15803d" ghost={ghost} />
+        </group>
+      ))}
+      <mesh castShadow={!ghost} position={[0, 1.6, 0]}>
+        <torusGeometry args={[0.85, 0.06, 8, 24, Math.PI]} />
+        <Mat color="#f8fafc" ghost={ghost} />
+      </mesh>
+      {ARCH_BLOOMS.map(({ at, color }) => (
+        <mesh key={at.join()} position={at}>
+          <dodecahedronGeometry args={[0.1, 0]} />
+          <Mat color={color} ghost={ghost} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+const KOI = ['#f97316', '#f8fafc', '#ef4444'];
+const POND_STONES = Array.from({ length: 16 }, (_, i) => (i / 16) * Math.PI * 2);
+
+// Round pond with a stone rim, lily pads and koi swimming in circles
+function KoiPond({ ghost }: { ghost?: boolean }) {
+  const fishRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    const t = performance.now() * 0.0006;
+    fishRef.current?.children.forEach((fish, i) => {
+      const a = t * (1 + i * 0.25) + (i * Math.PI * 2) / 3;
+      const r = 0.45 + i * 0.25;
+      fish.position.set(Math.cos(a) * r, 0.11, Math.sin(a) * r);
+      fish.rotation.y = -a - Math.PI / 2;
+    });
+  });
+
+  return (
+    <group>
+      <mesh position={[0, 0.05, 0]}>
+        <cylinderGeometry args={[1.45, 1.45, 0.06, 32]} />
+        <Mat color="#0e7490" ghost={ghost} />
+      </mesh>
+      {POND_STONES.map((a, i) => (
+        <mesh key={a} position={[Math.cos(a) * 1.55, 0.1, Math.sin(a) * 1.55]} rotation={[a, a * 2, 0]}>
+          <dodecahedronGeometry args={[0.2, 0]} />
+          <Mat color={i % 2 ? '#a8a29e' : '#78716c'} ghost={ghost} />
+        </mesh>
+      ))}
+      {[
+        [0.7, -0.5],
+        [-0.6, 0.6],
+        [-0.3, -0.8],
+      ].map(([x, z], i) => (
+        <group key={i} position={[x, 0.09, z]}>
+          <mesh>
+            <cylinderGeometry args={[0.24, 0.24, 0.02, 12]} />
+            <Mat color="#16a34a" ghost={ghost} />
+          </mesh>
+          {i === 0 && (
+            <mesh position={[0.05, 0.1, 0]}>
+              <coneGeometry args={[0.1, 0.16, 6]} />
+              <Mat color="#f9a8d4" ghost={ghost} />
+            </mesh>
+          )}
+        </group>
+      ))}
+      {!ghost && (
+        <group ref={fishRef}>
+          {KOI.map((color) => (
+            <group key={color}>
+              <mesh scale={[1.6, 0.6, 0.75]}>
+                <sphereGeometry args={[0.12, 10, 8]} />
+                <meshLambertMaterial color={color} />
+              </mesh>
+              <mesh position={[-0.22, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <coneGeometry args={[0.08, 0.14, 6]} />
+                <meshLambertMaterial color={color === '#f8fafc' ? '#f97316' : color} />
+              </mesh>
+            </group>
+          ))}
+        </group>
+      )}
+    </group>
+  );
+}
+
+const ENVELOPE_GORES = 12;
+const RAINBOW = ['#ef4444', '#f97316', '#facc15', '#22c55e', '#3b82f6', '#a855f7'];
+
+// Rainbow-striped hot-air balloon tethered over its wicker basket, bobbing in the breeze
+function HotAirBalloon({ ghost }: { ghost?: boolean }) {
+  const floatRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (floatRef.current) floatRef.current.position.y = Math.sin(performance.now() * 0.0012) * 0.12;
+  });
+
+  return (
+    <group>
+      <Block size={[0.12, 0.3, 0.12]} at={[0.85, 0.15, 0.85]} color="#78350f" ghost={ghost} />
+      <group ref={floatRef}>
+        <Block size={[0.8, 0.55, 0.8]} at={[0, 0.85, 0]} color="#a16207" ghost={ghost} shadow />
+        <Block size={[0.86, 0.08, 0.86]} at={[0, 1.13, 0]} color="#78350f" ghost={ghost} />
+        {[-1, 1].flatMap((sx) =>
+          [-1, 1].map((sz) => (
+            <mesh key={`${sx}${sz}`} position={[sx * 0.45, 1.6, sz * 0.45]} rotation={[sz * 0.19, 0, -sx * 0.19]}>
+              <cylinderGeometry args={[0.012, 0.012, 0.95, 4]} />
+              <Mat color="#78350f" ghost={ghost} />
+            </mesh>
+          ))
+        )}
+        <mesh position={[0, 1.45, 0]}>
+          <cylinderGeometry args={[0.1, 0.12, 0.14, 8]} />
+          <Mat color="#475569" ghost={ghost} />
+        </mesh>
+        <mesh position={[0, 1.62, 0]}>
+          <coneGeometry args={[0.08, 0.22, 8]} />
+          <Mat color="#fb923c" ghost={ghost} glow />
+        </mesh>
+        <mesh position={[0, 2.05, 0]}>
+          <cylinderGeometry args={[0.42, 0.62, 0.3, 16, 1, true]} />
+          <Mat color="#7c2d12" ghost={ghost} />
+        </mesh>
+        {Array.from({ length: ENVELOPE_GORES }, (_, i) => (
+          <mesh key={i} castShadow={!ghost && i === 0} position={[0, 3.2, 0]} scale={[1, 1.15, 1]}>
+            <sphereGeometry
+              args={[1.3, 4, 18, (i / ENVELOPE_GORES) * Math.PI * 2, (Math.PI * 2) / ENVELOPE_GORES]}
+            />
+            <Mat color={RAINBOW[i % RAINBOW.length]} ghost={ghost} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 // 3D model of a farm decoration or workshop machine (also used translucent as the placement ghost and in shop previews)
 export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
   if (isMachineId(id)) return <MachineModel id={id} ghost={ghost} />;
@@ -456,6 +777,20 @@ export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
       return <JackLantern ghost={ghost} />;
     case 'decor_cauldron':
       return <Cauldron ghost={ghost} />;
+    case 'decor_mailbox':
+      return <Mailbox ghost={ghost} />;
+    case 'decor_beehive':
+      return <Beehive ghost={ghost} />;
+    case 'decor_swing':
+      return <Swing ghost={ghost} />;
+    case 'decor_hoian_lanterns':
+      return <HoiAnLanterns ghost={ghost} />;
+    case 'decor_flower_arch':
+      return <FlowerArch ghost={ghost} />;
+    case 'decor_koi_pond':
+      return <KoiPond ghost={ghost} />;
+    case 'decor_hot_air_balloon':
+      return <HotAirBalloon ghost={ghost} />;
     default:
       return null;
   }
