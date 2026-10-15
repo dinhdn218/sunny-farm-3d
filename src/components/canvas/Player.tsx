@@ -72,6 +72,13 @@ export function Player() {
         return;
       }
 
+      // P switches photo mode; while it is on only walking works (the overlay takes the pictures)
+      if (e.code === 'KeyP' || (store.photoMode && e.code === 'Escape')) {
+        store.togglePhotoMode();
+        return;
+      }
+      if (store.photoMode) return;
+
       if (store.placingSprinkler && e.code === 'Escape') {
         store.cancelPlacingSprinkler();
         return;

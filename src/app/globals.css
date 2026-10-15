@@ -111,3 +111,23 @@ canvas {
 }
 
 @tailwind utilities;
+
+/* Photo mode: hide the name tags and labels that drei <Html> floats over the 3D view
+   (they sit next to the canvas's wrapper, inside the R3F container) */
+[data-photo-mode] div:has(> canvas) ~ div {
+  display: none;
+}
+
+/* Camera flash after a photo */
+.photo-flash {
+  animation: photo-flash 0.4s ease-out forwards;
+}
+
+@keyframes photo-flash {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}

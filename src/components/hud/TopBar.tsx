@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import { npcPresetsFor } from '@/config/npcs';
-import { soundFX } from '@/lib/audio';
 import { countItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
@@ -14,6 +13,7 @@ import { isEventActive } from '@/lib/event';
 import { visibleQuests } from '@/lib/quests';
 import { SEASONS, SEASON_DAYS, WEATHERS } from '@/config/seasons';
 import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
+import { SoundSettings } from './SoundSettings';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -41,8 +41,8 @@ export function TopBar() {
   const nextDay = useGameStore((s) => s.nextDay);
   const openExpand = useGameStore((s) => s.openExpand);
   const openWorkshop = useGameStore((s) => s.openWorkshop);
+  const togglePhotoMode = useGameStore((s) => s.togglePhotoMode);
 
-  const [muted, setMuted] = useState(soundFX.muted);
   const worldCfg = WORLDS[currentWorld];
   const headerRef = useRef<HTMLElement>(null);
 
@@ -299,15 +299,14 @@ export function TopBar() {
         </button>
 
         <button
-          onClick={() => {
-            soundFX.muted = !muted;
-            setMuted(!muted);
-          }}
-          title="Bật/Tắt Âm Thanh"
-          className="game-btn flex h-9 w-9 items-center justify-center rounded-xl border-2 border-amber-950 bg-amber-800 text-sm text-amber-100 hover:bg-amber-700"
+          onClick={togglePhotoMode}
+          title="Chế độ chụp ảnh (phím P)"
+          className="game-btn flex h-9 w-9 items-center justify-center rounded-xl border-2 border-cyan-950 bg-cyan-700 text-sm text-white hover:bg-cyan-600"
         >
-          <i className={`fa-solid ${muted ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
+          📷
         </button>
+
+        <SoundSettings />
       </div>
     </header>
   );

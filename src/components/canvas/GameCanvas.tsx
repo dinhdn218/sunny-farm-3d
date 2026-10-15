@@ -19,6 +19,7 @@ import { MallWorld } from './worlds/MallWorld';
 import { CinemaWorld } from './worlds/CinemaWorld';
 import { HalloweenScene } from './environment/Halloween';
 import { WeatherEffects } from './environment/WeatherEffects';
+import { PhotoRig } from './PhotoRig';
 import { isEventActive } from '@/lib/event';
 import { localDateKey } from '@/lib/dailyGift';
 import { weatherOf } from '@/lib/seasons';
@@ -78,9 +79,11 @@ function SkyAndLights() {
 
 export default function GameCanvas() {
   const currentWorld = useGameStore((s) => s.currentWorld);
+  const photoMode = useGameStore((s) => s.photoMode);
 
   return (
-    <div className="fixed inset-0 z-0">
+    // Photo mode hides the name tags and labels floating over the 3D view (see globals.css)
+    <div className="fixed inset-0 z-0" data-photo-mode={photoMode || undefined}>
       <Canvas
         shadows
         flat
@@ -91,6 +94,7 @@ export default function GameCanvas() {
       >
         <SkyAndLights />
         <CameraRig />
+        <PhotoRig />
 
         <BaseIsland />
         <CloudsAndPortal />

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerSync } from '@/lib/multiplayer';
 import { useCloudSync } from '@/lib/cloudSync';
+import { useBackgroundMusic } from '@/lib/music';
 import { TopBar } from '@/components/hud/TopBar';
 import { QuestTracker } from '@/components/hud/QuestTracker';
 import { ChatBox } from '@/components/hud/ChatBox';
@@ -26,6 +27,7 @@ import { WorkshopModal } from '@/components/hud/modals/WorkshopModal';
 import { MarketModal } from '@/components/hud/modals/MarketModal';
 import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
 import { FishingOverlay } from '@/components/hud/FishingOverlay';
+import { PhotoOverlay } from '@/components/hud/PhotoOverlay';
 import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
 import { CandyShopModal } from '@/components/hud/modals/CandyShopModal';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
@@ -37,10 +39,12 @@ const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
 
 export default function HomePage() {
   const activeModal = useGameStore((s) => s.activeModal);
+  const photoMode = useGameStore((s) => s.photoMode);
   const [mounted, setMounted] = useState(false);
 
   useMultiplayerSync();
   useCloudSync();
+  useBackgroundMusic();
 
   // The store is persisted in localStorage, so the HUD renders client-side only to avoid hydration mismatches
   useEffect(() => {
@@ -63,6 +67,15 @@ export default function HomePage() {
   return (
     <main>
       <GameCanvas />
+      {photoMode ? <PhotoOverlay /> : <Hud activeModal={activeModal} />}
+    </main>
+  );
+}
+
+// Everything drawn over the 3D view; photo mode swaps it for the camera controls
+function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getState>['activeModal'] }) {
+  return (
+    <>
       <FloatingLabels />
       <Tooltip />
 
@@ -88,6 +101,6 @@ export default function HomePage() {
       {activeModal === 'fishJournal' && <FishJournalModal />}
       {activeModal === 'dailyGift' && <DailyGiftModal />}
       {activeModal === 'candyShop' && <CandyShopModal />}
-    </main>
+    </>
   );
 }

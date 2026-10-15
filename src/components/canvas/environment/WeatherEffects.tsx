@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { camControl } from '@/lib/controls';
 import { seasonOf, weatherOf } from '@/lib/seasons';
+import { music } from '@/lib/music';
 
 type Fall = 'rain' | 'snow' | 'leaves';
 
@@ -82,6 +83,7 @@ function Lightning() {
     const now = performance.now();
     if (now >= timing.current.nextAt) {
       timing.current = { flashAt: now, nextAt: now + 5000 + Math.random() * 7000 };
+      music.thunder(0.3 + Math.random() * 1.2);
     }
     light.intensity = now - timing.current.flashAt < 120 ? 3.5 : 0;
   });

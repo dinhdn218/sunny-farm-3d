@@ -1,24 +1,49 @@
 'use client';
 
-class SoundSynthesizer {
-  private ctx: AudioContext | null = null;
-  public muted: boolean = false;
+// One AudioContext for effects, ambience and music
+let sharedContext: AudioContext | null = null;
 
-  private getContext(): AudioContext | null {
-    if (this.muted || typeof window === 'undefined') return null;
-    if (!this.ctx) {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext })
-          .webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
-      }
+export function audioContext(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (!sharedContext) {
+    const AudioCtx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    if (!AudioCtx) return null;
+    sharedContext = new AudioCtx();
+  }
+  // A hidden tab stays paused (see lib/music)
+  if (sharedContext.state === 'suspended' && !document.hidden) {
+    sharedContext.resume().catch(() => {});
+  }
+  return sharedContext;
+}
+
+class SoundSynthesizer {
+  private bus: GainNode | null = null;
+  private level = 0.8;
+
+  // From 0 (silent) to 1; the ambience plays through the same channel
+  get volume() {
+    return this.level;
+  }
+
+  set volume(level: number) {
+    this.level = level;
+    if (this.bus) this.bus.gain.value = level;
+  }
+
+  // The effects channel, for sounds made elsewhere (ambience)
+  public output(): { ctx: AudioContext; out: GainNode } | null {
+    const ctx = audioContext();
+    if (!ctx) return null;
+    if (!this.bus) {
+      this.bus = ctx.createGain();
+      this.bus.gain.value = this.level;
+      this.bus.connect(ctx.destination);
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
-    }
-    return this.ctx;
+    return { ctx, out: this.bus };
   }
 
   public playTone(
@@ -28,8 +53,10 @@ class SoundSynthesizer {
     volume: number = 0.12,
     slideTo?: number
   ) {
-    const ctx = this.getContext();
-    if (!ctx) return;
+    if (this.level <= 0) return;
+    const output = this.output();
+    if (!output) return;
+    const { ctx, out } = output;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -46,7 +73,7 @@ class SoundSynthesizer {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
     osc.connect(gain);
-    gain.connect(ctx.destination);
+    gain.connect(out);
     osc.start();
     osc.stop(ctx.currentTime + duration);
   }
@@ -102,6 +129,11 @@ class SoundSynthesizer {
 
   public chat() {
     this.playTone(680, 'sine', 0.07, 0.08, 920);
+  }
+
+  public shutter() {
+    this.playTone(1800, 'square', 0.03, 0.06, 900);
+    setTimeout(() => this.playTone(900, 'triangle', 0.09, 0.1, 380), 70);
   }
 
   public error() {

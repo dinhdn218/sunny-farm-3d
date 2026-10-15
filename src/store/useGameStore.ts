@@ -137,6 +137,11 @@ interface GameState extends SaveData {
   cloudConflict: { profile: UserProfile; cloud: CloudSave } | null;
   networkMode: 'supabase' | 'local';
   useGlbModels: boolean;
+  // Device settings, from 0 (silent) to 1
+  musicVolume: number;
+  sfxVolume: number;
+  // The HUD hides and the camera roams freely for screenshots (not saved)
+  photoMode: boolean;
 
   maxEnergy: number;
   timePhaseIndex: number;
@@ -188,6 +193,9 @@ interface GameState extends SaveData {
   endCloudSession: () => void;
   setNetworkMode: (mode: 'supabase' | 'local') => void;
   toggleGlbModels: () => void;
+  setMusicVolume: (volume: number) => void;
+  setSfxVolume: (volume: number) => void;
+  togglePhotoMode: () => void;
   showToast: (
     msg: string,
     color?: string,
@@ -265,6 +273,8 @@ const cosmeticById = (id: string) => COSMETICS.find((c) => c.id === id);
 const publicZonesVisited = (visited: WorldId[]) =>
   visited.filter((w) => w !== 'farm').length;
 
+const clampVolume = (volume: number) => Math.min(1, Math.max(0, volume));
+
 // Lễ Hội Bí Ngô runs by the device's calendar date
 const festivalActive = () => isEventActive(localDateKey(new Date()));
 
@@ -336,6 +346,9 @@ export const useGameStore = create<GameState>()(
         cloudConflict: null,
         networkMode: 'local',
         useGlbModels: false,
+        musicVolume: 0.5,
+        sfxVolume: 0.8,
+        photoMode: false,
 
         maxEnergy: 100,
         timePhaseIndex: 0,
@@ -468,6 +481,17 @@ export const useGameStore = create<GameState>()(
           })),
 
         setNetworkMode: (mode) => set({ networkMode: mode }),
+
+        setMusicVolume: (volume) => set({ musicVolume: clampVolume(volume) }),
+        setSfxVolume: (volume) => set({ sfxVolume: clampVolume(volume) }),
+
+        togglePhotoMode: () =>
+          set((s) => {
+            if (s.photoMode) return { photoMode: false };
+            // A cast, a placement or the save-conflict question has to finish first
+            if (s.fishing || s.placingDecor || s.placingSprinkler || s.activeModal === 'cloudConflict') return s;
+            return { photoMode: true, activeModal: null, tooltip: null };
+          }),
 
         toggleGlbModels: () => {
           const next = !get().useGlbModels;
@@ -1855,6 +1879,8 @@ export const useGameStore = create<GameState>()(
         ...pickSaveData(state),
         playerId: state.playerId,
         useGlbModels: state.useGlbModels,
+        musicVolume: state.musicVolume,
+        sfxVolume: state.sfxVolume,
         cloudLink: state.cloudLink,
         cloudDirty: state.cloudDirty,
       }),
