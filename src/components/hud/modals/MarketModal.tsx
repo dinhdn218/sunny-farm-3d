@@ -4,6 +4,8 @@ import { useMemo } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { ITEM_LIST } from '@/config/items';
 import { marketDay, marketPrice } from '@/lib/market';
+import { SEASONS } from '@/config/seasons';
+import { isInSeason, seasonOf, seasonalPrice } from '@/lib/seasons';
 import { ModalShell } from './ModalShell';
 
 // Today's market at the Mall: prices swing daily, with one sought-after and one glutted item
@@ -16,10 +18,14 @@ export function MarketModal() {
 
   const market = useMemo(() => marketDay(day), [day]);
   const atMall = currentWorld === 'mall';
+  const season = SEASONS[seasonOf(day)];
   const rows = ITEM_LIST.map((item) => ({
     item,
+    // Usual price today, in-season bonus included
+    base: seasonalPrice(item.id, day),
     price: marketPrice(item.id, day),
     owned: items[item.id] ?? 0,
+    inSeason: isInSeason(item.id, day),
     tag: item.id === market.hot ? 'hot' : item.id === market.glut ? 'glut' : null,
   }));
   const bagValue = rows.reduce((sum, r) => sum + r.owned * r.price, 0);
@@ -43,8 +49,8 @@ export function MarketModal() {
       )}
 
       <div className="space-y-1.5 overflow-y-auto pr-1">
-        {rows.map(({ item, price, owned, tag }) => {
-          const pct = Math.round((price / item.sellPrice - 1) * 100);
+        {rows.map(({ item, base, price, owned, inSeason, tag }) => {
+          const pct = Math.round((price / base - 1) * 100);
           return (
             <div
               key={item.id}
@@ -71,8 +77,13 @@ export function MarketModal() {
                         📉 Ế hàng
                       </span>
                     )}
+                    {inSeason && (
+                      <span className="ml-1.5 rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] text-white">
+                        {season.icon} Đúng mùa
+                      </span>
+                    )}
                   </div>
-                  <div className="text-[10px] font-bold text-amber-700">Giá thường 🪙{item.sellPrice} • Có: {owned}</div>
+                  <div className="text-[10px] font-bold text-amber-700">Giá thường 🪙{base} • Có: {owned}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">

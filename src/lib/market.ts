@@ -1,5 +1,6 @@
 import { ItemId } from '@/types/game';
-import { ITEMS, ITEM_LIST } from '@/config/items';
+import { ITEM_LIST } from '@/config/items';
+import { seasonalPrice } from '@/lib/seasons';
 
 // Today's market at the Mall: every item swings 80–120%, one is sought after (140–160%), one glutted (60–70%)
 export interface MarketDay {
@@ -35,6 +36,7 @@ export function marketDay(day: number): MarketDay {
   return { multipliers, hot, glut };
 }
 
+// Today's swing applied to the season's price (in-season crops start higher)
 export function marketPrice(id: ItemId, day: number) {
-  return Math.round(ITEMS[id].sellPrice * marketDay(day).multipliers[id]);
+  return Math.round(seasonalPrice(id, day) * marketDay(day).multipliers[id]);
 }

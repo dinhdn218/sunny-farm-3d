@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ITEMS, ITEM_LIST } from '@/config/items';
+import { ITEM_LIST } from '@/config/items';
 import { marketDay, marketPrice } from '@/lib/market';
+import { seasonalPrice } from '@/lib/seasons';
 
 describe('marketDay', () => {
   it('keeps the same prices all day', () => {
@@ -35,8 +36,15 @@ describe('marketDay', () => {
 describe('marketPrice', () => {
   it('pays far more for the sought-after item and far less for the glutted one', () => {
     const { hot, glut } = marketDay(5);
-    expect(marketPrice(hot, 5)).toBeGreaterThanOrEqual(Math.round(ITEMS[hot].sellPrice * 1.4));
-    expect(marketPrice(glut, 5)).toBeLessThanOrEqual(Math.round(ITEMS[glut].sellPrice * 0.7));
+    expect(marketPrice(hot, 5)).toBeGreaterThanOrEqual(Math.round(seasonalPrice(hot, 5) * 1.4));
+    expect(marketPrice(glut, 5)).toBeLessThanOrEqual(Math.round(seasonalPrice(glut, 5) * 0.7));
+  });
+
+  it("starts from the season's price, so in-season crops fetch more at the market too", () => {
+    // Carrots are in season in spring (day 3) and out of season in summer (day 10)
+    const ratio = (day: number) => marketPrice('carrot', day) / marketDay(day).multipliers.carrot;
+    expect(Math.round(ratio(3))).toBe(48);
+    expect(Math.round(ratio(10))).toBe(40);
   });
 
   it('pays whole gold coins', () => {

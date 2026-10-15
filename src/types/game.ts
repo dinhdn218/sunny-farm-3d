@@ -42,6 +42,9 @@ export type RecipeId =
 
 export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
+export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
+export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
+
 export type ToolId =
   | 'hoe'
   | 'water'
@@ -71,6 +74,8 @@ export interface CropConfig {
   regrow: boolean;
   color: string;
   description: string;
+  // Sells for 20% more in this season (it can be grown all year)
+  season: SeasonId;
 }
 
 export interface AnimalConfig {

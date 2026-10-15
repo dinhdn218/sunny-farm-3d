@@ -4,6 +4,9 @@ import { useGameStore } from '@/store/useGameStore';
 import { ITEMS, ITEM_LIST } from '@/config/items';
 import { instantSellPrice } from '@/lib/inventory';
 import { marketDay, marketPrice } from '@/lib/market';
+import { IN_SEASON_BONUS_PERCENT, SEASONS } from '@/config/seasons';
+import { isInSeason, seasonOf, seasonalPrice } from '@/lib/seasons';
+import { ItemId } from '@/types/game';
 import { ModalShell } from './ModalShell';
 
 export function InventoryModal() {
@@ -20,8 +23,18 @@ export function InventoryModal() {
   const bag = ITEM_LIST.filter((item) => (items[item.id] ?? 0) > 0);
   const bin = ITEM_LIST.filter((item) => (shippingBin[item.id] ?? 0) > 0);
   const bagNowValue = bag.reduce((sum, item) => sum + (items[item.id] ?? 0) * instantSellPrice(item.id), 0);
-  const binValue = bin.reduce((sum, item) => sum + (shippingBin[item.id] ?? 0) * item.sellPrice, 0);
+  const binValue = bin.reduce((sum, item) => sum + (shippingBin[item.id] ?? 0) * seasonalPrice(item.id, day), 0);
   const hot = ITEMS[marketDay(day).hot];
+  // In-season crops earn their bonus only through the bin (and the market), not by selling now
+  const seasonTag = (id: ItemId) =>
+    isInSeason(id, day) && (
+      <span
+        title={`Đúng mùa: bán qua Rương hoặc Chợ Phiên được +${IN_SEASON_BONUS_PERCENT}%`}
+        className="ml-1 inline-block whitespace-nowrap rounded-full bg-emerald-600 px-1.5 py-0.5 text-[10px] font-black text-white"
+      >
+        {SEASONS[seasonOf(day)].icon} +{IN_SEASON_BONUS_PERCENT}%
+      </span>
+    );
 
   return (
     <ModalShell
@@ -32,7 +45,7 @@ export function InventoryModal() {
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-rose-400/50 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900">
         <span>
           🔥 Chợ Phiên hôm nay đang săn {hot.icon} {hot.name}: 🪙{marketPrice(hot.id, day)} (giá thường 🪙
-          {hot.sellPrice})
+          {seasonalPrice(hot.id, day)})
         </span>
         <button
           onClick={() => setActiveModal('market')}
@@ -67,6 +80,7 @@ export function InventoryModal() {
               >
                 <span className="text-xs font-black text-amber-950">
                   {item.icon} {item.name} x{items[item.id]}
+                  {seasonTag(item.id)}
                 </span>
                 <div className="flex shrink-0 gap-1.5">
                   <button
@@ -116,7 +130,8 @@ export function InventoryModal() {
                     className="flex items-center justify-between rounded-xl border border-red-800/20 bg-white/80 px-3 py-2"
                   >
                     <span className="text-xs font-black text-red-950">
-                      {item.icon} {item.name} x{qty} (+{qty * item.sellPrice}🪙)
+                      {item.icon} {item.name} x{qty} (+{qty * seasonalPrice(item.id, day)}🪙)
+                      {seasonTag(item.id)}
                     </span>
                     <button
                       onClick={() => returnFromBin(item.id, 1)}

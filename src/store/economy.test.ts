@@ -60,7 +60,8 @@ describe('selling', () => {
   });
 
   it('sells the shipping bin at full price overnight and keeps the bag', () => {
-    useGameStore.setState({ gold: 0, items: { wheat: 1 }, shippingBin: { carrot: 3, cheese: 1 } });
+    // Day 10 is summer: no seasonal bonus on carrots
+    useGameStore.setState({ day: 10, gold: 0, items: { wheat: 1 }, shippingBin: { carrot: 3, cheese: 1 } });
     store().nextDay();
     expect(store().gold).toBe(3 * 40 + 260);
     expect(store().items).toEqual({ wheat: 1 });

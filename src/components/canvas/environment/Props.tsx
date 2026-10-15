@@ -5,7 +5,11 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import { TreeType } from '@/types/game';
+import { useGameStore } from '@/store/useGameStore';
+import { SEASON_LOOK } from '@/config/seasons';
+import { seasonOf } from '@/lib/seasons';
 
+// Leaves follow the season (palms on the beach stay green)
 export function Tree({
   x,
   z,
@@ -17,6 +21,8 @@ export function Tree({
   scale: number;
   type: TreeType;
 }) {
+  const look = useGameStore((s) => SEASON_LOOK[seasonOf(s.day)]);
+
   return (
     <group position={[x, 0, z]} scale={scale}>
       <mesh castShadow position={[0, 0.7, 0]}>
@@ -28,21 +34,21 @@ export function Tree({
         [0, 1, 2].map((i) => (
           <mesh key={i} castShadow position={[0, 1.5 + i * 0.75, 0]}>
             <coneGeometry args={[1.15 - i * 0.25, 1.35, 7]} />
-            <meshLambertMaterial color="#15803d" />
+            <meshLambertMaterial color={look.pine} />
           </mesh>
         ))}
 
       {type === 'oak' && (
         <mesh castShadow position={[0, 1.95, 0]}>
           <dodecahedronGeometry args={[1.15, 0]} />
-          <meshLambertMaterial color="#4d7c0f" />
+          <meshLambertMaterial color={look.oak} />
         </mesh>
       )}
 
       {type === 'sakura' && (
         <mesh castShadow position={[0, 2.0, 0]}>
           <dodecahedronGeometry args={[1.3, 0]} />
-          <meshLambertMaterial color="#f472b6" />
+          <meshLambertMaterial color={look.sakura} />
         </mesh>
       )}
 

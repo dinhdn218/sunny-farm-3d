@@ -4,13 +4,23 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
+import { SEASON_LOOK } from '@/config/seasons';
 import { BASE_ISLAND_RADIUS, islandShape } from '@/lib/farmLayout';
+import { seasonOf } from '@/lib/seasons';
 
 // Shared floating island: zone-coloured ground, rocky cliff and the surrounding sea.
 // On the farm the island stretches into an ellipse as land plots are bought.
 export function BaseIsland() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const ownedPlots = useGameStore((s) => s.ownedPlots);
+  const look = useGameStore((s) => SEASON_LOOK[seasonOf(s.day)]);
+  // The grassy zones change with the seasons; sand and paving don't
+  const ground =
+    currentWorld === 'farm'
+      ? look.farmGround
+      : currentWorld === 'park'
+      ? look.parkGround
+      : WORLDS[currentWorld].groundColor;
   const shape = useMemo(
     () => islandShape(currentWorld, ownedPlots),
     [currentWorld, ownedPlots]
@@ -25,7 +35,7 @@ export function BaseIsland() {
     <group>
       <mesh receiveShadow position={[shape.cx, -1.2, shape.cz]} scale={scale}>
         <cylinderGeometry args={[BASE_ISLAND_RADIUS, 16.0, 2.4, 28]} />
-        <meshLambertMaterial color={WORLDS[currentWorld].groundColor} />
+        <meshLambertMaterial color={ground} />
       </mesh>
       <mesh position={[shape.cx, -3.9, shape.cz]} scale={scale}>
         <cylinderGeometry args={[15.8, 11.5, 3.4, 22]} />

@@ -1,12 +1,23 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
+import { CROP_LIST } from '@/config/crops';
+import { IN_SEASON_BONUS_PERCENT, SEASONS, WEATHERS } from '@/config/seasons';
+import { dayInSeason, seasonOf } from '@/lib/seasons';
 
 export function DaySummaryModal() {
   const summary = useGameStore((s) => s.lastDaySummary);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
 
   if (!summary) return null;
+
+  const today = summary.day + 1;
+  const seasonId = seasonOf(today);
+  const season = SEASONS[seasonId];
+  const weather = WEATHERS[summary.weather];
+  const forecast = WEATHERS[summary.forecast];
+  const newSeason = dayInSeason(today) === 1;
+  const inSeasonCrops = CROP_LIST.filter((c) => c.season === seasonId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
@@ -15,11 +26,27 @@ export function DaySummaryModal() {
           🐓
         </div>
         <h2 className="text-2xl font-black text-amber-950">
-          🌞 Ngày {summary.day + 1} - Mùa Xuân
+          {season.icon} Ngày {today} - {season.name}
         </h2>
-        <p className="mb-4 text-xs font-bold text-amber-800">
+        <p className="mb-3 text-xs font-bold text-amber-800">
           Bạn đã nghỉ ngơi khỏe khoắn và hồi phục 100% Thể lực.
         </p>
+
+        {newSeason && (
+          <p className="mb-3 rounded-xl border-2 border-amber-600/40 bg-amber-200/80 px-3 py-1.5 text-xs font-black text-amber-900">
+            {season.icon} {season.name} đã đến!{' '}
+            {inSeasonCrops.map((c) => `${c.icon} ${c.name}`).join(', ')} đúng mùa, bán +{IN_SEASON_BONUS_PERCENT}% giá.
+          </p>
+        )}
+
+        <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border-2 border-sky-700/30 bg-sky-50/90 px-4 py-2 text-xs font-bold text-sky-900">
+          <span>
+            {weather.icon} Hôm nay: {weather.name}
+          </span>
+          <span>
+            Dự báo ngày mai: {forecast.icon} {forecast.name}
+          </span>
+        </div>
 
         <div className="mb-4 space-y-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-4 text-left">
           <div className="border-b border-amber-700/20 pb-1 text-xs font-black uppercase text-amber-800">
@@ -42,6 +69,14 @@ export function DaySummaryModal() {
               <div className="flex justify-between">
                 <span>💦 Bình phun đã tưới sẵn:</span>
                 <span className="text-sky-700">{summary.sprinklerWatered} ô</span>
+              </div>
+            )}
+            {summary.rainWatered > 0 && (
+              <div className="flex justify-between">
+                <span>
+                  {weather.icon} {summary.weather === 'snow' ? 'Tuyết tan' : 'Mưa'} đã tưới giúp:
+                </span>
+                <span className="text-sky-700">{summary.rainWatered} ô</span>
               </div>
             )}
             {summary.batchesReady > 0 && (

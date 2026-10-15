@@ -12,6 +12,8 @@ import { giftDay, localDateKey } from '@/lib/dailyGift';
 import { waterCapacity } from '@/lib/tools';
 import { isEventActive } from '@/lib/event';
 import { visibleQuests } from '@/lib/quests';
+import { SEASONS, SEASON_DAYS, WEATHERS } from '@/config/seasons';
+import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -51,6 +53,8 @@ export function TopBar() {
   const hasClaimable = visibleQuests(quests, festival).some(
     (q) => !q.claimed && q.progress >= q.target
   );
+  const season = SEASONS[seasonOf(day)];
+  const weather = WEATHERS[weatherOf(day)];
 
   return (
     <header className="pointer-events-none fixed left-0 right-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
@@ -75,6 +79,9 @@ export function TopBar() {
             </div>
             <div className="mt-0.5 text-[11px] font-bold text-amber-800">
               Ngày {day} • {TIME_PHASES[timePhaseIndex].label}
+            </div>
+            <div className="text-[10px] font-bold text-amber-700">
+              {season.icon} {season.name} {dayInSeason(day)}/{SEASON_DAYS} • {weather.icon} {weather.name}
             </div>
           </div>
         </button>

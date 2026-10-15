@@ -18,8 +18,14 @@ import { BeachWorld } from './worlds/BeachWorld';
 import { MallWorld } from './worlds/MallWorld';
 import { CinemaWorld } from './worlds/CinemaWorld';
 import { HalloweenScene } from './environment/Halloween';
+import { WeatherEffects } from './environment/WeatherEffects';
 import { isEventActive } from '@/lib/event';
 import { localDateKey } from '@/lib/dailyGift';
+import { weatherOf } from '@/lib/seasons';
+import { Weather } from '@/types/game';
+
+// Overcast skies on wet days
+const WET_SKY: Partial<Record<Weather, string>> = { rain: '#64748b', storm: '#334155', snow: '#cbd5e1' };
 
 // The HTML version renders with three r128 defaults (no tone mapping, no colour management,
 // legacy light units). `flat linear legacy` restores the first two; lights are scaled by π for the third.
@@ -27,12 +33,20 @@ const LEGACY_LIGHT_SCALE = Math.PI;
 
 function SkyAndLights() {
   const timePhaseIndex = useGameStore((s) => s.timePhaseIndex);
+  const weather = useGameStore((s) => weatherOf(s.day));
   const phase = TIME_PHASES[timePhaseIndex];
   const sunRef = useRef<THREE.DirectionalLight>(null);
-  // Festival nights turn purple
+  // Festival nights turn purple; wet days are overcast
   const festiveNight = phase.id === 'night' && isEventActive(localDateKey(new Date()));
-  const sky = festiveNight ? '#1e1036' : phase.sky;
-  const fog = festiveNight ? '#2e1065' : phase.fog;
+  const overcast = WET_SKY[weather];
+  const tint = (color: string) =>
+    overcast ? `#${new THREE.Color(color).lerp(new THREE.Color(overcast), 0.6).getHexString()}` : color;
+  const sky = festiveNight ? '#1e1036' : tint(phase.sky);
+  const fog = festiveNight ? '#2e1065' : tint(phase.fog);
+  // Clouds dim the sun and thicken the haze
+  const sunIntensity = phase.sunIntensity * (overcast ? 0.55 : 1);
+  const ambientIntensity = phase.ambientIntensity * (overcast ? 0.85 : 1);
+  const fogDensity = overcast ? 0.022 : 0.014;
 
   useLayoutEffect(() => {
     const shadowCam = sunRef.current?.shadow.camera;
@@ -47,14 +61,14 @@ function SkyAndLights() {
   return (
     <>
       <color attach="background" args={[sky]} />
-      <fogExp2 attach="fog" args={[fog, 0.014]} />
-      <ambientLight intensity={phase.ambientIntensity * LEGACY_LIGHT_SCALE} />
+      <fogExp2 attach="fog" args={[fog, fogDensity]} />
+      <ambientLight intensity={ambientIntensity * LEGACY_LIGHT_SCALE} />
       <directionalLight
         ref={sunRef}
         castShadow
         position={[18, 28, 16]}
         color={phase.sunColor}
-        intensity={phase.sunIntensity * LEGACY_LIGHT_SCALE}
+        intensity={sunIntensity * LEGACY_LIGHT_SCALE}
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0005}
       />
@@ -87,6 +101,7 @@ export default function GameCanvas() {
         {currentWorld === 'mall' && <MallWorld />}
         {currentWorld === 'cinema' && <CinemaWorld />}
         <HalloweenScene />
+        <WeatherEffects />
 
         <Player />
         <SimulatedPlayers />

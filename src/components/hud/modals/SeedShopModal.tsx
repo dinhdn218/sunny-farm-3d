@@ -2,6 +2,8 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { CROP_LIST } from '@/config/crops';
+import { IN_SEASON_BONUS_PERCENT, SEASONS } from '@/config/seasons';
+import { isInSeason, seasonalPrice } from '@/lib/seasons';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -118,6 +120,7 @@ function SprinklerCard() {
 }
 
 export function SeedShopModal() {
+  const day = useGameStore((s) => s.day);
   const gold = useGameStore((s) => s.gold);
   const seeds = useGameStore((s) => s.seeds);
   const breadCount = useGameStore((s) => s.breadCount);
@@ -155,8 +158,17 @@ export function SeedShopModal() {
                   </div>
                   <p className="text-xs text-amber-800">{crop.description}</p>
                   <div className="text-[11px] font-black text-emerald-800">
-                    Bán: 🪙 {crop.sellPrice} Vàng
+                    Bán: 🪙 {seasonalPrice(crop.id, day)} Vàng
                   </div>
+                  {isInSeason(crop.id, day) ? (
+                    <div className="text-[11px] font-black text-emerald-700">
+                      {SEASONS[crop.season].icon} Đúng mùa: bán +{IN_SEASON_BONUS_PERCENT}% giá
+                    </div>
+                  ) : (
+                    <div className="text-[11px] font-bold text-amber-700">
+                      {SEASONS[crop.season].icon} Bán +{IN_SEASON_BONUS_PERCENT}% vào {SEASONS[crop.season].name}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end gap-2 border-t border-amber-700/20 pt-2">

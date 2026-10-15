@@ -21,6 +21,7 @@ import {
   TileData,
   ToolId,
   UserProfile,
+  Weather,
   WorldId,
 } from '@/types/game';
 import { CROPS } from '@/config/crops';
@@ -76,6 +77,7 @@ import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
+import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -113,6 +115,10 @@ interface DaySummaryData {
   batchesReady: number;
   // Tiles the sprinklers watered this morning
   sprinklerWatered: number;
+  // The new day's weather (rain, storms and snow water the fields) and the next day's forecast
+  weather: Weather;
+  forecast: Weather;
+  rainWatered: number;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -1529,7 +1535,7 @@ export const useGameStore = create<GameState>()(
               label: ITEMS[id].name,
               icon: ITEMS[id].icon,
               count,
-              gold: count * ITEMS[id].sellPrice,
+              gold: count * seasonalPrice(id, day),
             }));
           const totalGoldEarned = soldItems.reduce((sum, item) => sum + item.gold, 0);
 
@@ -1569,8 +1575,16 @@ export const useGameStore = create<GameState>()(
             (t) => t.state === 'planted' && t.stage >= 3
           ).length;
           // Sprinklers water their neighbours for the new day (so those crops grow tonight)
-          const morningTiles = applySprinklers(nextTiles);
-          const sprinklerWatered = morningTiles.filter((t) => t.watered).length;
+          const sprinkledTiles = applySprinklers(nextTiles);
+          const sprinklerWatered = sprinkledTiles.filter((t) => t.watered).length;
+          // Rain, storms and snow water every worked tile
+          const weather = weatherOf(day + 1);
+          const morningTiles = isWet(weather)
+            ? sprinkledTiles.map((t) =>
+                t.state !== 'empty' && !t.sprinkler && !t.watered ? { ...t, watered: true } : t
+              )
+            : sprinkledTiles;
+          const rainWatered = morningTiles.filter((t) => t.watered).length - sprinklerWatered;
 
           let animalProductsReady = 0;
           const nextAnimals = animals.map((a) => {
@@ -1613,6 +1627,9 @@ export const useGameStore = create<GameState>()(
               animalProductsReady,
               batchesReady,
               sprinklerWatered,
+              weather,
+              forecast: weatherOf(day + 2),
+              rainWatered,
             },
             activeModal: 'summary',
           });

@@ -11,6 +11,7 @@ export const CROPS: Record<CropId, CropConfig> = {
     regrow: false,
     color: '#ff6b1a',
     description: 'Lớn nhanh (2 ngày), dễ trồng.',
+    season: 'spring',
   },
   wheat: {
     id: 'wheat',
@@ -22,6 +23,7 @@ export const CROPS: Record<CropId, CropConfig> = {
     regrow: false,
     color: '#facc15',
     description: 'Bông lúa vàng óng (2 ngày).',
+    season: 'winter',
   },
   tomato: {
     id: 'tomato',
@@ -33,6 +35,7 @@ export const CROPS: Record<CropId, CropConfig> = {
     regrow: true,
     color: '#ef4444',
     description: 'Thu hoạch nhiều đợt không mất gốc!',
+    season: 'summer',
   },
   pumpkin: {
     id: 'pumpkin',
@@ -44,6 +47,7 @@ export const CROPS: Record<CropId, CropConfig> = {
     regrow: false,
     color: '#f97316',
     description: 'Quả khổng lồ bán giá cực cao.',
+    season: 'autumn',
   },
 };
 

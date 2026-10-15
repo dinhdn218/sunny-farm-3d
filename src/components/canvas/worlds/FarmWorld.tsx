@@ -11,6 +11,8 @@ import { MACHINES, RECIPES } from '@/config/machines';
 import { ITEMS } from '@/config/items';
 import { formatCountdown } from '@/lib/format';
 import { areaTiles } from '@/lib/tools';
+import { seasonOf } from '@/lib/seasons';
+import { SEASON_LOOK } from '@/config/seasons';
 import {
   PLOT_SIZE,
   TILE_SIZE,
@@ -115,14 +117,17 @@ function Sprinkler() {
 
 const FarmTile = memo(function FarmTile({
   tile,
+  grass,
   onHover,
 }: {
   tile: TileData;
+  // Colour of untilled ground this season
+  grass: string;
   onHover: (id: string | null) => void;
 }) {
   const { x, z } = tileToWorld(tile.r, tile.c);
   const tilled = tile.state !== 'empty';
-  const baseColor = !tilled ? '#84cc16' : tile.watered ? '#3b1d0a' : '#78350f';
+  const baseColor = !tilled ? grass : tile.watered ? '#3b1d0a' : '#78350f';
   const ridgeColor = tile.watered ? '#451a03' : '#92400e';
 
   return (
@@ -194,11 +199,13 @@ const LockedPlot = memo(function LockedPlot({
   pz,
   purchasable,
   price,
+  grass,
 }: {
   px: number;
   pz: number;
   purchasable: boolean;
   price: number;
+  grass: string;
 }) {
   const key = plotKey(px, pz);
   const { x, z } = plotCenter(px, pz);
@@ -213,7 +220,7 @@ const LockedPlot = memo(function LockedPlot({
     <group position={[x, 0, z]}>
       <mesh receiveShadow position={[0, 0.1, 0]} {...handlers}>
         <boxGeometry args={[PLOT_SIZE - 0.08, 0.12, PLOT_SIZE - 0.08]} />
-        <meshLambertMaterial color="#4d7c0f" />
+        <meshLambertMaterial color={grass} />
       </mesh>
       {scatter.map((p, i) =>
         p.rock ? (
@@ -387,6 +394,7 @@ export function FarmWorld() {
   const placingSprinkler = useGameStore((s) => s.placingSprinkler);
   const activeTool = useGameStore((s) => s.activeTool);
   const toolTiers = useGameStore((s) => s.toolTiers);
+  const look = useGameStore((s) => SEASON_LOOK[seasonOf(s.day)]);
   const refillWater = useGameStore((s) => s.refillWater);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const nextDay = useGameStore((s) => s.nextDay);
@@ -473,10 +481,10 @@ export function FarmWorld() {
       </mesh>
 
       {ownedTiles.map((tile) => (
-        <FarmTile key={tile.id} tile={tile} onHover={onHover} />
+        <FarmTile key={tile.id} tile={tile} grass={look.grass} onHover={onHover} />
       ))}
       {lockedPlots.map((p) => (
-        <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} />
+        <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} grass={look.wildGrass} />
       ))}
 
       {hoverArea.map((p) => (
@@ -544,7 +552,7 @@ export function FarmWorld() {
       <group position={[FARM_SITES.ranch[0] + ranchDx, 0, FARM_SITES.ranch[1] + ranchDz]}>
         <mesh receiveShadow position={[0, 0.03, 0]}>
           <boxGeometry args={[6.2, 0.06, 5.4]} />
-          <meshLambertMaterial color="#4ade80" />
+          <meshLambertMaterial color={look.pasture} />
         </mesh>
         {[
           [0, 2.7, 6.2, 0.12],
