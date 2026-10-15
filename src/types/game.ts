@@ -281,6 +281,16 @@ export interface QuestItem {
 
 // Gameplay state that makes up a farm: what is saved on this device and in the cloud.
 // Identity (player id, Google account) and device settings live outside it.
+export type BuildPieceId = 'fence' | 'path' | 'lamp' | 'flowerbed' | 'bush';
+
+// A building piece on the farm grid (one per cell, see lib/build)
+export interface BuildPiece {
+  kind: BuildPieceId;
+  x: number;
+  z: number;
+  rotY: number;
+}
+
 export interface SaveData {
   playerName: string;
   gold: number;
@@ -320,6 +330,9 @@ export interface SaveData {
   ownedCosmetics: string[];
   // Decor and machines placed on the farm
   decorPlacements: Record<string, DecorPlacement>;
+  // Building pieces bought but not yet placed, and those laid out on the farm
+  buildStock: Partial<Record<BuildPieceId, number>>;
+  buildPieces: BuildPiece[];
   quests: QuestItem[];
   dailyDay: number;
 }

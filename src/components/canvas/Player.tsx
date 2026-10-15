@@ -91,6 +91,13 @@ export function Player() {
         return;
       }
 
+      // Building: R turns the piece and Esc finishes; walking still works
+      if (store.buildMode) {
+        if (e.code === 'KeyR') store.rotateBuildPiece();
+        else if (e.code === 'Escape') store.stopBuilding();
+        return;
+      }
+
       const tool = HOTBAR_KEYS[e.code];
       if (tool) {
         store.setActiveTool(tool);

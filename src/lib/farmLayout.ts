@@ -1,8 +1,9 @@
-import { DecorPlacement, TreeType, WorldId } from '@/types/game';
+import { BuildPiece, DecorPlacement, TreeType, WorldId } from '@/types/game';
 import { FIELD_BORDER, PLOT_SIZE, PLOTS_PER_SIDE, parsePlotKey } from '@/config/farm';
 import { COSMETICS } from '@/config/cosmetics';
 import { MACHINES, isMachineId } from '@/config/machines';
 import { WORLDS } from '@/config/worlds';
+import { BUILD_PIECE_RADIUS, pieceAt } from '@/lib/build';
 
 export interface FarmBands {
   west: number;
@@ -196,24 +197,46 @@ function circleHitsRect(x: number, z: number, r: number, rect: Rect) {
   return (x - nx) ** 2 + (z - nz) ** 2 < r * r;
 }
 
-// Decor must stay on the island and off the field, buildings, trees, signs and other decor
+// A circle of radius r at (x, z) on the island's grass, off the field, buildings, trees and signs
+function onFreeGround(x: number, z: number, r: number, ownedPlots: string[]) {
+  if (!insideIsland(x, z, islandShape('farm', ownedPlots), r + 0.6)) return false;
+  if (circleHitsRect(x, z, r, fieldRect(ownedPlots))) return false;
+  return !farmColliders(ownedPlots).some((c) =>
+    'r' in c ? Math.hypot(c.x - x, c.z - z) < c.r + r : circleHitsRect(x, z, r, c)
+  );
+}
+
+// Decor must stay on free ground and clear of other decor and building pieces
 export function canPlaceDecor(
   id: string,
   x: number,
   z: number,
   ownedPlots: string[],
-  placements: Record<string, DecorPlacement>
+  placements: Record<string, DecorPlacement>,
+  pieces: BuildPiece[] = []
 ) {
   const r = decorFootprint(id);
-  if (!insideIsland(x, z, islandShape('farm', ownedPlots), r + 0.6)) return false;
-  if (circleHitsRect(x, z, r, fieldRect(ownedPlots))) return false;
-  const blocked = farmColliders(ownedPlots).some((c) =>
-    'r' in c ? Math.hypot(c.x - x, c.z - z) < c.r + r : circleHitsRect(x, z, r, c)
-  );
-  if (blocked) return false;
+  if (!onFreeGround(x, z, r, ownedPlots)) return false;
+  if (pieces.some((p) => Math.hypot(p.x - x, p.z - z) < r + BUILD_PIECE_RADIUS)) return false;
   return Object.entries(placements).every(
     ([other, p]) => other === id || Math.hypot(p.x - x, p.z - z) >= r + decorFootprint(other)
   );
+}
+
+// A building piece needs free ground, room around decor and machines, and a cell of its own
+export function canPlaceBuildPiece(
+  x: number,
+  z: number,
+  ownedPlots: string[],
+  placements: Record<string, DecorPlacement>,
+  pieces: BuildPiece[]
+) {
+  const r = BUILD_PIECE_RADIUS;
+  if (!onFreeGround(x, z, r, ownedPlots)) return false;
+  if (Object.entries(placements).some(([id, p]) => Math.hypot(p.x - x, p.z - z) < r + decorFootprint(id))) {
+    return false;
+  }
+  return !pieceAt(pieces, x, z);
 }
 
 const DEFAULT_DECOR_SPOTS: Record<string, [number, number]> = {

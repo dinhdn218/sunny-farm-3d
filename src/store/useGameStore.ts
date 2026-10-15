@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   AnimalSpecies,
+  BuildPieceId,
   ChatMessage,
   CropId,
   FarmAnimal,
@@ -50,6 +51,7 @@ import {
 } from '@/config/farm';
 import {
   FarmBands,
+  canPlaceBuildPiece,
   canPlaceDecor,
   farmBands,
   placeableInfo,
@@ -79,6 +81,8 @@ import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
 import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
 import { roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
+import { pieceAt, snapToCell } from '@/lib/build';
+import { BUILD_PIECES } from '@/config/build';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -154,6 +158,8 @@ interface GameState extends SaveData {
   placingDecor: { id: string; rotY: number } | null;
   // Choosing a field tile for a sprinkler
   placingSprinkler: boolean;
+  // Laying out building pieces on the farm, or erasing them (not saved)
+  buildMode: { kind: BuildPieceId | 'erase'; rotY: number } | null;
   activeModal:
     | 'map'
     | 'quests'
@@ -250,6 +256,12 @@ interface GameState extends SaveData {
   cancelPlacingDecor: () => void;
   placeDecor: (x: number, z: number) => void;
   storeDecor: (id: string) => void;
+  buyBuildPieces: (kind: BuildPieceId, count: number) => void;
+  startBuilding: (kind: BuildPieceId | 'erase') => void;
+  rotateBuildPiece: () => void;
+  stopBuilding: () => void;
+  // Build (or erase) in the grid cell at this point
+  buildAt: (x: number, z: number) => void;
 
   buyAnimal: (species: AnimalSpecies) => void;
   buyAnimalFeed: (amount?: number) => void;
@@ -360,6 +372,7 @@ export const useGameStore = create<GameState>()(
         selectedPlot: null,
         placingDecor: null,
         placingSprinkler: false,
+        buildMode: null,
         activeModal: null,
         workshopMachine: null,
         fishing: null,
@@ -493,7 +506,7 @@ export const useGameStore = create<GameState>()(
             if (s.photoMode) return { photoMode: false };
             // A cast, a placement or the save-conflict question has to finish first
             if (s.fishing || s.placingDecor || s.placingSprinkler || s.activeModal === 'cloudConflict') return s;
-            return { photoMode: true, activeModal: null, tooltip: null };
+            return { photoMode: true, activeModal: null, tooltip: null, buildMode: null };
           }),
 
         toggleGlbModels: () => {
@@ -549,6 +562,7 @@ export const useGameStore = create<GameState>()(
             activeModal: null,
             tooltip: null,
             placingDecor: null,
+            buildMode: null,
             fishing: null,
           });
 
@@ -957,7 +971,7 @@ export const useGameStore = create<GameState>()(
             get().showToast('🏡 Về Nông Trại để đặt Bình Phun!', 'text-amber-300');
             return;
           }
-          set({ placingSprinkler: true, placingDecor: null, activeModal: null, tooltip: null });
+          set({ placingSprinkler: true, placingDecor: null, buildMode: null, activeModal: null, tooltip: null });
         },
 
         cancelPlacingSprinkler: () => set({ placingSprinkler: false }),
@@ -1277,7 +1291,7 @@ export const useGameStore = create<GameState>()(
         selectPlot: (plot) => set({ selectedPlot: plot }),
 
         buyPlot: (plot) => {
-          const { ownedPlots, gold, decorPlacements, playerPos, currentWorld } = get();
+          const { ownedPlots, gold, decorPlacements, buildPieces, playerPos, currentWorld } = get();
           if (!isPlotPurchasable(plot, ownedPlots)) return;
           const price = plotPrice(ownedPlots.length);
           if (gold < price) {
@@ -1302,6 +1316,10 @@ export const useGameStore = create<GameState>()(
               return [id, { ...p, x, z }];
             })
           );
+          const nextPieces = buildPieces.map((p) => {
+            const [x, z] = stretchPoint(p.x, p.z, added);
+            return { ...p, x, z };
+          });
           if (currentWorld === 'farm') {
             const [x, z] = stretchPoint(playerPos.x, playerPos.z, added);
             playerPos.x = x;
@@ -1313,6 +1331,7 @@ export const useGameStore = create<GameState>()(
             gold: gold - price,
             ownedPlots: nextOwned,
             decorPlacements: nextPlacements,
+            buildPieces: nextPieces,
             selectedPlot: null,
             activeModal: null,
           });
@@ -1343,6 +1362,7 @@ export const useGameStore = create<GameState>()(
           }
           set({
             placingDecor: { id, rotY: decorPlacements[id]?.rotY ?? 0 },
+            buildMode: null,
             activeModal: null,
             tooltip: null,
           });
@@ -1358,10 +1378,10 @@ export const useGameStore = create<GameState>()(
         cancelPlacingDecor: () => set({ placingDecor: null }),
 
         placeDecor: (x, z) => {
-          const { placingDecor, decorPlacements, ownedPlots } = get();
+          const { placingDecor, decorPlacements, ownedPlots, buildPieces } = get();
           if (!placingDecor) return;
           const item = placeableInfo(placingDecor.id);
-          if (!canPlaceDecor(placingDecor.id, x, z, ownedPlots, decorPlacements)) {
+          if (!canPlaceDecor(placingDecor.id, x, z, ownedPlots, decorPlacements, buildPieces)) {
             soundFX.error();
             get().showToast('🚫 Không đặt được ở đây!', 'text-red-400', [x, 0.5, z]);
             return;
@@ -1394,6 +1414,77 @@ export const useGameStore = create<GameState>()(
           soundFX.plant();
           set({ decorPlacements: next });
           get().showToast(`📦 Đã cất ${cosmeticById(id)?.name} vào kho`, 'text-amber-300');
+        },
+
+        buyBuildPieces: (kind, count) => {
+          const { gold, buildStock } = get();
+          const piece = BUILD_PIECES[kind];
+          const cost = piece.price * count;
+          if (gold < cost) {
+            soundFX.error();
+            get().showToast(`Cần ${cost} Vàng 🪙 để mua ${count} ${piece.name}!`, 'text-red-400');
+            return;
+          }
+          soundFX.coin();
+          set({ gold: gold - cost, buildStock: { ...buildStock, [kind]: (buildStock[kind] ?? 0) + count } });
+          get().showToast(`${piece.icon} +${count} ${piece.name}`, 'text-amber-300');
+        },
+
+        // Building goes on piece after piece until the player is done
+        startBuilding: (kind) => {
+          if (get().currentWorld !== 'farm') {
+            get().showToast('🏡 Về Nông Trại để xây dựng!', 'text-amber-300');
+            return;
+          }
+          set((s) => ({
+            buildMode: { kind, rotY: s.buildMode?.rotY ?? 0 },
+            placingDecor: null,
+            placingSprinkler: false,
+            activeModal: null,
+            tooltip: null,
+          }));
+        },
+
+        rotateBuildPiece: () =>
+          set((s) => (s.buildMode ? { buildMode: { ...s.buildMode, rotY: s.buildMode.rotY + Math.PI / 2 } } : {})),
+
+        stopBuilding: () => set({ buildMode: null }),
+
+        buildAt: (x, z) => {
+          const { buildMode, buildPieces, buildStock, ownedPlots, decorPlacements } = get();
+          if (!buildMode) return;
+          const cx = snapToCell(x);
+          const cz = snapToCell(z);
+
+          // The eraser puts a piece back into the stock
+          if (buildMode.kind === 'erase') {
+            const piece = pieceAt(buildPieces, cx, cz);
+            if (!piece) return;
+            soundFX.till();
+            set({
+              buildPieces: buildPieces.filter((p) => p !== piece),
+              buildStock: { ...buildStock, [piece.kind]: (buildStock[piece.kind] ?? 0) + 1 },
+            });
+            return;
+          }
+
+          const { kind, rotY } = buildMode;
+          const cfg = BUILD_PIECES[kind];
+          if ((buildStock[kind] ?? 0) <= 0) {
+            soundFX.error();
+            get().showToast(`Hết ${cfg.icon} ${cfg.name}! Mua thêm trên thanh xây dựng.`, 'text-red-400');
+            return;
+          }
+          if (!canPlaceBuildPiece(cx, cz, ownedPlots, decorPlacements, buildPieces)) {
+            soundFX.error();
+            get().showToast('🚫 Không đặt được ở đây!', 'text-red-400', [cx, 0.5, cz]);
+            return;
+          }
+          soundFX.plant();
+          set({
+            buildPieces: [...buildPieces, { kind, x: cx, z: cz, rotY }],
+            buildStock: { ...buildStock, [kind]: (buildStock[kind] ?? 0) - 1 },
+          });
         },
 
         buyAnimal: (species) => {
@@ -1659,6 +1750,7 @@ export const useGameStore = create<GameState>()(
             ],
             dailyDay: day + 1,
             placingDecor: null,
+            buildMode: null,
             fishing: null,
             lastDaySummary: {
               day,

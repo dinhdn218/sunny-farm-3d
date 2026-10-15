@@ -10,7 +10,7 @@ type Vec3 = [number, number, number];
 const ZERO: Vec3 = [0, 0, 0];
 
 // Material that turns see-through for the placement ghost; `glow` ignores lighting
-function Mat({ color, ghost, glow = false }: { color: string; ghost?: boolean; glow?: boolean }) {
+export function Mat({ color, ghost, glow = false }: { color: string; ghost?: boolean; glow?: boolean }) {
   const opacity = ghost ? 0.55 : 1;
   return glow ? (
     <meshBasicMaterial color={color} transparent={ghost} opacity={opacity} />
@@ -19,7 +19,7 @@ function Mat({ color, ghost, glow = false }: { color: string; ghost?: boolean; g
   );
 }
 
-function Block({
+export function Block({
   size,
   at,
   color,

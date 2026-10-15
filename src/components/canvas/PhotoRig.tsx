@@ -2,21 +2,13 @@
 
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import { useGameStore } from '@/store/useGameStore';
 import { photoCamera } from '@/lib/photo';
 
-// Photo mode: clicks stop reaching the world (left-drag orbits instead), and the
-// current view can be copied out as a picture
+// Lets photo mode copy the current view out as a picture
 export function PhotoRig() {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
-  const setEvents = useThree((s) => s.setEvents);
-  const photoMode = useGameStore((s) => s.photoMode);
-
-  useEffect(() => {
-    setEvents({ enabled: !photoMode });
-  }, [photoMode, setEvents]);
 
   useEffect(() => {
     photoCamera.snap = () => {

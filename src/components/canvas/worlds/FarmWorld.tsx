@@ -42,6 +42,8 @@ import { DecorModel } from '../models/DecorModel';
 import { MachineModel } from '../models/MachineModel';
 import { Tree } from '../environment/Props';
 import { DecorPlacer } from '../DecorPlacer';
+import { BuildPieces } from '../BuildPieces';
+import { BuildPlacer } from '../BuildPlacer';
 
 const SIDE_NAMES: Record<ExpansionSide, string> = {
   west: 'Tây',
@@ -605,6 +607,8 @@ export function FarmWorld() {
         ))}
 
       <DecorPlacer />
+      <BuildPieces />
+      <BuildPlacer />
     </group>
   );
 }

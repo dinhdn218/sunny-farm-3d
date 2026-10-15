@@ -1,7 +1,7 @@
 'use client';
 
-import { useLayoutEffect, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { TIME_PHASES } from '@/config/time';
@@ -77,6 +77,19 @@ function SkyAndLights() {
   );
 }
 
+// The world stops answering clicks while the camera roams for photos (left-drag orbits)
+// or pieces are being built (left click builds)
+function WorldClicks() {
+  const setEvents = useThree((s) => s.setEvents);
+  const paused = useGameStore((s) => s.photoMode || !!s.buildMode);
+
+  useEffect(() => {
+    setEvents({ enabled: !paused });
+  }, [paused, setEvents]);
+
+  return null;
+}
+
 export default function GameCanvas() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const photoMode = useGameStore((s) => s.photoMode);
@@ -95,6 +108,7 @@ export default function GameCanvas() {
         <SkyAndLights />
         <CameraRig />
         <PhotoRig />
+        <WorldClicks />
 
         <BaseIsland />
         <CloudsAndPortal />

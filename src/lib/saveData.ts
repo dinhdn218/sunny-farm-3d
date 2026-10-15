@@ -41,6 +41,8 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   cosmetics: true,
   ownedCosmetics: true,
   decorPlacements: true,
+  buildStock: true,
+  buildPieces: true,
   quests: true,
   dailyDay: true,
 };

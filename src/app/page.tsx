@@ -10,6 +10,7 @@ import { TopBar } from '@/components/hud/TopBar';
 import { QuestTracker } from '@/components/hud/QuestTracker';
 import { ChatBox } from '@/components/hud/ChatBox';
 import { Hotbar } from '@/components/hud/Hotbar';
+import { BuildBar } from '@/components/hud/BuildBar';
 import { MobileDpad } from '@/components/hud/MobileDpad';
 import { Tooltip } from '@/components/hud/Tooltip';
 import { FloatingLabels } from '@/components/hud/FloatingLabels';
@@ -74,6 +75,8 @@ export default function HomePage() {
 
 // Everything drawn over the 3D view; photo mode swaps it for the camera controls
 function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getState>['activeModal'] }) {
+  const building = useGameStore((s) => !!s.buildMode);
+
   return (
     <>
       <FloatingLabels />
@@ -83,7 +86,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       <QuestTracker />
       <ChatBox />
       <MobileDpad />
-      <Hotbar />
+      {building ? <BuildBar /> : <Hotbar />}
       <FishingOverlay />
 
       {activeModal === 'map' && <WorldMapModal />}

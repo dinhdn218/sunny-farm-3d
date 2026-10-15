@@ -8,6 +8,7 @@ import { CosmeticCategory, CosmeticItem } from '@/types/game';
 import { isEventActive } from '@/lib/event';
 import { localDateKey } from '@/lib/dailyGift';
 import { ModalShell } from './ModalShell';
+import { BuildShop } from './BuildShop';
 
 // The try-on preview is its own WebGL canvas, browser only
 const ItemPreview = dynamic(() => import('../ItemPreview'), { ssr: false });
@@ -120,6 +121,7 @@ export function WardrobeModal() {
           )}
 
           <div className="grid min-h-0 grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
+            {isDecorTab && <BuildShop />}
             {items.map((item) => {
               const isDecor = item.category === 'decor';
               const owned = ownedCosmetics.includes(item.id);

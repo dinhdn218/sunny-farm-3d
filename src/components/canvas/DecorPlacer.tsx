@@ -28,11 +28,11 @@ export function DecorPlacer() {
     let pressedAt: { x: number; y: number } | null = null;
 
     const moveTo = (x: number, z: number) => {
-      const { ownedPlots, decorPlacements } = useGameStore.getState();
+      const { ownedPlots, decorPlacements, buildPieces } = useGameStore.getState();
       cursor.current = {
         x,
         z,
-        valid: canPlaceDecor(placingId, x, z, ownedPlots, decorPlacements),
+        valid: canPlaceDecor(placingId, x, z, ownedPlots, decorPlacements, buildPieces),
       };
     };
     const aim = (e: PointerEvent) => {

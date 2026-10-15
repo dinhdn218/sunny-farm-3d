@@ -110,6 +110,8 @@ export function createNewGameSave(): SaveData {
       'shiba_inu',
     ],
     decorPlacements: {},
+    buildStock: {},
+    buildPieces: [],
     quests: createInitialQuests(1),
     dailyDay: 1,
   };
