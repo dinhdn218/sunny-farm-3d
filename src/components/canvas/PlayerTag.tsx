@@ -7,10 +7,13 @@ export function PlayerTag({
   name,
   chatText,
   isSelf = false,
+  level,
 }: {
   name: string;
   chatText?: string;
   isSelf?: boolean;
+  // Farmer level (players only)
+  level?: number;
 }) {
   return (
     <Html position={[0, 2.15, 0]} zIndexRange={[15, 0]}>
@@ -27,6 +30,9 @@ export function PlayerTag({
               : 'border border-white/30 bg-slate-900/85 text-white'
           }`}
         >
+          {level !== undefined && (
+            <span className="mr-1 rounded-full bg-orange-600 px-1.5 text-[9px] text-white">Lv{level}</span>
+          )}
           {name}
         </div>
       </div>

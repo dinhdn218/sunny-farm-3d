@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { ChatMessage, RemotePlayer } from '@/types/game';
 import { supabase, isSupabaseConfigured } from './supabase';
+import { levelInfo } from './leveling';
 
 // Syncs the local player with real peers: Supabase Realtime when configured, plus other
 // tabs via BroadcastChannel. The wandering residents are simulated by <SimulatedPlayers />.
@@ -74,6 +75,7 @@ export function useMultiplayerSync() {
         z: state.playerPos.z,
         rotY: state.playerPos.rotY,
         cosmetics: state.cosmetics,
+        level: levelInfo(state.xp).level,
         chatMsg: state.localChatMsg,
         emote: state.localEmote,
         updatedAt: now,

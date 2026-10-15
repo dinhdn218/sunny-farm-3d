@@ -26,6 +26,8 @@ import { WorkshopModal } from '@/components/hud/modals/WorkshopModal';
 import { MarketModal } from '@/components/hud/modals/MarketModal';
 import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
 import { FishingOverlay } from '@/components/hud/FishingOverlay';
+import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
+import { giftDay, localDateKey } from '@/lib/dailyGift';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -42,6 +44,11 @@ export default function HomePage() {
   // The store is persisted in localStorage, so the HUD renders client-side only to avoid hydration mismatches
   useEffect(() => {
     setMounted(true);
+    // Greet the player with today's gift if it has not been claimed yet
+    const s = useGameStore.getState();
+    if (!s.activeModal && giftDay(s.lastGiftDate, s.loginStreak, localDateKey(new Date())) !== null) {
+      s.setActiveModal('dailyGift');
+    }
   }, []);
 
   if (!mounted) {
@@ -78,6 +85,7 @@ export default function HomePage() {
       {activeModal === 'workshop' && <WorkshopModal />}
       {activeModal === 'market' && <MarketModal />}
       {activeModal === 'fishJournal' && <FishJournalModal />}
+      {activeModal === 'dailyGift' && <DailyGiftModal />}
     </main>
   );
 }

@@ -72,6 +72,8 @@ import {
 } from '@/lib/inventory';
 import { marketPrice } from '@/lib/market';
 import { rollCatch, rollSize } from '@/lib/fishing';
+import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
+import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { formatCountdown } from '@/lib/format';
 import { createNewGameSave } from '@/lib/newGame';
 import {
@@ -136,6 +138,7 @@ interface GameState extends SaveData {
     | 'workshop'
     | 'market'
     | 'fishJournal'
+    | 'dailyGift'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -218,6 +221,7 @@ interface GameState extends SaveData {
   buyOrEquipCosmetic: (itemId: string) => void;
   incrementQuest: (type: QuestType, amount?: number, crop?: CropId) => void;
   claimQuest: (questId: string) => void;
+  claimDailyGift: () => void;
   sendChat: (text: string) => void;
   triggerEmote: (emote: string, chatText?: string) => void;
   setRemotePlayers: (players: Record<string, RemotePlayer>) => void;
@@ -246,6 +250,33 @@ export const useGameStore = create<GameState>()(
             playerPos.z,
           ])
         );
+      };
+
+      // Experience from gameplay events; every level reached pays its reward once
+      const gainXp = (amount: number) => {
+        if (amount <= 0) return;
+        const { xp, gold, gems, playerPos } = get();
+        const before = levelInfo(xp).level;
+        const after = levelInfo(xp + amount).level;
+        let bonusGold = 0;
+        let bonusGems = 0;
+        for (let level = before + 1; level <= after; level++) {
+          const reward = levelReward(level);
+          bonusGold += reward.gold;
+          bonusGems += reward.gems;
+        }
+        set({ xp: xp + amount, gold: gold + bonusGold, gems: gems + bonusGems });
+        if (after > before) {
+          soundFX.questClaim();
+          [0xfacc15, 0xf472b6, 0x38bdf8].forEach((color) =>
+            spawnParticles(playerPos.x, 1.2, playerPos.z, color, 16)
+          );
+          get().showToast(
+            `⭐ Lên cấp ${after}: ${levelTitle(after)}! +${bonusGold}🪙 +${bonusGems}💎`,
+            'text-amber-300',
+            [playerPos.x, 1.8, playerPos.z]
+          );
+        }
       };
 
       // "Visit N zones" depends on where you have been, not on a single event
@@ -1474,11 +1505,13 @@ export const useGameStore = create<GameState>()(
           }
         },
 
+        // Every gameplay event goes through here: quest progress and farmer experience
         incrementQuest: (type, amount = 1, crop) => {
           if (amount <= 0) return;
           const completed: QuestItem[] = [];
           set((s) => ({ quests: advanceQuests(s.quests, type, amount, crop, completed) }));
           announceCompleted(completed);
+          gainXp(xpFor(type, amount));
         },
 
         claimQuest: (questId) => {
@@ -1500,6 +1533,32 @@ export const useGameStore = create<GameState>()(
           );
           // The next story quest may already be satisfied (e.g. zones visited earlier)
           if (q.category === 'main') syncVisitQuest();
+        },
+
+        // One gift per real calendar day, following the 7-day login streak
+        claimDailyGift: () => {
+          const { loginStreak, lastGiftDate, gold, gems, breadCount, animalFeed, seeds, playerPos } =
+            get();
+          const today = localDateKey(new Date());
+          const day = giftDay(lastGiftDate, loginStreak, today);
+          if (day === null) return;
+          const gift = DAILY_GIFTS[day - 1];
+          const nextSeeds = { ...seeds };
+          (Object.entries(gift.seeds ?? {}) as [CropId, number][]).forEach(([crop, n]) => {
+            nextSeeds[crop] = (nextSeeds[crop] ?? 0) + n;
+          });
+          soundFX.questClaim();
+          set({
+            gold: gold + (gift.gold ?? 0),
+            gems: gems + (gift.gems ?? 0),
+            breadCount: breadCount + (gift.bread ?? 0),
+            animalFeed: animalFeed + (gift.feed ?? 0),
+            seeds: nextSeeds,
+            loginStreak: day,
+            lastGiftDate: today,
+          });
+          spawnParticles(playerPos.x, 1.0, playerPos.z, 0xfacc15, 24);
+          get().showToast(`🎁 Quà ngày ${day}: ${giftLabel(gift)}!`, 'text-yellow-300');
         },
 
         sendChat: (text) => {

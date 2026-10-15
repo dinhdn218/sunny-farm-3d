@@ -289,6 +289,11 @@ export interface SaveData {
   lastFreeSnackDay: number;
   // Fishing journal: how many of each kind were caught and the biggest one (cm)
   fishLog: Partial<Record<FishId, { caught: number; best: number }>>;
+  // Farmer experience; the level is derived from it (lib/leveling)
+  xp: number;
+  // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed
+  loginStreak: number;
+  lastGiftDate: string | null;
   cosmetics: PlayerCosmetics;
   ownedCosmetics: string[];
   // Decor and machines placed on the farm
@@ -306,6 +311,7 @@ export interface RemotePlayer {
   z: number;
   rotY: number;
   cosmetics: PlayerCosmetics;
+  level?: number;
   chatMsg?: string;
   emote?: string;
   updatedAt: number;

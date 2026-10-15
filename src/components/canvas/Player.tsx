@@ -7,6 +7,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { camControl, touchMove } from '@/lib/controls';
 import { WALK_MARGIN, insideIsland, islandShape } from '@/lib/farmLayout';
 import { ToolId } from '@/types/game';
+import { levelInfo } from '@/lib/leveling';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
 
@@ -44,6 +45,7 @@ export function Player() {
   const localChatMsg = useGameStore((s) => s.localChatMsg);
   const localEmote = useGameStore((s) => s.localEmote);
   const fishing = useGameStore((s) => !!s.fishing);
+  const level = useGameStore((s) => levelInfo(s.xp).level);
 
   useEffect(() => {
     if (localEmote) {
@@ -172,7 +174,7 @@ export function Player() {
         motion={motion}
         tool={fishing ? 'rod' : currentWorld === 'farm' ? activeTool : null}
       />
-      <PlayerTag name={playerName} chatText={localChatMsg} isSelf />
+      <PlayerTag name={playerName} chatText={localChatMsg} isSelf level={level} />
     </group>
   );
 }

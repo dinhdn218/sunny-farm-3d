@@ -7,6 +7,8 @@ import { TIME_PHASES } from '@/config/time';
 import { npcPresetsFor } from '@/config/npcs';
 import { soundFX } from '@/lib/audio';
 import { countItems } from '@/lib/inventory';
+import { levelInfo, levelTitle } from '@/lib/leveling';
+import { giftDay, localDateKey } from '@/lib/dailyGift';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -22,6 +24,10 @@ export function TopBar() {
   const items = useGameStore((s) => s.items);
   const shippingBin = useGameStore((s) => s.shippingBin);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
+  const xp = useGameStore((s) => s.xp);
+  const giftReady = useGameStore(
+    (s) => giftDay(s.lastGiftDate, s.loginStreak, localDateKey(new Date())) !== null
+  );
   const signedIn = useGameStore((s) => !!s.userProfile);
   const cloudError = useGameStore((s) => !!s.cloudError);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
@@ -36,6 +42,7 @@ export function TopBar() {
   const onlineCount =
     1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
   const storedCount = countItems(items) + countItems(shippingBin);
+  const { level, into, need } = levelInfo(xp);
   const hasClaimable = quests.some((q) => !q.claimed && q.progress >= q.target);
 
   return (
@@ -90,6 +97,32 @@ export function TopBar() {
             </div>
           </div>
         </div>
+
+        <button
+          onClick={() => setActiveModal('dailyGift')}
+          title="Cấp độ nông dân & Quà hằng ngày"
+          className="parchment-panel relative flex items-center gap-2 rounded-2xl px-2.5 py-1.5 transition hover:brightness-105 active:scale-95"
+        >
+          <div className="flex h-9 w-9 flex-col items-center justify-center rounded-xl bg-orange-500 text-white shadow-inner">
+            <span className="text-[8px] font-black leading-none">CẤP</span>
+            <span className="text-sm font-black leading-none">{level}</span>
+          </div>
+          <div className="hidden w-24 text-left md:block">
+            <div className="truncate text-[10px] font-extrabold text-amber-900">{levelTitle(level)}</div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-amber-950/25">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
+                style={{ width: need ? `${(into / need) * 100}%` : '100%' }}
+              />
+            </div>
+            <div className="text-[9px] font-bold text-amber-800">{need ? `${into}/${need} XP` : 'MAX'}</div>
+          </div>
+          {giftReady && (
+            <span className="absolute -right-1.5 -top-1.5 animate-bounce text-base" title="Có quà hôm nay!">
+              🎁
+            </span>
+          )}
+        </button>
 
         <div className="parchment-panel hidden min-w-[155px] flex-col gap-1 rounded-2xl px-3 py-1.5 sm:flex">
           <div>

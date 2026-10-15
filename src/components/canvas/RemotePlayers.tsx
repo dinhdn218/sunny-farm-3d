@@ -22,7 +22,7 @@ function RemotePlayerActor({ data }: { data: RemotePlayer }) {
   return (
     <group ref={groupRef} position={[data.x, 0.08, data.z]}>
       <AvatarMesh cosmetics={data.cosmetics} />
-      <PlayerTag name={data.name} chatText={data.chatMsg} />
+      <PlayerTag name={data.name} chatText={data.chatMsg} level={data.level} />
     </group>
   );
 }

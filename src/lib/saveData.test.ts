@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createNewGameSave } from '@/lib/newGame';
+import { createInitialQuests } from '@/lib/quests';
 import { SAVE_VERSION, isFreshSave, migrateSave, saveFromCloud } from '@/lib/saveData';
 
 describe('isFreshSave', () => {
@@ -76,6 +77,16 @@ describe('migrateSave from version 1', () => {
     const save = migrateSave(v1, 1);
     expect(save.machines).toEqual({});
     expect(save.lastFreeSnackDay).toBe(0);
+  });
+});
+
+describe('migrateSave from version 2', () => {
+  it('estimates experience from what the achievement counters show', () => {
+    const v2 = { ...createNewGameSave(), quests: createInitialQuests(1, { a_harvest: 10, a_days: 4 }) };
+    const save = migrateSave(v2, 2);
+    expect(save.xp).toBe(50);
+    expect(save.loginStreak).toBe(0);
+    expect(save.lastGiftDate).toBeNull();
   });
 });
 

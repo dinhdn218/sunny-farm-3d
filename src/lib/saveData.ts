@@ -4,9 +4,10 @@ import { GRID_SIZE, PLOT_TILES, STARTER_PLOTS } from '@/config/farm';
 import { defaultDecorPlacements } from '@/lib/farmLayout';
 import { createInitialQuests, reconcileQuests } from '@/lib/quests';
 import { addItems } from '@/lib/inventory';
+import { estimateXp } from '@/lib/leveling';
 import { createEmptyGrid, createNewGameSave } from '@/lib/newGame';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 // A save as read back from storage: possibly from an older version, possibly with extra keys
 export type StoredSave = Partial<SaveData> & Record<string, unknown>;
@@ -31,6 +32,9 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   machines: true,
   lastFreeSnackDay: true,
   fishLog: true,
+  xp: true,
+  loginStreak: true,
+  lastGiftDate: true,
   cosmetics: true,
   ownedCosmetics: true,
   decorPlacements: true,
@@ -99,11 +103,22 @@ function fromV1(saved: StoredSave): StoredSave {
   };
 }
 
+// v2 saves predate farmer levels and the daily gift: experience is estimated from the achievement counters
+function fromV2(saved: StoredSave): StoredSave {
+  return {
+    ...saved,
+    xp: estimateXp(saved.quests ?? []),
+    loginStreak: 0,
+    lastGiftDate: null,
+  };
+}
+
 // Brings a save written by an older version of the game up to date
 export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
   let save = raw as StoredSave;
   if (version < 1) save = fromV0(save);
   if (version < 2) save = fromV1(save);
+  if (version < 3) save = fromV2(save);
   return save;
 }
 

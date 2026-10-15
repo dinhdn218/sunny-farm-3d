@@ -89,6 +89,9 @@ export function createNewGameSave(): SaveData {
     machines: {},
     lastFreeSnackDay: 0,
     fishLog: {},
+    xp: 0,
+    loginStreak: 0,
+    lastGiftDate: null,
     cosmetics: {
       hat: 'straw_hat',
       outfit: 'farmer_blue',
