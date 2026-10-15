@@ -79,6 +79,7 @@ import {
   takeItems,
 } from '@/lib/inventory';
 import { marketPrice } from '@/lib/market';
+import { refillOrders } from '@/lib/orders';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
@@ -135,6 +136,8 @@ interface DaySummaryData {
   rainWatered: number;
   // What the pet you walk with did overnight
   petNote: string | null;
+  // Orders posted on the board this morning
+  newOrders: number;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -187,6 +190,7 @@ interface GameState extends SaveData {
     | 'candyShop'
     | 'luckyWheel'
     | 'claw'
+    | 'orders'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -254,6 +258,8 @@ interface GameState extends SaveData {
   returnFromBin: (id: ItemId, amount?: number) => void;
   depositAllToBin: () => void;
   sellAtMarket: (id: ItemId, amount?: number) => void;
+  deliverOrder: (orderId: string) => void;
+  discardOrder: (orderId: string) => void;
 
   openWorkshop: (machine?: MachineId) => void;
   buyMachine: (id: MachineId) => void;
@@ -1160,6 +1166,43 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('market_sell', earned);
         },
 
+        // A resident's order from the order board: the goods leave the bag and the reward is paid at once
+        deliverOrder: (orderId) => {
+          const { orders, items, gold, gems, playerPos } = get();
+          const order = orders.find((o) => o.id === orderId);
+          if (!order) return;
+          const rest = takeItems(items, order.items);
+          if (!rest) {
+            soundFX.error();
+            get().showToast('📦 Chưa đủ hàng để giao đơn này!', 'text-red-400');
+            return;
+          }
+          soundFX.questClaim();
+          set({
+            items: rest,
+            gold: gold + order.rewardGold,
+            gems: gems + order.rewardGems,
+            orders: orders.filter((o) => o.id !== orderId),
+          });
+          spawnParticles(playerPos.x, 0.6, playerPos.z, 0xfacc15, 20);
+          get().showToast(
+            `📦 Đã giao đơn cho ${order.customer}! +${order.rewardGold}🪙${
+              order.rewardGems ? ` +${order.rewardGems}💎` : ''
+            }`,
+            'text-yellow-300'
+          );
+          get().incrementQuest('earn_gold', order.rewardGold);
+          get().incrementQuest('deliver_order', 1);
+        },
+
+        // The slot stays empty until the next morning brings a new order
+        discardOrder: (orderId) => {
+          const order = get().orders.find((o) => o.id === orderId);
+          if (!order) return;
+          set((s) => ({ orders: s.orders.filter((o) => o.id !== orderId) }));
+          get().showToast(`Đã từ chối đơn của ${order.customer}. Sáng mai sẽ có đơn mới.`, 'text-amber-300');
+        },
+
         openWorkshop: (machine) =>
           set((s) => ({
             activeModal: 'workshop',
@@ -1826,6 +1869,10 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('earn_gold', totalGoldEarned);
           get().incrementQuest('sleep', 1);
 
+          // Residents post new orders in the board's empty slots
+          const orders = refillOrders({ ...get(), day: day + 1 });
+          const newOrders = orders.length - get().orders.length;
+
           soundFX.questClaim();
           set({
             day: day + 1,
@@ -1846,6 +1893,7 @@ export const useGameStore = create<GameState>()(
               ...createDailyQuests(day + 1),
             ],
             dailyDay: day + 1,
+            orders,
             placingDecor: null,
             buildMode: null,
             fishing: null,
@@ -1863,6 +1911,7 @@ export const useGameStore = create<GameState>()(
               forecast: weatherOf(day + 2),
               rainWatered,
               petNote,
+              newOrders,
             },
             activeModal: 'summary',
           });

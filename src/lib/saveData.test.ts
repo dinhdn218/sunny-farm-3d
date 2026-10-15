@@ -105,6 +105,16 @@ describe('saveFromCloud', () => {
     expect(save.tiles).toHaveLength(256);
   });
 
+  it('gives a cloud save from before the order board a full board', () => {
+    const { orders: _orders, ...old } = createNewGameSave();
+    expect(saveFromCloud({ ...old, day: 12 }, SAVE_VERSION).orders).toHaveLength(3);
+  });
+
+  it('keeps the open orders of a cloud save', () => {
+    const orders = [{ id: 'ord_5_0', customer: 'Bảo Ngọc 🐱', items: { milk: 1 }, rewardGold: 240, rewardGems: 0 }];
+    expect(saveFromCloud({ ...createNewGameSave(), orders }, SAVE_VERSION).orders).toEqual(orders);
+  });
+
   it('drops keys that are not part of a save', () => {
     const save = saveFromCloud({ gold: 5, activeModal: 'map', userProfile: { id: 'x' } }, 1);
     expect(save).not.toHaveProperty('activeModal');

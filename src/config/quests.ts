@@ -68,6 +68,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_craft', title: 'Bếp Núc Bận Rộn', desc: 'Chế biến xong 2 mẻ hàng ở Xưởng.', icon: '🍳', type: 'craft', target: 2, rewardGold: 110, rewardGems: 4 },
   { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
   { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
+  { id: 'd_order', title: 'Giao Hàng Tận Nơi', desc: 'Giao 1 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 1, rewardGold: 100, rewardGems: 4 },
 ];
 
 export const DAILY_QUEST_COUNT = 3;
@@ -153,6 +154,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
       { target: 10, rewardGold: 100, rewardGems: 5 },
       { target: 50, rewardGold: 300, rewardGems: 15 },
       { target: 200, rewardGold: 800, rewardGems: 40 },
+    ],
+  },
+  {
+    id: 'a_orders',
+    title: 'Thương Lái Uy Tín',
+    icon: '📦',
+    type: 'deliver_order',
+    desc: 'Giao {n} đơn hàng cho cư dân.',
+    tiers: [
+      { target: 5, rewardGold: 100, rewardGems: 5 },
+      { target: 25, rewardGold: 300, rewardGems: 15 },
+      { target: 100, rewardGold: 800, rewardGems: 40 },
     ],
   },
   {

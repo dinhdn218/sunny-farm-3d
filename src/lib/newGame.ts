@@ -1,6 +1,7 @@
 import { FarmAnimal, SaveData, TileData } from '@/types/game';
 import { GRID_SIZE, STARTER_PLOTS } from '@/config/farm';
 import { createInitialQuests } from '@/lib/quests';
+import { refillOrders } from '@/lib/orders';
 
 export const createEmptyGrid = (): TileData[] => {
   const grid: TileData[] = [];
@@ -70,7 +71,7 @@ const createInitialAnimals = (): FarmAnimal[] => [
 
 // The farm a new player starts with
 export function createNewGameSave(): SaveData {
-  return {
+  const save: SaveData = {
     playerName: 'Nông Dân ' + Math.floor(100 + Math.random() * 899),
     gold: 810,
     gems: 130,
@@ -117,5 +118,7 @@ export function createNewGameSave(): SaveData {
     buildPieces: [],
     quests: createInitialQuests(1),
     dailyDay: 1,
+    orders: [],
   };
+  return { ...save, orders: refillOrders(save) };
 }

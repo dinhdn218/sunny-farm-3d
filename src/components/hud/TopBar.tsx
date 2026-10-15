@@ -5,7 +5,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import { npcPresetsFor } from '@/config/npcs';
-import { countItems } from '@/lib/inventory';
+import { countItems, hasItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 import { waterCapacity } from '@/lib/tools';
@@ -236,6 +236,8 @@ const TrayDivider = () => (
 function MenuTray() {
   const quests = useGameStore((s) => s.quests);
   const storedCount = useGameStore((s) => countItems(s.items) + countItems(s.shippingBin));
+  // Orders the bag already holds everything for
+  const deliverable = useGameStore((s) => s.orders.filter((o) => hasItems(s.items, o.items)).length);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const openExpand = useGameStore((s) => s.openExpand);
   const openWorkshop = useGameStore((s) => s.openWorkshop);
@@ -263,6 +265,15 @@ function MenuTray() {
         color="border-amber-900 bg-amber-500 text-amber-950 hover:bg-amber-400"
         onClick={() => setActiveModal('quests')}
         badge={hasClaimable && <Badge bounce>!</Badge>}
+      />
+      <MenuButton
+        icon="📦"
+        label="Đơn Hàng"
+        name="Bảng Đơn Hàng"
+        hotkey="O"
+        color="border-violet-950 bg-violet-600 text-white hover:bg-violet-500"
+        onClick={() => setActiveModal('orders')}
+        badge={deliverable > 0 && <Badge bounce>{deliverable}</Badge>}
       />
       <TrayDivider />
       <MenuButton

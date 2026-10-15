@@ -270,7 +270,8 @@ export type QuestType =
   | 'event_shop'
   | 'card_game'
   | 'card_win'
-  | 'forage';
+  | 'forage'
+  | 'deliver_order';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
@@ -295,6 +296,16 @@ export interface QuestItem {
   // Achievements: current tier (0-based) out of `tiers`
   tier?: number;
   tiers?: number;
+}
+
+// A resident's order on the order board: the goods are delivered from the bag (lib/orders)
+export interface Order {
+  id: string;
+  // Resident who placed it
+  customer: string;
+  items: ItemCounts;
+  rewardGold: number;
+  rewardGems: number;
 }
 
 // Gameplay state that makes up a farm: what is saved on this device and in the cloud.
@@ -358,6 +369,8 @@ export interface SaveData {
   buildPieces: BuildPiece[];
   quests: QuestItem[];
   dailyDay: number;
+  // The order board: open orders stay until delivered or refused, empty slots refill each morning
+  orders: Order[];
 }
 
 export interface RemotePlayer {

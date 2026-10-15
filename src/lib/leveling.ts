@@ -15,6 +15,7 @@ const XP_PER: Partial<Record<QuestType, number>> = {
   card_game: 3,
   card_win: 5,
   forage: 2,
+  deliver_order: 10,
   sleep: 5,
   visit_world: 2,
   cinema_channel: 1,

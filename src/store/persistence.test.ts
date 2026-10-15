@@ -27,6 +27,15 @@ describe('loading the saved game', () => {
     expect(useGameStore.getState().quests.some((q) => q.id === 'm_machine')).toBe(true);
   });
 
+  it('gives a save from before the order board a full board', async () => {
+    const { orders: _orders, ...old } = createNewGameSave();
+    storeSaved({ ...old, day: 12 });
+
+    await useGameStore.persist.rehydrate();
+
+    expect(useGameStore.getState().orders).toHaveLength(3);
+  });
+
   it('never restores a signed-in account from storage', async () => {
     storeSaved({
       ...createNewGameSave(),

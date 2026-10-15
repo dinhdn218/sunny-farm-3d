@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addItems, countItems, instantSellPrice, missingItems, takeItems } from '@/lib/inventory';
+import { addItems, countItems, hasItems, instantSellPrice, missingItems, takeItems } from '@/lib/inventory';
 
 describe('addItems', () => {
   it('adds to what is already in the bag without changing the original', () => {
@@ -22,6 +22,16 @@ describe('takeItems', () => {
 describe('missingItems', () => {
   it('lists only what the bag is short of', () => {
     expect(missingItems({ egg: 1, wheat: 5 }, { pumpkin: 1, egg: 1, wheat: 1 })).toEqual({ pumpkin: 1 });
+  });
+});
+
+describe('hasItems', () => {
+  it('is true when the bag holds at least that much of everything', () => {
+    expect(hasItems({ carrot: 4, egg: 1 }, { carrot: 3, egg: 1 })).toBe(true);
+  });
+
+  it('is false when the bag is short of anything', () => {
+    expect(hasItems({ carrot: 4 }, { carrot: 3, egg: 1 })).toBe(false);
   });
 });
 

@@ -36,6 +36,8 @@ export function missingItems(bag: ItemCounts, need: ItemCounts): ItemCounts {
   return missing;
 }
 
+export const hasItems = (bag: ItemCounts, need: ItemCounts) => takeItems(bag, need) !== null;
+
 export const countItems = (bag: ItemCounts) =>
   entries(bag).reduce((sum, [, n]) => sum + n, 0);
 

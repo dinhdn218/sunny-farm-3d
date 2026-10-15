@@ -32,6 +32,7 @@ const MODAL_KEYS = {
   KeyB: 'shop',
   KeyR: 'ranch',
   KeyX: 'workshop',
+  KeyO: 'orders',
 } as const;
 
 export function Player() {
