@@ -24,6 +24,7 @@ export const TOOL_UPGRADES: Record<UpgradableTool, { gold: number; gems: number 
 
 export const MAX_TOOL_TIER = 2;
 export const SPRINKLER_PRICE = 300;
+export const FERTILIZER_PRICE = 30;
 
 const AREA_OFFSETS: [number, number][][] = [
   [[0, 0]],

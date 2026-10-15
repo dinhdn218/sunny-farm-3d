@@ -22,6 +22,7 @@ const SLOTS: HotbarSlot[] = [
   { id: 'seeds', key: '4', name: 'Hạt Giống', icon: '🌱', desc: 'Gieo lên đất đã cuốc' },
   { id: 'bread', key: '5', name: 'Bánh Mì', icon: '🥖', desc: 'Ăn ngay để hồi +45 Thể lực' },
   { id: 'feed', key: '6', name: 'Chăn Nuôi', icon: '🐄', desc: 'Click vào Gà, Cừu, Bò trong chuồng để cho ăn & thu hoạch' },
+  { id: 'fertilizer', key: '7', name: 'Phân Bón', icon: '🪴', desc: 'Bón lên ô đất đã cuốc: lần thu hoạch tới được gấp đôi' },
 ];
 
 const AREA_NAMES = ['1 ô', '3 ô cùng hàng', '3×3 ô'];
@@ -63,6 +64,7 @@ export function Hotbar() {
   const seeds = useGameStore((s) => s.seeds);
   const breadCount = useGameStore((s) => s.breadCount);
   const animalFeed = useGameStore((s) => s.animalFeed);
+  const fertilizer = useGameStore((s) => s.fertilizer);
   const placingDecor = useGameStore((s) => s.placingDecor);
   const rotatePlacingDecor = useGameStore((s) => s.rotatePlacingDecor);
   const cancelPlacingDecor = useGameStore((s) => s.cancelPlacingDecor);
@@ -82,6 +84,7 @@ export function Hotbar() {
     if (slot.id === 'seeds') return seeds[seedCrop] || 0;
     if (slot.id === 'bread') return breadCount;
     if (slot.id === 'feed') return animalFeed;
+    if (slot.id === 'fertilizer') return fertilizer;
     return null;
   };
   // The seed slot takes out the last seeds, or moves on to the next crop's

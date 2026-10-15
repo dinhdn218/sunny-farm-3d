@@ -78,7 +78,7 @@ export type FestivalId = 'halloween' | 'christmas' | 'tet';
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
 
 // Every crop's seeds are a tool of their own (one hotbar slot, see lib/tools)
-export type ToolId = 'hoe' | 'water' | 'basket' | `seed_${CropId}` | 'bread' | 'feed';
+export type ToolId = 'hoe' | 'water' | 'basket' | `seed_${CropId}` | 'bread' | 'feed' | 'fertilizer';
 
 export interface UserProfile {
   id: string;
@@ -202,6 +202,8 @@ export interface TileData {
   daysWatered: number;
   // A sprinkler stands on this tile: it can't be worked and waters its neighbours each morning
   sprinkler?: boolean;
+  // Fertilized: the next harvest from this tile is doubled
+  fertilized?: boolean;
 }
 
 export interface WorldConfig {
@@ -396,6 +398,8 @@ export interface SaveData {
   toolTiers: { hoe: number; water: number };
   // Sprinklers bought but not placed on the field
   sprinklers: number;
+  // Bags of fertilizer
+  fertilizer: number;
   // Each festival's own currency (config/festivals), kept after it ends
   festivalTokens: Partial<Record<FestivalId, number>>;
   // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed

@@ -98,6 +98,7 @@ import { BUILD_PIECES } from '@/config/build';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
+  FERTILIZER_PRICE,
   TOOL_NAMES,
   TOOL_UPGRADES,
   UpgradableTool,
@@ -266,6 +267,7 @@ interface GameState extends SaveData {
   buyBread: () => void;
   buyToolUpgrade: (tool: UpgradableTool) => void;
   buySprinkler: () => void;
+  buyFertilizer: (amount: number) => void;
   startPlacingSprinkler: () => void;
   cancelPlacingSprinkler: () => void;
   placeSprinkler: (r: number, c: number) => void;
@@ -788,10 +790,12 @@ export const useGameStore = create<GameState>()(
             const cropCfg = CROPS[cropKey];
             soundFX.harvest();
 
+            // Fertilized soil gives a double harvest, and the fertilizer is used up
+            const count = targetTile.fertilized ? 2 : 1;
             const updatedTiles = tiles.map((t) => {
               if (t.r !== r || t.c !== c) return t;
               if (cropCfg.regrow) {
-                return { ...t, stage: 2, watered: false, daysWatered: 0 };
+                return { ...t, stage: 2, watered: false, daysWatered: 0, fertilized: false };
               }
               return {
                 ...t,
@@ -800,13 +804,41 @@ export const useGameStore = create<GameState>()(
                 stage: 0,
                 watered: false,
                 daysWatered: 0,
+                fertilized: false,
               };
             });
 
-            set({ tiles: updatedTiles, items: addItems(items, { [cropKey]: 1 }) });
+            set({ tiles: updatedTiles, items: addItems(items, { [cropKey]: count }) });
             spawnParticles(tx, 0.45, tz, 0xfacc15, 20);
-            get().showToast(`${cropCfg.icon} +1 ${cropCfg.name}!`, 'text-yellow-300', [tx, 0.65, tz]);
-            get().incrementQuest('harvest', 1, cropKey);
+            get().showToast(`${cropCfg.icon} +${count} ${cropCfg.name}!`, 'text-yellow-300', [tx, 0.65, tz]);
+            get().incrementQuest('harvest', count, cropKey);
+            return;
+          }
+
+          // Fertilizer on worked soil (no energy needed): the next harvest from the tile is doubled
+          if (activeTool === 'fertilizer') {
+            const at: [number, number, number] = [tx, 0.4, tz];
+            if (targetTile.state === 'empty') {
+              soundFX.error();
+              get().showToast('Cần cuốc đất trước!', 'text-amber-300', at);
+              return;
+            }
+            if (targetTile.fertilized) {
+              get().showToast('🪴 Ô này đã bón phân rồi!', 'text-amber-300', at);
+              return;
+            }
+            if (state.fertilizer <= 0) {
+              soundFX.error();
+              get().showToast('Hết Phân Bón! Mua ở Cửa Hàng Hạt Giống.', 'text-red-300', at);
+              return;
+            }
+            soundFX.plant();
+            set({
+              fertilizer: state.fertilizer - 1,
+              tiles: tiles.map((t) => (t.id === targetTile.id ? { ...t, fertilized: true } : t)),
+            });
+            spawnParticles(tx, 0.15, tz, 0x84cc16, 12);
+            get().showToast('🪴 Đã bón phân: lần thu hoạch tới được gấp đôi!', 'text-lime-300', at);
             return;
           }
 
@@ -1041,6 +1073,19 @@ export const useGameStore = create<GameState>()(
             ...(tool === 'water' ? { water: waterCapacity(next) } : {}),
           });
           get().showToast(`🛠️ Đã nâng cấp lên ${TOOL_NAMES[tool][next]}!`, 'text-lime-300');
+        },
+
+        buyFertilizer: (amount) => {
+          const { gold, fertilizer } = get();
+          const cost = FERTILIZER_PRICE * amount;
+          if (gold < cost) {
+            soundFX.error();
+            get().showToast(`Cần ${cost} Vàng 🪙 để mua ${amount} Phân Bón!`, 'text-red-400');
+            return;
+          }
+          soundFX.coin();
+          set({ gold: gold - cost, fertilizer: fertilizer + amount });
+          get().showToast(`🪴 +${amount} Phân Bón`, 'text-lime-300');
         },
 
         buySprinkler: () => {

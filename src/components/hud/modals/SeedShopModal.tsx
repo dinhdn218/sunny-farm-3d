@@ -7,6 +7,7 @@ import { isInSeason, seasonalPrice } from '@/lib/seasons';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
+  FERTILIZER_PRICE,
   TOOL_NAMES,
   TOOL_UPGRADES,
   UpgradableTool,
@@ -65,6 +66,45 @@ function ToolUpgradeCard({ tool }: { tool: UpgradableTool }) {
             {price?.gems ? ` + 💎${price.gems}` : ''})
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function FertilizerCard() {
+  const gold = useGameStore((s) => s.gold);
+  const fertilizer = useGameStore((s) => s.fertilizer);
+  const buyFertilizer = useGameStore((s) => s.buyFertilizer);
+
+  return (
+    <div className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-lime-700/40 bg-lime-50/90 p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-lime-600 bg-lime-200 text-2xl">
+          🪴
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between">
+            <span className="text-sm font-black text-amber-950">Phân Bón Hữu Cơ</span>
+            <span className="text-xs font-bold text-amber-800">Kho: {fertilizer}</span>
+          </div>
+          <p className="text-xs text-amber-800">
+            Bón lên ô đất đã cuốc (phím 7): lần thu hoạch tới ở ô đó được gấp đôi nông sản.
+          </p>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 border-t border-lime-700/20 pt-2">
+        {[1, 5].map((amount) => (
+          <button
+            key={amount}
+            onClick={() => buyFertilizer(amount)}
+            disabled={gold < FERTILIZER_PRICE * amount}
+            className={`game-btn rounded-xl px-3 py-1 text-xs font-black text-white ${
+              gold >= FERTILIZER_PRICE * amount ? 'bg-lime-700 hover:bg-lime-600' : 'bg-slate-400'
+            }`}
+          >
+            Mua {amount} (🪙{FERTILIZER_PRICE * amount})
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -213,11 +253,12 @@ export function SeedShopModal() {
           </div>
         </div>
 
-        <div className="mb-2 mt-4 text-xs font-black uppercase text-amber-900">🛠️ Nâng Cấp Công Cụ & Tưới Tự Động</div>
+        <div className="mb-2 mt-4 text-xs font-black uppercase text-amber-900">🛠️ Nâng Cấp Công Cụ, Tưới Tự Động & Phân Bón</div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <ToolUpgradeCard tool="hoe" />
           <ToolUpgradeCard tool="water" />
           <SprinklerCard />
+          <FertilizerCard />
         </div>
       </div>
     </ModalShell>

@@ -22,6 +22,7 @@ const HOTBAR_KEYS: Record<string, ToolId | 'seeds'> = {
   Digit4: 'seeds',
   Digit5: 'bread',
   Digit6: 'feed',
+  Digit7: 'fertilizer',
 };
 
 const MODAL_KEYS = {

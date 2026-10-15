@@ -69,7 +69,9 @@ function tileTooltip(tile: TileData) {
   if (tile.state === 'tilled' || !tile.crop) {
     return {
       title: `Đất canh tác ${coords}`,
-      desc: `${tile.watered ? '💧 Đã tưới' : '🏜️ Đất khô'} • Chọn Hạt Giống (4-7) để gieo`,
+      desc: `${tile.watered ? '💧 Đã tưới' : '🏜️ Đất khô'} • ${
+        tile.fertilized ? '🪴 Đã bón phân' : 'Phân Bón (7) để thu gấp đôi'
+      } • Hạt Giống (4) để gieo`,
     };
   }
   const crop = CROPS[tile.crop];
@@ -78,7 +80,7 @@ function tileTooltip(tile: TileData) {
     desc:
       tile.stage >= 3
         ? '✨ ĐÃ CHÍN! Click để thu hoạch!'
-        : `Giai đoạn ${tile.stage}/3`,
+        : `Giai đoạn ${tile.stage}/3${tile.fertilized ? ' • 🪴 Đã bón phân' : ''}`,
   };
 }
 
@@ -119,6 +121,15 @@ function Sprinkler() {
     </group>
   );
 }
+
+// Green granules scattered over fertilized soil
+const FERTILIZER_SPOTS: [number, number][] = [
+  [-0.36, -0.34],
+  [0.3, 0],
+  [-0.1, 0.34],
+  [0.4, 0.34],
+  [0.05, -0.34],
+];
 
 const FarmTile = memo(function FarmTile({
   tile,
@@ -188,6 +199,13 @@ const FarmTile = memo(function FarmTile({
           <CropMesh crop={tile.crop} stage={tile.stage} seed={tile.r + tile.c} />
         </group>
       )}
+      {tile.fertilized &&
+        FERTILIZER_SPOTS.map(([fx, fz]) => (
+          <mesh key={`${fx}${fz}`} position={[fx, 0.15, fz]}>
+            <sphereGeometry args={[0.05, 5, 4]} />
+            <meshLambertMaterial color="#a3e635" />
+          </mesh>
+        ))}
       {tile.sprinkler && <Sprinkler />}
     </group>
   );

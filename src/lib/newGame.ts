@@ -98,6 +98,7 @@ export function createNewGameSave(): SaveData {
     xp: 0,
     toolTiers: { hoe: 0, water: 0 },
     sprinklers: 0,
+    fertilizer: 0,
     festivalTokens: {},
     loginStreak: 0,
     lastGiftDate: null,

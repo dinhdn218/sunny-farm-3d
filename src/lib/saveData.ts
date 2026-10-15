@@ -39,6 +39,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   xp: true,
   toolTiers: true,
   sprinklers: true,
+  fertilizer: true,
   festivalTokens: true,
   loginStreak: true,
   lastGiftDate: true,

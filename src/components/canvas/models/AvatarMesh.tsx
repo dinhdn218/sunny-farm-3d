@@ -2147,6 +2147,8 @@ function HeldTool({ tool, tier = 0 }: { tool: HeldItem; tier?: number }) {
   }
   const bagColor = tool.startsWith("seed_")
     ? CROPS[tool.replace("seed_", "") as CropId].color
+    : tool === "fertilizer"
+    ? "#65a30d"
     : "#fde68a";
   return (
     <mesh position={[0, 0, 0.15]}>
