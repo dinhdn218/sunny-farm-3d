@@ -342,6 +342,102 @@ function GoldStatue({ ghost }: { ghost?: boolean }) {
   );
 }
 
+// Lễ Hội Bí Ngô: carved pumpkin lit from inside
+function JackLantern({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      {[-0.16, 0, 0.16].map((x, i) => (
+        <mesh key={x} castShadow={!ghost} position={[x, 0.36, 0]} scale={[i === 1 ? 1 : 0.85, 0.82, 1]}>
+          <sphereGeometry args={[0.42, 14, 12]} />
+          <Mat color={i === 1 ? '#f97316' : '#ea580c'} ghost={ghost} />
+        </mesh>
+      ))}
+      {[-0.16, 0.16].map((x) => (
+        <mesh key={x} position={[x, 0.46, 0.37]} rotation={[0, 0, Math.PI / 4]}>
+          <boxGeometry args={[0.12, 0.12, 0.05]} />
+          <Mat color="#fde047" ghost={ghost} glow />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.36, 0.4]} rotation={[0, 0, Math.PI / 4]}>
+        <boxGeometry args={[0.07, 0.07, 0.04]} />
+        <Mat color="#fde047" ghost={ghost} glow />
+      </mesh>
+      <mesh position={[0, 0.22, 0.37]}>
+        <boxGeometry args={[0.36, 0.08, 0.05]} />
+        <Mat color="#fde047" ghost={ghost} glow />
+      </mesh>
+      <mesh position={[0, 0.74, 0]}>
+        <cylinderGeometry args={[0.05, 0.07, 0.16, 6]} />
+        <Mat color="#4d7c0f" ghost={ghost} />
+      </mesh>
+      <Block size={[0.2, 0.03, 0.1]} at={[0.1, 0.74, 0]} rot={[0, 0, -0.4]} color="#65a30d" ghost={ghost} />
+    </group>
+  );
+}
+
+// Lễ Hội Bí Ngô: witch's cauldron bubbling over a small fire
+function Cauldron({ ghost }: { ghost?: boolean }) {
+  const bubbleRefs = useRef<(THREE.Mesh | null)[]>([]);
+
+  useFrame(() => {
+    const now = performance.now();
+    bubbleRefs.current.forEach((bubble, i) => {
+      if (!bubble) return;
+      const t = (now * 0.0006 + i / 4) % 1;
+      bubble.position.set(Math.sin(i * 2.1) * 0.18, 0.78 + t * 0.6, Math.cos(i * 2.1) * 0.18);
+      bubble.scale.setScalar(1 - t);
+    });
+  });
+
+  return (
+    <group>
+      {[0, 1].map((i) => (
+        <mesh key={i} position={[0, 0.08, 0]} rotation={[Math.PI / 2, 0, (i * Math.PI) / 2]}>
+          <cylinderGeometry args={[0.07, 0.07, 0.8, 6]} />
+          <Mat color="#78350f" ghost={ghost} />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.14, 0]}>
+        <sphereGeometry args={[0.16, 8, 6]} />
+        <Mat color="#f97316" ghost={ghost} glow />
+      </mesh>
+      {[0, 1, 2].map((i) => {
+        const a = (i / 3) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.sin(a) * 0.3, 0.2, Math.cos(a) * 0.3]}>
+            <cylinderGeometry args={[0.03, 0.03, 0.4, 5]} />
+            <Mat color="#1f2937" ghost={ghost} />
+          </mesh>
+        );
+      })}
+      <mesh castShadow={!ghost} position={[0, 0.55, 0]}>
+        <sphereGeometry args={[0.42, 16, 12, 0, Math.PI * 2, Math.PI * 0.35, Math.PI * 0.65]} />
+        <Mat color="#1f2937" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 0.76, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.37, 0.05, 8, 20]} />
+        <Mat color="#374151" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 0.74, 0]}>
+        <cylinderGeometry args={[0.35, 0.35, 0.04, 16]} />
+        <Mat color="#4ade80" ghost={ghost} glow />
+      </mesh>
+      {!ghost &&
+        [0, 1, 2, 3].map((i) => (
+          <mesh
+            key={i}
+            ref={(el) => {
+              bubbleRefs.current[i] = el;
+            }}
+          >
+            <sphereGeometry args={[0.06, 8, 6]} />
+            <meshBasicMaterial color="#86efac" />
+          </mesh>
+        ))}
+    </group>
+  );
+}
+
 // 3D model of a farm decoration or workshop machine (also used translucent as the placement ghost and in shop previews)
 export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
   if (isMachineId(id)) return <MachineModel id={id} ghost={ghost} />;
@@ -356,6 +452,10 @@ export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
       return <SakuraGrove ghost={ghost} />;
     case 'decor_gold_statue':
       return <GoldStatue ghost={ghost} />;
+    case 'decor_jack_lantern':
+      return <JackLantern ghost={ghost} />;
+    case 'decor_cauldron':
+      return <Cauldron ghost={ghost} />;
     default:
       return null;
   }

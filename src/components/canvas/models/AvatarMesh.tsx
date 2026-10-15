@@ -59,6 +59,7 @@ const OUTFIT_BASE: Record<string, { torso: string; arms: string; legs: string }>
   sakura_pink: { torso: '#f472b6', arms: SKIN, legs: '#fdf2f8' },
   royal_gold: { torso: '#7c3aed', arms: '#7c3aed', legs: '#312e81' },
   cyber_neon: { torso: '#0f172a', arms: '#1e293b', legs: '#0f172a' },
+  vampire_cape: { torso: '#111827', arms: '#111827', legs: '#1f2937' },
 };
 
 const BEACH_FLOWERS: [number, number, number, string][] = [
@@ -147,6 +148,21 @@ function OutfitBody({ id }: { id: string }) {
           <Part size={[0.03, 0.12, 0.2]} at={[0.235, 1.34, 0.12]} color="#334155" />
         </group>
       );
+    case 'vampire_cape':
+      return (
+        <group>
+          {/* White shirt front with a red bow tie */}
+          <Part size={[0.22, 0.5, 0.02]} at={[0, 0.78, 0.19]} color="#f8fafc" />
+          <Part size={[0.1, 0.07, 0.03]} at={[-0.05, 1.0, 0.205]} rot={[0, 0, 0.5]} color="#dc2626" />
+          <Part size={[0.1, 0.07, 0.03]} at={[0.05, 1.0, 0.205]} rot={[0, 0, -0.5]} color="#dc2626" />
+          {/* High collar standing up behind the head, red inside */}
+          <Part size={[0.62, 0.36, 0.04]} at={[0, 1.18, -0.21]} rot={[-0.35, 0, 0]} color="#111827" />
+          <Part size={[0.56, 0.32, 0.02]} at={[0, 1.18, -0.185]} rot={[-0.35, 0, 0]} color="#b91c1c" />
+          {/* Long cape down the back, red lining towards the body */}
+          <Part size={[0.7, 0.95, 0.04]} at={[0, 0.55, -0.25]} rot={[0.12, 0, 0]} color="#111827" />
+          <Part size={[0.64, 0.9, 0.02]} at={[0, 0.56, -0.225]} rot={[0.12, 0, 0]} color="#991b1b" />
+        </group>
+      );
     default:
       // Farmer overalls: denim bib with pocket, straps over the shoulders, brass buttons
       return (
@@ -202,6 +218,13 @@ function OutfitLeg({ id }: { id: string }) {
           <Part size={[0.255, 0.03, 0.305]} at={[0, -0.215, 0.04]} color="#ec4899" glow />
         </group>
       );
+    case 'vampire_cape':
+      return (
+        <group>
+          <Part size={[0.24, 0.1, 0.3]} at={[0, -0.18, 0.04]} color="#0f172a" />
+          <Part size={[0.08, 0.05, 0.02]} at={[0, -0.16, 0.195]} color="#cbd5e1" />
+        </group>
+      );
     default:
       return (
         <group>
@@ -242,6 +265,8 @@ function OutfitArm({ id }: { id: string }) {
           <Part size={[0.19, 0.03, 0.19]} at={[0, -0.18, 0]} color="#22d3ee" glow />
         </group>
       );
+    case 'vampire_cape':
+      return <Part size={[0.19, 0.06, 0.19]} at={[0, -0.19, 0]} color="#b91c1c" />;
     default:
       return null;
   }
@@ -381,6 +406,27 @@ function Hat({ id }: { id: string }) {
           <torusGeometry args={[0.26, 0.045, 8, 24]} />
           <meshBasicMaterial color="#fef08a" />
         </mesh>
+      );
+    case 'pumpkin_hat':
+      return (
+        <group position={[0, 0.1, 0]}>
+          {[-0.1, 0, 0.1].map((x, i) => (
+            <mesh key={x} position={[x, 0.08, 0]} scale={[i === 1 ? 1 : 0.8, 0.8, 1]}>
+              <sphereGeometry args={[0.24, 12, 10]} />
+              <meshLambertMaterial color={i === 1 ? '#f97316' : '#ea580c'} />
+            </mesh>
+          ))}
+          {/* Carved face lit from inside */}
+          {[-0.09, 0.09].map((x) => (
+            <Part key={x} size={[0.07, 0.07, 0.03]} at={[x, 0.13, 0.22]} rot={[0, 0, Math.PI / 4]} color="#fde047" glow />
+          ))}
+          <Part size={[0.18, 0.04, 0.03]} at={[0, 0.02, 0.235]} color="#fde047" glow />
+          <mesh position={[0, 0.3, 0]}>
+            <cylinderGeometry args={[0.03, 0.045, 0.12, 6]} />
+            <meshLambertMaterial color="#4d7c0f" />
+          </mesh>
+          <Part size={[0.12, 0.02, 0.07]} at={[0.07, 0.3, 0]} rot={[0, 0, -0.4]} color="#65a30d" />
+        </group>
       );
     default:
       return null;
@@ -524,6 +570,49 @@ function Shiba() {
   );
 }
 
+// Little purple bat flapping at shoulder height
+function BatPet() {
+  const wingLRef = useRef<THREE.Group>(null);
+  const wingRRef = useRef<THREE.Group>(null);
+  const wing = useMemo(() => createBatWingGeometry(), []);
+  useEffect(() => () => wing.dispose(), [wing]);
+
+  useFrame(() => {
+    const flap = Math.sin(performance.now() * 0.025) * 0.7;
+    if (wingLRef.current) wingLRef.current.rotation.y = flap;
+    if (wingRRef.current) wingRRef.current.rotation.y = -flap;
+  });
+
+  return (
+    <group position={[0, 1.25, 0]} scale={0.6}>
+      <mesh>
+        <sphereGeometry args={[0.2, 12, 10]} />
+        <meshLambertMaterial color="#4c1d95" />
+      </mesh>
+      {[-0.1, 0.1].map((x) => (
+        <mesh key={x} position={[x, 0.2, 0]}>
+          <coneGeometry args={[0.06, 0.16, 4]} />
+          <meshLambertMaterial color="#4c1d95" />
+        </mesh>
+      ))}
+      {[-0.07, 0.07].map((x) => (
+        <mesh key={x} position={[x, 0.05, 0.18]}>
+          <sphereGeometry args={[0.035, 8, 6]} />
+          <meshBasicMaterial color="#fde047" />
+        </mesh>
+      ))}
+      <Part size={[0.06, 0.03, 0.02]} at={[0, -0.05, 0.19]} color="#f8fafc" />
+      {[-1, 1].map((side) => (
+        <group key={side} ref={side === 1 ? wingRRef : wingLRef} position={[side * 0.15, 0.02, 0]}>
+          <mesh geometry={wing} scale={[side * 0.8, 0.65, 1]} rotation={[0, 0, side * -0.2]}>
+            <meshLambertMaterial color="#6d28d9" side={THREE.DoubleSide} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function RoboCat() {
   return (
     <group position={[0, 0.08, 0]}>
@@ -649,7 +738,7 @@ export function AvatarMesh({ cosmetics, motion, tool, toolTier }: AvatarMeshProp
   const outfitId = OUTFIT_BASE[cosmetics.outfit] ? cosmetics.outfit : 'farmer_blue';
   const base = OUTFIT_BASE[outfitId];
   const hasWings = WING_IDS.includes(cosmetics.wing);
-  const hasPet = cosmetics.pet === 'shiba_inu' || cosmetics.pet === 'robo_cat';
+  const hasPet = ['shiba_inu', 'robo_cat', 'bat_pet'].includes(cosmetics.pet);
 
   useFrame(() => {
     const now = performance.now();
@@ -750,7 +839,13 @@ export function AvatarMesh({ cosmetics, motion, tool, toolTier }: AvatarMeshProp
 
       {hasPet && (
         <group ref={petRef} position={[-0.85, 0, -0.75]}>
-          {cosmetics.pet === 'shiba_inu' ? <Shiba /> : <RoboCat />}
+          {cosmetics.pet === 'shiba_inu' ? (
+            <Shiba />
+          ) : cosmetics.pet === 'robo_cat' ? (
+            <RoboCat />
+          ) : (
+            <BatPet />
+          )}
         </group>
       )}
     </group>

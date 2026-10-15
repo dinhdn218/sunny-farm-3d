@@ -9,6 +9,7 @@ export interface QuestDef {
   target: number;
   rewardGold: number;
   rewardGems: number;
+  rewardCandy?: number;
   crop?: CropId;
   chapter?: string;
 }
@@ -70,6 +71,15 @@ export const DAILY_POOL: QuestDef[] = [
 ];
 
 export const DAILY_QUEST_COUNT = 3;
+
+// Lễ Hội Bí Ngô: one-off quests shown (and claimable) only while the festival runs
+export const EVENT_QUESTS: QuestDef[] = [
+  { id: 'e_pumpkins', title: 'Mùa Bí Ngô', desc: 'Thu hoạch 5 Bí Ngô.', icon: '🎃', type: 'harvest', crop: 'pumpkin', target: 5, rewardGold: 0, rewardGems: 5, rewardCandy: 15 },
+  { id: 'e_craft', title: 'Lò Nướng Đỏ Lửa', desc: 'Chế biến xong 3 mẻ hàng ở Xưởng.', icon: '🔥', type: 'craft', target: 3, rewardGold: 0, rewardGems: 5, rewardCandy: 15 },
+  { id: 'e_night_fish', title: 'Câu Cá Đêm Hội', desc: 'Câu được 3 con cá vào ban đêm (đổi giờ bằng nút 🌤️).', icon: '🌙', type: 'night_fish', target: 3, rewardGold: 0, rewardGems: 5, rewardCandy: 20 },
+  { id: 'e_feed', title: 'Bữa Tối Cho Đàn Thú', desc: 'Cho vật nuôi ăn 6 lần.', icon: '🐄', type: 'feed_animal', target: 6, rewardGold: 0, rewardGems: 5, rewardCandy: 15 },
+  { id: 'e_shop', title: 'Cho Kẹo Hay Bị Ghẹo', desc: 'Đổi 1 món ở Tiệm Kẹo Ma Quái (Công Viên).', icon: '🍬', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardCandy: 0 },
+];
 
 // Long-term goals with three tiers each (cumulative progress)
 export const ACHIEVEMENTS: AchievementDef[] = [

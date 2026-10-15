@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { COSMETICS } from '@/config/cosmetics';
 import { CosmeticCategory, CosmeticItem } from '@/types/game';
+import { isEventActive } from '@/lib/event';
+import { localDateKey } from '@/lib/dailyGift';
 import { ModalShell } from './ModalShell';
 
 // The try-on preview is its own WebGL canvas, browser only
@@ -19,6 +21,7 @@ const TABS: { id: string; label: string; categories: CosmeticCategory[] }[] = [
 ];
 
 function priceLabel(item: CosmeticItem) {
+  if (item.priceCandy !== undefined) return `🍬 ${item.priceCandy} Kẹo`;
   if (item.priceGold > 0 && item.priceGems > 0) {
     return `🪙 ${item.priceGold} + 💎 ${item.priceGems}`;
   }
@@ -36,11 +39,18 @@ export function WardrobeModal() {
   const buyOrEquipCosmetic = useGameStore((s) => s.buyOrEquipCosmetic);
   const startPlacingDecor = useGameStore((s) => s.startPlacingDecor);
   const storeDecor = useGameStore((s) => s.storeDecor);
+  const setActiveModal = useGameStore((s) => s.setActiveModal);
   const [tabId, setTabId] = useState(TABS[0].id);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
-  const items = COSMETICS.filter((c) => tab.categories.includes(c.category));
+  // Festival items show up while the festival runs, and afterwards only for those who own them
+  const festival = isEventActive(localDateKey(new Date()));
+  const items = COSMETICS.filter(
+    (c) =>
+      tab.categories.includes(c.category) &&
+      (c.priceCandy === undefined || festival || ownedCosmetics.includes(c.id))
+  );
   const isDecorTab = tab.id === 'farmDecor';
 
   // Hovering an item tries it on in the preview without buying it
@@ -174,6 +184,13 @@ export function WardrobeModal() {
                           </button>
                         )}
                       </div>
+                    ) : !owned && item.priceCandy !== undefined ? (
+                      <button
+                        onClick={() => setActiveModal('candyShop')}
+                        className="game-btn rounded-xl bg-purple-600 px-3 py-1.5 text-xs font-black text-white"
+                      >
+                        🍬 Tiệm Kẹo
+                      </button>
                     ) : (
                       <button
                         onClick={() => buyOrEquipCosmetic(item.id)}

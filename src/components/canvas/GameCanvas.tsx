@@ -17,6 +17,9 @@ import { ParkWorld } from './worlds/ParkWorld';
 import { BeachWorld } from './worlds/BeachWorld';
 import { MallWorld } from './worlds/MallWorld';
 import { CinemaWorld } from './worlds/CinemaWorld';
+import { HalloweenScene } from './environment/Halloween';
+import { isEventActive } from '@/lib/event';
+import { localDateKey } from '@/lib/dailyGift';
 
 // The HTML version renders with three r128 defaults (no tone mapping, no colour management,
 // legacy light units). `flat linear legacy` restores the first two; lights are scaled by π for the third.
@@ -26,6 +29,10 @@ function SkyAndLights() {
   const timePhaseIndex = useGameStore((s) => s.timePhaseIndex);
   const phase = TIME_PHASES[timePhaseIndex];
   const sunRef = useRef<THREE.DirectionalLight>(null);
+  // Festival nights turn purple
+  const festiveNight = phase.id === 'night' && isEventActive(localDateKey(new Date()));
+  const sky = festiveNight ? '#1e1036' : phase.sky;
+  const fog = festiveNight ? '#2e1065' : phase.fog;
 
   useLayoutEffect(() => {
     const shadowCam = sunRef.current?.shadow.camera;
@@ -39,8 +46,8 @@ function SkyAndLights() {
 
   return (
     <>
-      <color attach="background" args={[phase.sky]} />
-      <fogExp2 attach="fog" args={[phase.fog, 0.014]} />
+      <color attach="background" args={[sky]} />
+      <fogExp2 attach="fog" args={[fog, 0.014]} />
       <ambientLight intensity={phase.ambientIntensity * LEGACY_LIGHT_SCALE} />
       <directionalLight
         ref={sunRef}
@@ -79,6 +86,7 @@ export default function GameCanvas() {
         {currentWorld === 'beach' && <BeachWorld />}
         {currentWorld === 'mall' && <MallWorld />}
         {currentWorld === 'cinema' && <CinemaWorld />}
+        <HalloweenScene />
 
         <Player />
         <SimulatedPlayers />

@@ -10,6 +10,8 @@ import { countItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 import { waterCapacity } from '@/lib/tools';
+import { isEventActive } from '@/lib/event';
+import { visibleQuests } from '@/lib/quests';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -26,6 +28,7 @@ export function TopBar() {
   const shippingBin = useGameStore((s) => s.shippingBin);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
   const xp = useGameStore((s) => s.xp);
+  const candy = useGameStore((s) => s.candy);
   const giftReady = useGameStore(
     (s) => giftDay(s.lastGiftDate, s.loginStreak, localDateKey(new Date())) !== null
   );
@@ -44,7 +47,10 @@ export function TopBar() {
     1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
   const storedCount = countItems(items) + countItems(shippingBin);
   const { level, into, need } = levelInfo(xp);
-  const hasClaimable = quests.some((q) => !q.claimed && q.progress >= q.target);
+  const festival = isEventActive(localDateKey(new Date()));
+  const hasClaimable = visibleQuests(quests, festival).some(
+    (q) => !q.claimed && q.progress >= q.target
+  );
 
   return (
     <header className="pointer-events-none fixed left-0 right-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
@@ -98,6 +104,20 @@ export function TopBar() {
             </div>
           </div>
         </div>
+
+        {festival && (
+          <button
+            onClick={() => setActiveModal('candyShop')}
+            title="Lễ Hội Bí Ngô: Tiệm Kẹo Ma Quái"
+            className="flex items-center gap-1.5 rounded-2xl border-[3px] border-purple-900 bg-purple-700 px-3 py-1.5 text-white shadow-[0_4px_0_#3b0764] transition hover:brightness-110 active:scale-95"
+          >
+            <span className="text-lg">🍬</span>
+            <div className="text-left">
+              <div className="text-[9px] font-extrabold uppercase leading-none text-purple-200">Kẹo</div>
+              <div className="text-sm font-black leading-tight sm:text-base">{candy}</div>
+            </div>
+          </button>
+        )}
 
         <button
           onClick={() => setActiveModal('dailyGift')}

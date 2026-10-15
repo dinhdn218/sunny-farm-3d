@@ -35,6 +35,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   xp: true,
   toolTiers: true,
   sprinklers: true,
+  candy: true,
   loginStreak: true,
   lastGiftDate: true,
   cosmetics: true,

@@ -3,16 +3,21 @@
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { QuestCategory } from '@/types/game';
-import { activeMainQuest, isClaimable } from '@/lib/quests';
+import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
+import { isEventActive } from '@/lib/event';
+import { localDateKey } from '@/lib/dailyGift';
 
 const CATEGORY_TAG: Record<QuestCategory, string> = {
   main: '📖',
   daily: '📅',
   achievement: '🏆',
+  event: '🎃',
 };
 
 export function QuestTracker() {
-  const quests = useGameStore((s) => s.quests);
+  const allQuests = useGameStore((s) => s.quests);
+  const festival = isEventActive(localDateKey(new Date()));
+  const quests = visibleQuests(allQuests, festival);
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
@@ -175,6 +180,14 @@ export function QuestTracker() {
               <div className="mb-1.5 text-xs font-black text-sky-300">
                 {worldCfg.icon} {worldCfg.name}
               </div>
+              {currentWorld === 'park' && festival && (
+                <button
+                  onClick={() => setActiveModal('candyShop')}
+                  className="game-btn mb-1.5 w-full rounded-xl bg-purple-600 py-1.5 text-xs font-black text-white hover:bg-purple-500"
+                >
+                  🍬 Tiệm Kẹo Ma Quái
+                </button>
+              )}
               <button
                 onClick={() => setActiveModal('map')}
                 className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500"

@@ -203,6 +203,8 @@ export interface CosmeticItem {
   description: string;
   // Decor only: radius kept clear around the item when placing it on the farm
   footprint?: number;
+  // Festival items are traded for candy at the event shop instead of bought with gold
+  priceCandy?: number;
 }
 
 export interface PlayerCosmetics {
@@ -240,9 +242,11 @@ export type QuestType =
   | 'buy_machine'
   | 'craft'
   | 'market_sell'
-  | 'fish';
+  | 'fish'
+  | 'night_fish'
+  | 'event_shop';
 
-export type QuestCategory = 'main' | 'daily' | 'achievement';
+export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
 export interface QuestItem {
   id: string;
@@ -256,6 +260,8 @@ export interface QuestItem {
   claimed: boolean;
   rewardGold: number;
   rewardGems: number;
+  // Festival candy (event quests)
+  rewardCandy?: number;
   // Only events for this crop count
   crop?: CropId;
   // Story chapter label (main quests)
@@ -297,6 +303,8 @@ export interface SaveData {
   toolTiers: { hoe: number; water: number };
   // Sprinklers bought but not placed on the field
   sprinklers: number;
+  // Festival candy (lib/event)
+  candy: number;
   // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed
   loginStreak: number;
   lastGiftDate: string | null;

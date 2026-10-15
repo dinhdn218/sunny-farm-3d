@@ -3,6 +3,7 @@ import {
   ACHIEVEMENTS,
   DAILY_POOL,
   DAILY_QUEST_COUNT,
+  EVENT_QUESTS,
   MAIN_QUESTS,
   QuestDef,
 } from '@/config/quests';
@@ -20,6 +21,7 @@ function fromDef(def: QuestDef, category: QuestCategory, id = def.id): QuestItem
     claimed: false,
     rewardGold: def.rewardGold,
     rewardGems: def.rewardGems,
+    rewardCandy: def.rewardCandy,
     crop: def.crop,
     chapter: def.chapter,
   };
@@ -70,25 +72,37 @@ export function createInitialQuests(
     ...MAIN_QUESTS.map((def) => fromDef(def, 'main')),
     ...createDailyQuests(day),
     ...ACHIEVEMENTS.map((a) => achievementQuest(a.id, 0, achievementProgress[a.id] ?? 0)),
+    ...EVENT_QUESTS.map((def) => fromDef(def, 'event')),
   ];
 }
 
-// Brings saved quests in line with the current game: story quests and achievements follow the
-// config (new ones added in order, texts refreshed) while progress, tiers and claims are kept
+// Festival quests stay in the save but are only shown (and claimable) while the festival runs
+export const visibleQuests = (quests: QuestItem[], eventActive: boolean) =>
+  eventActive ? quests : quests.filter((q) => q.category !== 'event');
+
+// Brings saved quests in line with the current game: story, festival quests and achievements follow
+// the config (new ones added in order, texts refreshed) while progress, tiers and claims are kept
 export function reconcileQuests(saved: QuestItem[], day: number): QuestItem[] {
   const savedById = new Map(saved.map((q) => [q.id, q]));
-  const mains = MAIN_QUESTS.map((def) => {
-    const old = savedById.get(def.id);
-    const quest = fromDef(def, 'main');
-    return old ? { ...quest, progress: old.progress, claimed: old.claimed } : quest;
-  });
+  const fromConfig = (defs: QuestDef[], category: QuestCategory) =>
+    defs.map((def) => {
+      const old = savedById.get(def.id);
+      const quest = fromDef(def, category);
+      return old ? { ...quest, progress: old.progress, claimed: old.claimed } : quest;
+    });
+  const mains = fromConfig(MAIN_QUESTS, 'main');
   const dailies = saved.filter((q) => q.category === 'daily');
   const achievements = ACHIEVEMENTS.map((def) => {
     const old = savedById.get(def.id);
     if (!old) return achievementQuest(def.id, 0, 0);
     return { ...achievementQuest(def.id, old.tier ?? 0, old.progress), claimed: old.claimed };
   });
-  return [...mains, ...(dailies.length > 0 ? dailies : createDailyQuests(day)), ...achievements];
+  return [
+    ...mains,
+    ...(dailies.length > 0 ? dailies : createDailyQuests(day)),
+    ...achievements,
+    ...fromConfig(EVENT_QUESTS, 'event'),
+  ];
 }
 
 export const activeMainQuest = (quests: QuestItem[]) =>

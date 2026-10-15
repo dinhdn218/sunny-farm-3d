@@ -27,6 +27,7 @@ import { MarketModal } from '@/components/hud/modals/MarketModal';
 import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
 import { FishingOverlay } from '@/components/hud/FishingOverlay';
 import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
+import { CandyShopModal } from '@/components/hud/modals/CandyShopModal';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 
 // WebGL canvas only exists in the browser
@@ -86,6 +87,7 @@ export default function HomePage() {
       {activeModal === 'market' && <MarketModal />}
       {activeModal === 'fishJournal' && <FishJournalModal />}
       {activeModal === 'dailyGift' && <DailyGiftModal />}
+      {activeModal === 'candyShop' && <CandyShopModal />}
     </main>
   );
 }

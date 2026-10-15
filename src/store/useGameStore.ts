@@ -75,6 +75,7 @@ import { marketPrice } from '@/lib/market';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
+import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -154,6 +155,7 @@ interface GameState extends SaveData {
     | 'market'
     | 'fishJournal'
     | 'dailyGift'
+    | 'candyShop'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -242,6 +244,7 @@ interface GameState extends SaveData {
   incrementQuest: (type: QuestType, amount?: number, crop?: CropId) => void;
   claimQuest: (questId: string) => void;
   claimDailyGift: () => void;
+  buyCandyItem: (itemId: string) => void;
   sendChat: (text: string) => void;
   triggerEmote: (emote: string, chatText?: string) => void;
   setRemotePlayers: (players: Record<string, RemotePlayer>) => void;
@@ -255,6 +258,9 @@ const cosmeticById = (id: string) => COSMETICS.find((c) => c.id === id);
 
 const publicZonesVisited = (visited: WorldId[]) =>
   visited.filter((w) => w !== 'farm').length;
+
+// Lễ Hội Bí Ngô runs by the device's calendar date
+const festivalActive = () => isEventActive(localDateKey(new Date()));
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -672,13 +678,16 @@ export const useGameStore = create<GameState>()(
               };
             });
 
+            // Every pumpkin brings festival candy while Lễ Hội Bí Ngô runs
+            const candy = cropKey === 'pumpkin' && festivalActive() ? CANDY_PER_PUMPKIN : 0;
             set({
               tiles: updatedTiles,
               items: addItems(items, { [cropKey]: 1 }),
+              candy: state.candy + candy,
             });
             spawnParticles(tx, 0.45, tz, 0xfacc15, 20);
             get().showToast(
-              `${cropCfg.icon} +1 ${cropCfg.name}!`,
+              `${cropCfg.icon} +1 ${cropCfg.name}${candy ? ` +${candy}🍬` : ''}!`,
               'text-yellow-300',
               [tx, 0.65, tz]
             );
@@ -1207,7 +1216,17 @@ export const useGameStore = create<GameState>()(
             fishing: { ...fishing, stage: 'result', escaped: false, firstOfKind: !logged },
           });
           get().showToast(`${cfg.icon} +1 ${cfg.name} (${fishing.size} cm)!`, 'text-sky-300');
-          if (cfg.rarity !== 'junk') get().incrementQuest('fish', 1);
+          if (cfg.rarity !== 'junk') {
+            get().incrementQuest('fish', 1);
+            // Night fishing: its own quests, plus candy during the festival
+            if (TIME_PHASES[get().timePhaseIndex].id === 'night') {
+              get().incrementQuest('night_fish', 1);
+              if (festivalActive()) {
+                set((s) => ({ candy: s.candy + CANDY_PER_NIGHT_FISH }));
+                get().showToast(`🌙 Cá đêm hội +${CANDY_PER_NIGHT_FISH}🍬`, 'text-purple-300');
+              }
+            }
+          }
         },
 
         loseFish: () => {
@@ -1622,6 +1641,13 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
+          // Festival items are only traded for candy at the event shop
+          if (item.priceCandy !== undefined) {
+            soundFX.error();
+            get().showToast('🍬 Đổi bằng Kẹo ở Tiệm Kẹo Ma Quái (Công Viên)!', 'text-purple-300');
+            return;
+          }
+
           if (gold < item.priceGold) {
             soundFX.error();
             get().showToast('Không đủ Vàng 🪙!', 'text-red-400');
@@ -1665,24 +1691,62 @@ export const useGameStore = create<GameState>()(
         },
 
         claimQuest: (questId) => {
-          const { quests, gold, gems, playerPos } = get();
+          const { quests, gold, gems, candy, playerPos } = get();
           const q = quests.find((item) => item.id === questId);
           if (!q || q.claimed || q.progress < q.target) return;
+          if (q.category === 'event' && !festivalActive()) return;
 
+          const rewardCandy = q.rewardCandy ?? 0;
           soundFX.questClaim();
           set({
             gold: gold + q.rewardGold,
             gems: gems + q.rewardGems,
+            candy: candy + rewardCandy,
             quests: quests.map((item) => (item.id === questId ? afterClaim(item) : item)),
           });
           spawnParticles(playerPos.x, 0.6, playerPos.z, 0xfacc15, 25);
           get().showToast(
-            `🎉 +${q.rewardGold}🪙 +${q.rewardGems}💎!`,
+            `🎉 +${q.rewardGold}🪙 +${q.rewardGems}💎${rewardCandy ? ` +${rewardCandy}🍬` : ''}!`,
             'text-yellow-300',
             [playerPos.x, 1.3, playerPos.z]
           );
           // The next story quest may already be satisfied (e.g. zones visited earlier)
           if (q.category === 'main') syncVisitQuest();
+        },
+
+        // Tiệm Kẹo Ma Quái: festival items for candy, at its stall in the Park while the festival runs
+        buyCandyItem: (itemId) => {
+          const { candy, ownedCosmetics, cosmetics, currentWorld, playerPos } = get();
+          const item = cosmeticById(itemId);
+          if (!item || item.priceCandy === undefined || ownedCosmetics.includes(itemId)) return;
+          if (!festivalActive()) {
+            get().showToast('🎃 Lễ Hội Bí Ngô đã kết thúc!', 'text-amber-300');
+            return;
+          }
+          if (currentWorld !== 'park') {
+            soundFX.error();
+            get().showToast('🌸 Hãy đến Tiệm Kẹo Ma Quái ở Công Viên để đổi quà!', 'text-purple-300');
+            return;
+          }
+          if (candy < item.priceCandy) {
+            soundFX.error();
+            get().showToast(`Cần ${item.priceCandy}🍬 để đổi ${item.name}!`, 'text-red-400');
+            return;
+          }
+          const isDecor = item.category === 'decor';
+          soundFX.questClaim();
+          set({
+            candy: candy - item.priceCandy,
+            ownedCosmetics: [...ownedCosmetics, itemId],
+            cosmetics: isDecor ? cosmetics : { ...cosmetics, [item.category]: itemId },
+          });
+          spawnParticles(playerPos.x, 0.9, playerPos.z, 0xa855f7, 22);
+          get().showToast(
+            `🎃 Đã đổi ${item.icon} ${item.name}!${isDecor ? ' Về nông trại để đặt.' : ''}`,
+            'text-purple-300'
+          );
+          get().incrementQuest(isDecor ? 'buy_decor' : 'buy_cosmetic', 1);
+          get().incrementQuest('event_shop', 1);
         },
 
         // One gift per real calendar day, following the 7-day login streak

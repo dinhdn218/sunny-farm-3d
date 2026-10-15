@@ -51,6 +51,15 @@ describe('reconcileQuests', () => {
     expect(byId(quests, 'a_craft')).toMatchObject({ tier: 0, progress: 0, claimed: false });
   });
 
+  it('keeps the progress of event quests and adds the ones a save lacks', () => {
+    const saved = createInitialQuests(1)
+      .filter((q) => q.id !== 'e_shop')
+      .map((q) => (q.id === 'e_pumpkins' ? { ...q, progress: 4 } : q));
+    const quests = reconcileQuests(saved, 1);
+    expect(byId(quests, 'e_pumpkins')).toMatchObject({ category: 'event', progress: 4 });
+    expect(byId(quests, 'e_shop')).toMatchObject({ category: 'event', progress: 0 });
+  });
+
   it('keeps an achievement finished at its last tier finished', () => {
     const done = { ...achievementQuest('a_days', 2, 30), claimed: true };
     const saved = createInitialQuests(1).map((q) => (q.id === 'a_days' ? done : q));
