@@ -3,6 +3,7 @@ import { CROPS } from './crops';
 import { ANIMALS } from './animals';
 import { CATCH_LIST } from './fish';
 import { FORAGE_ITEMS } from './forage';
+import { BUG_LIST } from './bugs';
 
 // Goods made in the workshop; worth about 1.4–1.6× their ingredients
 export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
@@ -53,6 +54,11 @@ const hiveItems = {
   honey: { id: 'honey', name: 'Mật Ong', icon: '🍯', sellPrice: 90, kind: 'animal' },
 } as Record<ItemConfig['id'], ItemConfig>;
 
+// Bugs netted in the Park
+const bugItems = Object.fromEntries(
+  BUG_LIST.map((b) => [b.id, { id: b.id, name: b.name, icon: b.icon, sellPrice: b.sellPrice, kind: 'bug' }])
+) as Record<ItemConfig['id'], ItemConfig>;
+
 // Beach finds, without their spawn weights
 const forageItems = Object.fromEntries(
   Object.values(FORAGE_ITEMS).map(({ weight: _weight, ...item }) => [item.id, item])
@@ -65,6 +71,7 @@ export const ITEMS = {
   ...hiveItems,
   ...fishItems,
   ...forageItems,
+  ...bugItems,
   ...ARTISAN_GOODS,
 } as Record<ItemId, ItemConfig>;
 

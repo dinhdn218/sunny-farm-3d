@@ -89,6 +89,9 @@ export function ZonePanel() {
               {festival.shop.icon} {festival.shop.name}
             </ZoneButton>
           )}
+          <p className="mt-1 text-[10px] font-bold leading-snug text-lime-200">
+            🦋 Côn trùng bay quanh công viên, đổi theo giờ và mùa: click vào để bắt bằng vợt
+          </p>
         </>
       )}
 

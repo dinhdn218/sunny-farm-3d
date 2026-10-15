@@ -94,6 +94,8 @@ export function createNewGameSave(): SaveData {
     lastWheelDate: null,
     beachDay: 0,
     beachTaken: [],
+    bugDay: 0,
+    bugsTaken: [],
     fishLog: {},
     xp: 0,
     toolTiers: { hoe: 0, water: 0 },

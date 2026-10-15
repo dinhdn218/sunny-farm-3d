@@ -9,7 +9,8 @@ import { reelZoneScale } from '@/lib/pets';
 import { TIME_PHASES } from '@/config/time';
 import { CatchId, FishingSession } from '@/types/game';
 
-function Panel({ children, onPointerDown }: { children: ReactNode; onPointerDown?: () => void }) {
+// Card at the bottom of the screen for the fishing and bug-catching games
+export function Panel({ children, onPointerDown }: { children: ReactNode; onPointerDown?: () => void }) {
   return (
     <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-30 flex justify-center px-3">
       <div

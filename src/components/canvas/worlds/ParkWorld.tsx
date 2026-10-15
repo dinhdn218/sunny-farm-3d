@@ -8,6 +8,7 @@ import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { activeFestival } from '@/lib/festivals';
 import { FestivalConfig } from '@/config/festivals';
+import { ParkBugs } from '../ParkBugs';
 import { localDateKey } from '@/lib/dailyGift';
 import { FISHING_ENERGY, FISHING_SPOTS } from '@/config/fish';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
@@ -400,6 +401,7 @@ export function ParkWorld() {
       <IceCreamCart />
       <Carousel />
       {festival && <FestivalStall festival={festival} onOpen={() => setActiveModal('festivalShop')} />}
+      <ParkBugs />
     </group>
   );
 }

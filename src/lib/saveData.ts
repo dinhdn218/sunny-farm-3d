@@ -35,6 +35,8 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   lastWheelDate: true,
   beachDay: true,
   beachTaken: true,
+  bugDay: true,
+  bugsTaken: true,
   fishLog: true,
   xp: true,
   toolTiers: true,

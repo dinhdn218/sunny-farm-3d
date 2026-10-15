@@ -13,7 +13,7 @@ export interface CollectionSet {
 
 const ofKind = (kind: ItemConfig['kind']) => ITEM_LIST.filter((i) => i.kind === kind).map((i) => i.id);
 
-// Every item there is to find, in five sets; junk off the fishing line is in none
+// Every item there is to find, set by set; junk off the fishing line is in none
 export const COLLECTION_SETS: CollectionSet[] = [
   { id: 'crops', name: 'Nông Sản', icon: '🌾', items: ofKind('crop'), reward: { gold: 300, gems: 15 } },
   { id: 'animal', name: 'Chăn Nuôi', icon: '🥚', items: ofKind('animal'), reward: { gold: 300, gems: 15 } },
@@ -26,6 +26,7 @@ export const COLLECTION_SETS: CollectionSet[] = [
     reward: { gold: 500, gems: 25 },
   },
   { id: 'beach', name: 'Bãi Biển', icon: '🐚', items: ofKind('forage'), reward: { gold: 200, gems: 10 } },
+  { id: 'bugs', name: 'Côn Trùng', icon: '🦋', items: ofKind('bug'), reward: { gold: 400, gems: 20 } },
 ];
 
 export function setProgress(set: CollectionSet, collected: ItemId[]) {

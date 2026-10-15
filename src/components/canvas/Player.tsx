@@ -76,6 +76,11 @@ export function Player() {
         if (e.code === 'Escape') store.endFishing();
         return;
       }
+      // The net game has Space; Esc puts the net away
+      if (store.bugCatch) {
+        if (e.code === 'Escape') store.endBugCatch();
+        return;
+      }
 
       // P switches photo mode; while it is on only walking works (the overlay takes the pictures)
       if (e.code === 'KeyP' || (store.photoMode && e.code === 'Escape')) {
@@ -137,7 +142,7 @@ export function Player() {
 
     // The player stays put on the jetty while the line is out, and in their chair at a card table
     const seated = !!useCasinoStore.getState().open;
-    const still = !!fishing || seated;
+    const still = !!fishing || seated || !!store.bugCatch;
     let moveX = still ? 0 : touchMove.x;
     let moveZ = still ? 0 : touchMove.z;
     if (!still) {

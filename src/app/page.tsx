@@ -29,6 +29,7 @@ import { WorkshopModal } from '@/components/hud/modals/WorkshopModal';
 import { MarketModal } from '@/components/hud/modals/MarketModal';
 import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
 import { FishingOverlay } from '@/components/hud/FishingOverlay';
+import { BugCatchOverlay } from '@/components/hud/BugCatchOverlay';
 import { PhotoOverlay } from '@/components/hud/PhotoOverlay';
 import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
 import { FestivalShopModal } from '@/components/hud/modals/FestivalShopModal';
@@ -96,6 +97,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       <MobileDpad />
       {building ? <BuildBar /> : <Hotbar />}
       <FishingOverlay />
+      <BugCatchOverlay />
 
       {activeModal === 'map' && <WorldMapModal />}
       {activeModal === 'quests' && <QuestModal />}

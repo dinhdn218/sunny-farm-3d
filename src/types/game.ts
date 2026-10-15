@@ -47,7 +47,9 @@ export type ForageId = 'shell' | 'starfish' | 'coral' | 'pearl';
 export type HiveProductId = 'honey';
 // Picked from the fruit trees planted on the farm (lib/trees)
 export type FruitId = 'mango' | 'orange';
-export type ItemId = CropId | FruitId | AnimalProductId | HiveProductId | ArtisanId | FishId | ForageId;
+// Caught with a net in the Park (lib/bugs)
+export type BugId = 'butterfly' | 'ladybug' | 'caterpillar' | 'ant' | 'cricket' | 'firefly' | 'beetle' | 'spider';
+export type ItemId = CropId | FruitId | AnimalProductId | HiveProductId | ArtisanId | FishId | ForageId | BugId;
 // Where a line can be cast: the sea off the Beach jetty or the lotus pond in the Park
 export type FishingSpotId = 'beach' | 'park';
 export type ItemCounts = Partial<Record<ItemId, number>>;
@@ -71,7 +73,7 @@ export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
 
 // The collection book's sets (lib/collection)
-export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach';
+export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach' | 'bugs';
 
 // Calendar festivals (config/festivals)
 export type FestivalId = 'halloween' | 'christmas' | 'tet';
@@ -121,7 +123,7 @@ export interface ItemConfig {
   name: string;
   icon: string;
   sellPrice: number;
-  kind: 'crop' | 'animal' | 'artisan' | 'fish' | 'forage';
+  kind: 'crop' | 'animal' | 'artisan' | 'fish' | 'forage' | 'bug';
 }
 
 export interface CatchConfig {
@@ -288,7 +290,8 @@ export type QuestType =
   | 'card_game'
   | 'card_win'
   | 'forage'
-  | 'deliver_order';
+  | 'deliver_order'
+  | 'catch_bug';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
@@ -336,6 +339,16 @@ export interface Letter {
   read: boolean;
   gift?: LetterGift;
   claimed?: boolean;
+}
+
+// A swing of the net at a bug in the Park (not saved)
+export interface BugCatch {
+  spot: number;
+  bug: BugId;
+  // Centre of the green zone on the 0–1 bar
+  zone: number;
+  stage: 'aim' | 'result';
+  caught?: boolean;
 }
 
 // A resident's order on the order board: the goods are delivered from the bag (lib/orders)
@@ -390,6 +403,9 @@ export interface SaveData {
   // Beach finds picked up today (spot numbers), and the day they belong to
   beachDay: number;
   beachTaken: number[];
+  // Bugs in the Park already netted (or scared off) today, as `${phase}:${spot}`, and that day
+  bugDay: number;
+  bugsTaken: string[];
   // Fishing journal: how many of each kind were caught and the biggest one (cm)
   fishLog: Partial<Record<FishId, { caught: number; best: number }>>;
   // Farmer experience; the level is derived from it (lib/leveling)

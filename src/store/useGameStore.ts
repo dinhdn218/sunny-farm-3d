@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   AnimalSpecies,
+  BugCatch,
   BuildPiece,
   BuildPieceId,
   CollectionSetId,
@@ -84,6 +85,8 @@ import { marketPrice } from '@/lib/market';
 import { refillOrders } from '@/lib/orders';
 import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
 import { daysUntilGrown, ripenTrees } from '@/lib/trees';
+import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
+import { bugsInPark, netCaught, netZoneWidth } from '@/lib/bugs';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
 import { rollCatch, rollSize } from '@/lib/fishing';
@@ -214,6 +217,8 @@ interface GameState extends SaveData {
   workshopMachine: MachineId | null;
   // The current cast at the Beach fishing jetty (not saved)
   fishing: FishingSession | null;
+  // The net swung at a bug in the Park (not saved)
+  bugCatch: BugCatch | null;
   lastDaySummary: DaySummaryData | null;
   floatingLabels: FloatingLabel[];
   tooltip: HoverTooltip | null;
@@ -299,6 +304,10 @@ interface GameState extends SaveData {
   landCatch: () => void;
   loseFish: () => void;
   endFishing: () => void;
+  // Go after the bug on a spot in the Park, then swing where the marker is on the net's bar
+  startBugCatch: (spot: number) => void;
+  swingNet: (marker: number) => void;
+  endBugCatch: () => void;
 
   openExpand: (plot?: string | null) => void;
   selectPlot: (plot: string) => void;
@@ -443,6 +452,7 @@ export const useGameStore = create<GameState>()(
         activeModal: null,
         workshopMachine: null,
         fishing: null,
+        bugCatch: null,
         lastDaySummary: null,
         floatingLabels: [],
         tooltip: null,
@@ -574,7 +584,7 @@ export const useGameStore = create<GameState>()(
           set((s) => {
             if (s.photoMode) return { photoMode: false };
             // A cast, a placement or the save-conflict question has to finish first
-            if (s.fishing || s.placingDecor || s.placingSprinkler || s.activeModal === 'cloudConflict') return s;
+            if (s.fishing || s.bugCatch || s.placingDecor || s.placingSprinkler || s.activeModal === 'cloudConflict') return s;
             return { photoMode: true, activeModal: null, tooltip: null, buildMode: null, walkGoal: null };
           }),
 
@@ -633,6 +643,7 @@ export const useGameStore = create<GameState>()(
             placingDecor: null,
             buildMode: null,
             fishing: null,
+            bugCatch: null,
             walkGoal: null,
           });
 
@@ -1541,6 +1552,52 @@ export const useGameStore = create<GameState>()(
         },
 
         endFishing: () => set({ fishing: null }),
+
+        startBugCatch: (spot) => {
+          const { currentWorld, day, timePhaseIndex, bugDay, bugsTaken, energy, bugCatch, fishing } = get();
+          if (currentWorld !== 'park' || bugCatch || fishing) return;
+          const phase = TIME_PHASES[timePhaseIndex].id;
+          const found = bugsInPark(day, phase).find((b) => b.spot === spot);
+          const taken = bugDay === day ? bugsTaken : [];
+          if (!found || taken.includes(`${phase}:${spot}`)) return;
+          if (energy < BUG_NET_ENERGY) {
+            soundFX.error();
+            get().showToast('⚡ Hết thể lực để vung vợt!', 'text-red-400');
+            return;
+          }
+          const width = netZoneWidth(BUGS[found.bug].difficulty);
+          set({
+            bugCatch: { spot, bug: found.bug, zone: width / 2 + Math.random() * (1 - width), stage: 'aim' },
+            walkGoal: null,
+            tooltip: null,
+          });
+        },
+
+        // One swing: in the zone the bug is netted, otherwise it flies off; either way the spot is empty till later
+        swingNet: (marker) => {
+          const { bugCatch, energy, items, day, bugDay, bugsTaken, timePhaseIndex } = get();
+          if (!bugCatch || bugCatch.stage !== 'aim') return;
+          const cfg = BUGS[bugCatch.bug];
+          const caught = netCaught(marker, bugCatch.zone, netZoneWidth(cfg.difficulty));
+          const phase = TIME_PHASES[timePhaseIndex].id;
+          const taken = bugDay === day ? bugsTaken : [];
+          set({
+            energy: Math.max(0, energy - BUG_NET_ENERGY),
+            bugDay: day,
+            bugsTaken: [...taken, `${phase}:${bugCatch.spot}`],
+            items: caught ? addItems(items, { [bugCatch.bug]: 1 }) : items,
+            bugCatch: { ...bugCatch, stage: 'result', caught },
+          });
+          if (caught) {
+            soundFX.harvest();
+            get().showToast(`${cfg.icon} +1 ${cfg.name}!`, 'text-lime-300');
+            get().incrementQuest('catch_bug', 1);
+          } else {
+            soundFX.error();
+          }
+        },
+
+        endBugCatch: () => set({ bugCatch: null }),
 
         openExpand: (plot = null) =>
           set({ activeModal: 'expand', selectedPlot: plot, tooltip: null }),
