@@ -111,18 +111,21 @@ export const activeMainQuest = (quests: QuestItem[]) =>
 
 export const isClaimable = (q: QuestItem) => !q.claimed && q.progress >= q.target;
 
-// Applies a gameplay event and collects the quests it completes into `completed`
+// Applies a gameplay event and collects the quests it completes into `completed`;
+// a festival's quests only count while it runs (`festival`)
 export function advanceQuests(
   quests: QuestItem[],
   type: QuestType,
   amount: number,
   crop: CropId | undefined,
-  completed: QuestItem[]
+  completed: QuestItem[],
+  festival: FestivalId | null
 ) {
   const activeMainId = activeMainQuest(quests)?.id;
   return quests.map((q) => {
     if (q.type !== type || q.claimed) return q;
     if (q.category === 'main' && q.id !== activeMainId) return q;
+    if (q.category === 'event' && q.festival !== festival) return q;
     if (q.crop && q.crop !== crop) return q;
     const capped = q.category !== 'achievement';
     if (capped && q.progress >= q.target) return q;

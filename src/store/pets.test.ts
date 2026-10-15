@@ -158,3 +158,13 @@ describe('bunny, sea turtle and panda', () => {
     }
   });
 });
+
+describe('reindeer', () => {
+  it('brings two loaves of bread home every morning', () => {
+    withPet('reindeer_pet');
+    useGameStore.setState({ day: 9, breadCount: 0, shippingBin: {} });
+    store().nextDay();
+    expect(store().breadCount).toBe(2);
+    expect(store().lastDaySummary?.petNote).toContain('Bánh Mì');
+  });
+});

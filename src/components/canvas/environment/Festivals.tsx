@@ -101,8 +101,22 @@ function HalloweenDressing({ spots, center, night }: DressingProps) {
   );
 }
 
+// Giáng Sinh: little Christmas trees and snowmen taking turns round the spots (the snow falls in WeatherEffects)
+function ChristmasDressing({ spots }: DressingProps) {
+  return (
+    <group>
+      {spots.map(([x, z], i) => (
+        <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={i % 2 === 0 ? 0.42 : 0.5}>
+          <DecorModel id={i % 2 === 0 ? 'decor_xmas_tree' : 'decor_snowman'} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
 const DRESSING: Record<FestivalId, (props: DressingProps) => JSX.Element> = {
   halloween: HalloweenDressing,
+  christmas: ChristmasDressing,
 };
 
 // The running festival's decorations on the farm and in the Park

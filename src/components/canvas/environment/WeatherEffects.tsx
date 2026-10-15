@@ -7,6 +7,8 @@ import { useGameStore } from '@/store/useGameStore';
 import { camControl } from '@/lib/controls';
 import { seasonOf, weatherOf } from '@/lib/seasons';
 import { music } from '@/lib/music';
+import { activeFestival } from '@/lib/festivals';
+import { localDateKey } from '@/lib/dailyGift';
 
 type Fall = 'rain' | 'snow' | 'leaves';
 
@@ -98,7 +100,7 @@ export function WeatherEffects() {
   const kind: Fall | null =
     weather === 'rain' || weather === 'storm'
       ? 'rain'
-      : weather === 'snow'
+      : weather === 'snow' || activeFestival(localDateKey(new Date()))?.snowfall
       ? 'snow'
       : seasonOf(day) === 'autumn'
       ? 'leaves'

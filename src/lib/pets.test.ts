@@ -108,3 +108,10 @@ describe('petMorningGift', () => {
     expect(petMorningGift('none_pet', 5)).toBeNull();
   });
 });
+
+describe('reindeer', () => {
+  it('brings two loaves of bread every morning', () => {
+    expect(petMorningGift('reindeer_pet', 5)?.bread).toBe(2);
+    expect(petMorningGift('reindeer_pet', 6)?.bread).toBe(2);
+  });
+});

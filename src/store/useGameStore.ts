@@ -1867,7 +1867,7 @@ export const useGameStore = create<GameState>()(
             timePhaseIndex: 0,
             gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0),
             gems: gems + (find?.kind === 'gems' ? find.amount : 0),
-            breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0),
+            breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0) + (gift?.bread ?? 0),
             seeds: find?.kind === 'seeds' ? { ...seeds, [find.crop]: (seeds[find.crop] ?? 0) + find.count } : seeds,
             items: gift?.items ? addItems(items, gift.items) : items,
             animalFeed: animalFeed + (gift?.feed ?? 0),
@@ -1971,11 +1971,13 @@ export const useGameStore = create<GameState>()(
         // Every gameplay event goes through here: quest progress, farmer experience and festival tokens
         incrementQuest: (type, amount = 1, crop) => {
           if (amount <= 0) return;
+          const festival = runningFestival();
           const completed: QuestItem[] = [];
-          set((s) => ({ quests: advanceQuests(s.quests, type, amount, crop, completed) }));
+          set((s) => ({
+            quests: advanceQuests(s.quests, type, amount, crop, completed, festival?.id ?? null),
+          }));
           announceCompleted(completed);
           gainXp(xpFor(type, amount));
-          const festival = runningFestival();
           const tokens = festival ? festivalTokensFor(festival, type, amount, crop) : 0;
           if (festival && tokens > 0) {
             const { playerPos } = get();

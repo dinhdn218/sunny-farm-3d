@@ -10,6 +10,14 @@ describe('activeFestival', () => {
     expect(activeFestival('2026-11-02')?.id).toBe('halloween');
     expect(activeFestival('2026-11-03')?.id).not.toBe('halloween');
   });
+
+  it('runs Giáng Sinh from 15 December through New Year’s Day', () => {
+    expect(activeFestival('2026-12-14')).toBeNull();
+    expect(activeFestival('2026-12-15')?.id).toBe('christmas');
+    expect(activeFestival('2026-12-25')?.id).toBe('christmas');
+    expect(activeFestival('2027-01-01')?.id).toBe('christmas');
+    expect(activeFestival('2027-01-02')?.id).not.toBe('christmas');
+  });
 });
 
 describe('festivalDaysLeft', () => {
@@ -22,6 +30,7 @@ describe('festivalDaysLeft', () => {
 describe('nextFestival', () => {
   it('is the festival that starts soonest after today', () => {
     expect(nextFestival('2026-10-01')?.id).toBe('halloween');
+    expect(nextFestival('2026-11-10')?.id).toBe('christmas');
   });
 
   it('is nothing once every festival is over', () => {
@@ -40,5 +49,15 @@ describe('festivalTokensFor', () => {
     const halloween = FESTIVALS.halloween;
     expect(festivalTokensFor(halloween, 'harvest', 1, 'carrot')).toBe(0);
     expect(festivalTokensFor(halloween, 'fish', 1)).toBe(0);
+  });
+});
+
+describe('festivalTokensFor at Giáng Sinh', () => {
+  it('pays gingerbread for wheat, workshop batches and delivered orders', () => {
+    const christmas = FESTIVALS.christmas;
+    expect(festivalTokensFor(christmas, 'harvest', 1, 'wheat')).toBe(2);
+    expect(festivalTokensFor(christmas, 'craft', 2)).toBe(6);
+    expect(festivalTokensFor(christmas, 'deliver_order', 1)).toBe(5);
+    expect(festivalTokensFor(christmas, 'harvest', 1, 'pumpkin')).toBe(0);
   });
 });

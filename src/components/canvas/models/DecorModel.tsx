@@ -760,6 +760,119 @@ function HotAirBalloon({ ghost }: { ghost?: boolean }) {
 }
 
 // 3D model of a farm decoration or workshop machine (also used translucent as the placement ghost and in shop previews)
+const BAUBLE_COLORS = ['#ef4444', '#facc15', '#38bdf8', '#f472b6'];
+// Baubles just outside each tier of the tree: height, distance from the trunk, how many, turn
+const BAUBLES: { at: Vec3; color: string }[] = [
+  { y: 0.45, r: 0.72, n: 6, turn: 0 },
+  { y: 1.05, r: 0.54, n: 5, turn: 0.4 },
+  { y: 1.6, r: 0.36, n: 4, turn: 0.2 },
+].flatMap(({ y, r, n, turn }, tier) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = turn + (i / n) * Math.PI * 2;
+    return { at: [Math.cos(a) * r, y, Math.sin(a) * r] as Vec3, color: BAUBLE_COLORS[(i + tier) % BAUBLE_COLORS.length] };
+  })
+);
+
+// Giáng Sinh: three-tier fir hung with baubles, a turning gold star on top and presents underneath
+function XmasTree({ ghost }: { ghost?: boolean }) {
+  const starRef = useRef<THREE.Mesh>(null);
+
+  useFrame(() => {
+    if (starRef.current) starRef.current.rotation.y = performance.now() * 0.0015;
+  });
+
+  return (
+    <group>
+      <Block size={[0.22, 0.4, 0.22]} at={[0, 0.2, 0]} color="#78350f" ghost={ghost} />
+      {[
+        [0.85, 0.9, 0.75],
+        [0.66, 0.8, 1.3],
+        [0.45, 0.7, 1.8],
+      ].map(([r, h, y]) => (
+        <mesh key={y} castShadow={!ghost} position={[0, y, 0]}>
+          <coneGeometry args={[r, h, 12]} />
+          <Mat color="#15803d" ghost={ghost} />
+        </mesh>
+      ))}
+      {BAUBLES.map(({ at, color }) => (
+        <mesh key={`${at[0]}_${at[1]}`} position={at}>
+          <sphereGeometry args={[0.07, 8, 6]} />
+          <Mat color={color} ghost={ghost} glow />
+        </mesh>
+      ))}
+      <mesh ref={starRef} position={[0, 2.27, 0]}>
+        <octahedronGeometry args={[0.17, 0]} />
+        <Mat color="#fde047" ghost={ghost} glow />
+      </mesh>
+      <Block size={[0.32, 0.26, 0.32]} at={[0.55, 0.13, 0.42]} color="#dc2626" ghost={ghost} shadow />
+      <Block size={[0.06, 0.27, 0.33]} at={[0.55, 0.13, 0.42]} color="#facc15" ghost={ghost} />
+      <Block size={[0.26, 0.2, 0.26]} at={[-0.52, 0.1, 0.46]} color="#2563eb" ghost={ghost} shadow />
+      <Block size={[0.27, 0.21, 0.05]} at={[-0.52, 0.1, 0.46]} color="#f8fafc" ghost={ghost} />
+    </group>
+  );
+}
+
+// Giáng Sinh: three snowballs with a carrot nose, coal eyes, a red scarf and a black top hat
+function Snowman({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      {[
+        [0.42, 0.38],
+        [0.3, 0.95],
+        [0.22, 1.38],
+      ].map(([r, y]) => (
+        <mesh key={y} castShadow={!ghost} position={[0, y, 0]}>
+          <sphereGeometry args={[r, 16, 12]} />
+          <Mat color="#f8fafc" ghost={ghost} />
+        </mesh>
+      ))}
+      {[-0.07, 0.07].map((x) => (
+        <mesh key={x} position={[x, 1.44, 0.19]}>
+          <sphereGeometry args={[0.03, 6, 6]} />
+          <Mat color="#111827" ghost={ghost} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.38, 0.29]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.035, 0.18, 8]} />
+        <Mat color="#f97316" ghost={ghost} />
+      </mesh>
+      {[1.03, 0.9].map((y) => (
+        <mesh key={y} position={[0, y, 0.29]}>
+          <sphereGeometry args={[0.035, 6, 6]} />
+          <Mat color="#111827" ghost={ghost} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.2, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.2, 0.05, 8, 18]} />
+        <Mat color="#dc2626" ghost={ghost} />
+      </mesh>
+      <Block size={[0.09, 0.28, 0.04]} at={[0.12, 1.06, 0.2]} rot={[0, 0, 0.2]} color="#dc2626" ghost={ghost} />
+      {[-1, 1].map((side) => (
+        <Block
+          key={side}
+          size={[0.6, 0.035, 0.035]}
+          at={[side * 0.48, 1.06, 0]}
+          rot={[0, 0, side * 0.5]}
+          color="#78350f"
+          ghost={ghost}
+        />
+      ))}
+      <mesh position={[0, 1.57, 0]}>
+        <cylinderGeometry args={[0.24, 0.24, 0.03, 16]} />
+        <Mat color="#111827" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]}>
+        <cylinderGeometry args={[0.15, 0.15, 0.28, 16]} />
+        <Mat color="#111827" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 1.62, 0]}>
+        <cylinderGeometry args={[0.153, 0.153, 0.05, 16]} />
+        <Mat color="#dc2626" ghost={ghost} />
+      </mesh>
+    </group>
+  );
+}
+
 export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
   if (isMachineId(id)) return <MachineModel id={id} ghost={ghost} />;
   switch (id) {
@@ -791,6 +904,10 @@ export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
       return <KoiPond ghost={ghost} />;
     case 'decor_hot_air_balloon':
       return <HotAirBalloon ghost={ghost} />;
+    case 'decor_xmas_tree':
+      return <XmasTree ghost={ghost} />;
+    case 'decor_snowman':
+      return <Snowman ghost={ghost} />;
     default:
       return null;
   }

@@ -74,13 +74,18 @@ export const DAILY_POOL: QuestDef[] = [
 
 export const DAILY_QUEST_COUNT = 3;
 
-// Festival quests: shown (and claimable) only while their festival runs; Lễ Hội Bí Ngô first
+// Festival quests: shown (and claimable) only while their festival runs
 export const EVENT_QUESTS: QuestDef[] = [
   { id: 'e_pumpkins', festival: 'halloween', title: 'Mùa Bí Ngô', desc: 'Thu hoạch 5 Bí Ngô.', icon: '🎃', type: 'harvest', crop: 'pumpkin', target: 5, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 'e_craft', festival: 'halloween', title: 'Lò Nướng Đỏ Lửa', desc: 'Chế biến xong 3 mẻ hàng ở Xưởng.', icon: '🔥', type: 'craft', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 'e_night_fish', festival: 'halloween', title: 'Câu Cá Đêm Hội', desc: 'Câu được 3 con cá vào ban đêm (đổi giờ bằng nút 🌤️).', icon: '🌙', type: 'night_fish', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
   { id: 'e_feed', festival: 'halloween', title: 'Bữa Tối Cho Đàn Thú', desc: 'Cho vật nuôi ăn 6 lần.', icon: '🐄', type: 'feed_animal', target: 6, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 'e_shop', festival: 'halloween', title: 'Cho Kẹo Hay Bị Ghẹo', desc: 'Đổi 1 món ở Tiệm Kẹo Ma Quái (Công Viên).', icon: '🍬', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardTokens: 0 },
+  { id: 'x_wheat', festival: 'christmas', title: 'Bột Mì Làm Bánh Gừng', desc: 'Thu hoạch 8 Lúa Mì.', icon: '🌾', type: 'harvest', crop: 'wheat', target: 8, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 'x_craft', festival: 'christmas', title: 'Lò Nướng Đêm Đông', desc: 'Chế biến xong 4 mẻ hàng ở Xưởng.', icon: '🔥', type: 'craft', target: 4, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
+  { id: 'x_orders', festival: 'christmas', title: 'Giao Quà Giáng Sinh', desc: 'Giao 3 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
+  { id: 'x_feed', festival: 'christmas', title: 'Sưởi Ấm Chuồng Trại', desc: 'Cho vật nuôi ăn 6 lần.', icon: '🐄', type: 'feed_animal', target: 6, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 'x_shop', festival: 'christmas', title: 'Món Quà Dưới Gốc Thông', desc: 'Đổi 1 món ở Xưởng Quà Ông Già Noel (Công Viên).', icon: '🎁', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardTokens: 0 },
 ];
 
 // Long-term goals with three tiers each (cumulative progress)

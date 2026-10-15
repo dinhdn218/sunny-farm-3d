@@ -28,7 +28,7 @@ type Vec3 = [number, number, number];
 const ZERO: Vec3 = [0, 0, 0];
 const SKIN = "#fde68a";
 const WING_IDS = ["angel_wings", "fairy_wings", "demon_wings", "phoenix_wings"];
-const PET_IDS = ["shiba_inu", "robo_cat", "bat_pet", "bunny_pet", "sea_turtle", "panda"];
+const PET_IDS = ["shiba_inu", "robo_cat", "bat_pet", "bunny_pet", "sea_turtle", "panda", "reindeer_pet"];
 
 // Box piece of the rig; `glow` pieces ignore lighting so neon and visor bits read as lights
 function Part({
@@ -68,6 +68,7 @@ const OUTFIT_BASE: Record<
   royal_gold: { torso: "#7c3aed", arms: "#7c3aed", legs: "#312e81" },
   cyber_neon: { torso: "#0f172a", arms: "#1e293b", legs: "#0f172a" },
   vampire_cape: { torso: "#111827", arms: "#111827", legs: "#1f2937" },
+  santa_suit: { torso: "#dc2626", arms: "#dc2626", legs: "#dc2626" },
   pajamas: { torso: "#93c5fd", arms: "#93c5fd", legs: "#93c5fd" },
   football_kit: { torso: "#dc2626", arms: SKIN, legs: SKIN },
   ao_dai: { torso: "#dc2626", arms: "#dc2626", legs: "#f8fafc" },
@@ -536,6 +537,18 @@ function OutfitBody({ id }: { id: string }) {
           </mesh>
         </group>
       );
+    case "santa_suit":
+      return (
+        <group>
+          {/* White fur down the front, round the hem and the collar; a black belt with a gold buckle */}
+          <Part size={[0.12, 0.62, 0.02]} at={[0, 0.74, 0.19]} color="#f8fafc" />
+          <Part size={[0.6, 0.09, 0.38]} at={[0, 0.47, 0]} color="#f8fafc" />
+          <Part size={[0.46, 0.08, 0.38]} at={[0, 1.03, 0]} color="#f8fafc" />
+          <Part size={[0.6, 0.08, 0.4]} at={[0, 0.62, 0]} color="#111827" />
+          <Part size={[0.13, 0.1, 0.03]} at={[0, 0.62, 0.205]} color="#facc15" />
+          <Part size={[0.07, 0.05, 0.03]} at={[0, 0.62, 0.21]} color="#111827" />
+        </group>
+      );
     default:
       // Farmer overalls: denim bib with pocket, straps over the shoulders, brass buttons
       return (
@@ -720,6 +733,14 @@ function OutfitLeg({ id }: { id: string }) {
           />
         </group>
       );
+    case "santa_suit":
+      return (
+        <group>
+          {/* Black boots with a fur cuff */}
+          <Part size={[0.24, 0.16, 0.3]} at={[0, -0.15, 0.04]} color="#111827" />
+          <Part size={[0.25, 0.05, 0.25]} at={[0, -0.05, 0]} color="#f8fafc" />
+        </group>
+      );
     default:
       return (
         <group>
@@ -820,6 +841,10 @@ function OutfitArm({ id }: { id: string }) {
             color="#3b82f6"
           />
         </group>
+      );
+    case "santa_suit":
+      return (
+        <Part size={[0.2, 0.08, 0.2]} at={[0, -0.18, 0]} color="#f8fafc" />
       );
     default:
       return null;
@@ -1206,6 +1231,28 @@ function Hat({ id }: { id: string }) {
           <mesh position={[0, 0.1, 0]}>
             <cylinderGeometry args={[0.245, 0.245, 0.09, 18]} />
             <meshLambertMaterial color="#b91c1c" />
+          </mesh>
+        </group>
+      );
+    case "santa_hat":
+      return (
+        <group>
+          {/* White fur band, a red cone flopping over to one side and a pom-pom on the tip */}
+          <mesh position={[0, 0.05, 0]}>
+            <cylinderGeometry args={[0.31, 0.31, 0.12, 16]} />
+            <meshLambertMaterial color="#f8fafc" />
+          </mesh>
+          <mesh position={[0, 0.27, 0]}>
+            <coneGeometry args={[0.28, 0.34, 16]} />
+            <meshLambertMaterial color="#dc2626" />
+          </mesh>
+          <mesh position={[0.12, 0.42, 0]} rotation={[0, 0, -2.0]}>
+            <coneGeometry args={[0.1, 0.26, 12]} />
+            <meshLambertMaterial color="#dc2626" />
+          </mesh>
+          <mesh position={[0.25, 0.35, 0]}>
+            <sphereGeometry args={[0.075, 10, 8]} />
+            <meshLambertMaterial color="#ffffff" />
           </mesh>
         </group>
       );
@@ -1704,6 +1751,47 @@ function Panda() {
 }
 
 // The pet trotting along behind the player
+// Giáng Sinh: a little reindeer with a glowing red nose and branching antlers
+function Reindeer() {
+  return (
+    <group>
+      <Part size={[0.3, 0.24, 0.48]} at={[0, 0.36, 0]} color="#92400e" />
+      <Part size={[0.2, 0.14, 0.06]} at={[0, 0.33, 0.24]} color="#fef3c7" />
+      {[
+        [-0.1, 0.16],
+        [0.1, 0.16],
+        [-0.1, -0.16],
+        [0.1, -0.16],
+      ].map(([x, z]) => (
+        <group key={`${x}${z}`}>
+          <Part size={[0.07, 0.24, 0.07]} at={[x, 0.12, z]} color="#78350f" />
+          <Part size={[0.075, 0.04, 0.075]} at={[x, 0.02, z]} color="#1c1917" />
+        </group>
+      ))}
+      <Part size={[0.12, 0.2, 0.12]} at={[0, 0.52, 0.2]} color="#92400e" />
+      <Part size={[0.22, 0.2, 0.26]} at={[0, 0.64, 0.28]} color="#92400e" />
+      <Part size={[0.14, 0.1, 0.08]} at={[0, 0.6, 0.42]} color="#a16207" />
+      <mesh position={[0, 0.62, 0.47]}>
+        <sphereGeometry args={[0.045, 10, 8]} />
+        <meshBasicMaterial color="#ef4444" />
+      </mesh>
+      {[-0.06, 0.06].map((x) => (
+        <Part key={x} size={[0.035, 0.045, 0.02]} at={[x, 0.69, 0.41]} color="#1e293b" />
+      ))}
+      {[-1, 1].map((side) => (
+        <group key={side}>
+          <Part size={[0.09, 0.04, 0.05]} at={[side * 0.14, 0.69, 0.24]} rot={[0, 0, side * 0.4]} color="#92400e" />
+          {/* Antler: a beam with two tines */}
+          <Part size={[0.03, 0.2, 0.03]} at={[side * 0.07, 0.82, 0.25]} rot={[0, 0, side * -0.3]} color="#d6d3d1" />
+          <Part size={[0.025, 0.1, 0.025]} at={[side * 0.14, 0.86, 0.25]} rot={[0, 0, side * -1.0]} color="#d6d3d1" />
+          <Part size={[0.025, 0.09, 0.025]} at={[side * 0.1, 0.92, 0.2]} rot={[0.6, 0, side * -0.2]} color="#d6d3d1" />
+        </group>
+      ))}
+      <Part size={[0.08, 0.08, 0.06]} at={[0, 0.44, -0.26]} color="#fef3c7" />
+    </group>
+  );
+}
+
 function Pet({ id }: { id: string }) {
   switch (id) {
     case "shiba_inu":
@@ -1718,6 +1806,8 @@ function Pet({ id }: { id: string }) {
       return <SeaTurtle />;
     case "panda":
       return <Panda />;
+    case "reindeer_pet":
+      return <Reindeer />;
     default:
       return null;
   }

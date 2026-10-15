@@ -1,7 +1,7 @@
 import { WorldId } from '@/types/game';
 
-// Each zone has its own tune by day; nights get a lullaby, festival nights a spooky one
-export type ThemeId = WorldId | 'night' | 'spooky';
+// Each zone has its own tune by day; nights get a lullaby, festival nights the festival's own tune
+export type ThemeId = WorldId | 'night' | 'spooky' | 'jingle';
 
 export interface MusicTheme {
   bpm: number;
@@ -60,4 +60,6 @@ export const MUSIC_THEMES: Record<ThemeId, MusicTheme> = {
   night: { bpm: 66, root: 60, scale: PENTATONIC, chords: [I, iii, IV, I], bass: [0], density: 0.2, lead: 'sine', pluck: false, stabs: false },
   // Lễ Hội Bí Ngô nights: a creepy waltz-like shuffle in A minor
   spooky: { bpm: 92, root: 57, scale: HARMONIC_MINOR, chords: [i, iv, V, i], bass: [0, 1.5, 2], density: 0.45, lead: 'triangle', pluck: true, stabs: false },
+  // Giáng Sinh nights: sleigh bells ringing over a cheerful march in G
+  jingle: { bpm: 120, root: 67, scale: MAJOR, chords: [I, IV, I, V], bass: [0, 2], density: 0.5, lead: 'sine', pluck: true, stabs: true },
 };

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { QuestItem } from '@/types/game';
 import { MAIN_QUESTS } from '@/config/quests';
-import { achievementQuest, createInitialQuests, reconcileQuests, visibleQuests } from '@/lib/quests';
+import { achievementQuest, advanceQuests, createInitialQuests, reconcileQuests, visibleQuests } from '@/lib/quests';
 
 const byId = (quests: QuestItem[], id: string) => quests.find((q) => q.id === id);
 
@@ -76,5 +76,26 @@ describe('visibleQuests', () => {
 
   it('hides festival quests while no festival runs', () => {
     expect(visibleQuests(quests, null).some((q) => q.category === 'event')).toBe(false);
+  });
+});
+
+describe('visibleQuests while another festival runs', () => {
+  it("shows that festival's quests and hides the others'", () => {
+    const shown = visibleQuests(createInitialQuests(1), 'christmas').map((q) => q.id);
+    expect(shown).toContain('x_orders');
+    expect(shown).not.toContain('e_pumpkins');
+  });
+});
+
+describe('advanceQuests', () => {
+  const progressOf = (festival: 'halloween' | 'christmas' | null) => {
+    const quests = advanceQuests(createInitialQuests(1), 'feed_animal', 1, undefined, [], festival);
+    return quests.find((q) => q.id === 'x_feed')?.progress;
+  };
+
+  it("counts a festival's quests only while that festival runs", () => {
+    expect(progressOf('christmas')).toBe(1);
+    expect(progressOf('halloween')).toBe(0);
+    expect(progressOf(null)).toBe(0);
   });
 });

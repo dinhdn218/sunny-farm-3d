@@ -27,6 +27,8 @@ export interface FestivalConfig {
   // Its nights: the sky (unless it keeps the usual one) and the tune
   nightSky?: { sky: string; fog: string };
   nightTheme: ThemeId;
+  // Light snow falls while it runs (unless it rains)
+  snowfall?: boolean;
   // The stall: counter, awning stripes and the goods on show
   stall: { counter: string; trim: string; stripes: [string, string]; goods: string[] };
   // Tailwind classes for its buttons, purse chip, banners and shop cards
@@ -67,6 +69,34 @@ export const FESTIVALS: Record<FestivalId, FestivalConfig> = {
       selected: 'border-purple-500 bg-purple-50',
       preview: 'border-purple-700/40 from-purple-300 to-amber-100',
       tag: 'bg-purple-700',
+    },
+  },
+  christmas: {
+    id: 'christmas',
+    name: 'Giáng Sinh An Lành',
+    icon: '🎄',
+    start: '2026-12-15',
+    end: '2027-01-01',
+    token: { name: 'Bánh Gừng', icon: '🍪' },
+    shop: { name: 'Xưởng Quà Ông Già Noel', icon: '🎅' },
+    earn: [
+      { type: 'harvest', crop: 'wheat', tokens: 2, label: '🌾 Thu hoạch Lúa Mì' },
+      { type: 'craft', tokens: 3, label: '🍳 Chế biến xong một mẻ' },
+      { type: 'deliver_order', tokens: 5, label: '📦 Giao một đơn hàng' },
+    ],
+    nightSky: { sky: '#0c1a3a', fog: '#1e3a8a' },
+    nightTheme: 'jingle',
+    snowfall: true,
+    stall: { counter: '#b91c1c', trim: '#facc15', stripes: ['#dc2626', '#f8fafc'], goods: ['#16a34a', '#dc2626', '#facc15'] },
+    ui: {
+      button: 'bg-red-600 hover:bg-red-500',
+      chip: 'bg-red-900 text-amber-200',
+      panel: 'border-red-500/40 bg-red-50 text-red-900',
+      text: 'text-red-800',
+      tile: 'border-red-700 bg-red-200',
+      selected: 'border-red-500 bg-red-50',
+      preview: 'border-red-700/40 from-emerald-200 to-red-100',
+      tag: 'bg-red-700',
     },
   },
 };

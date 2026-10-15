@@ -55,7 +55,7 @@ export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
 
 // Calendar festivals (config/festivals)
-export type FestivalId = 'halloween';
+export type FestivalId = 'halloween' | 'christmas';
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
 
 export type ToolId =
