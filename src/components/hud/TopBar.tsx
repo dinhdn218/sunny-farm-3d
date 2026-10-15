@@ -30,7 +30,7 @@ function Meter({ label, value, max, fill }: { label: string; value: number; max:
           {value}/{max}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-amber-950/25 p-0.5">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-teal-950/40 p-0.5">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${fill} transition-all duration-300`}
           style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
@@ -53,28 +53,28 @@ function TimeCard() {
   const weather = WEATHERS[weatherOf(day)];
 
   return (
-    <div className="parchment-panel pointer-events-auto flex items-center gap-2 rounded-2xl px-1.5 py-1.5 sm:gap-2.5 sm:px-2">
+    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-1.5 py-1.5 sm:gap-2.5 sm:px-2">
       <button
         onClick={() => setActiveModal('map')}
         title="Bản Đồ Thế Giới (phím M)"
         className={`flex items-center gap-2 rounded-xl text-left transition hover:brightness-105 active:scale-95 sm:gap-2.5 ${FOCUS_RING}`}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-lg text-white shadow-inner">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-700 text-lg text-white shadow-inner">
           {worldCfg.icon}
         </span>
         <span className="block">
-          <span className="block text-sm font-black leading-none text-amber-950 sm:text-base">
+          <span className="block text-sm font-black leading-none sm:text-base">
             {worldCfg.name}
           </span>
-          <span className="mt-1 block text-[11px] font-bold leading-tight text-amber-800">
+          <span className="mt-1 block text-[11px] font-bold leading-tight text-teal-50">
             Ngày {day} • {TIME_PHASES[timePhaseIndex].label}
           </span>
-          <span className="block text-[10px] font-bold leading-tight text-amber-700">
+          <span className="block text-[10px] font-bold leading-tight text-teal-50">
             {season.icon} {season.name} {dayInSeason(day)}/{SEASON_DAYS} • {weather.icon} {weather.name}
           </span>
         </span>
       </button>
-      <span aria-hidden className="w-px self-stretch bg-amber-800/25" />
+      <span aria-hidden className="w-0.5 self-stretch rounded-full bg-black/30" />
       <div className="flex gap-1 md:flex-col">
         <button
           onClick={cycleTimeOfDay}
@@ -112,7 +112,7 @@ function FarmerCard() {
   const title = levelTitle(level);
 
   return (
-    <div className="parchment-panel pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-2.5 sm:px-2.5">
+    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-2.5 sm:px-2.5">
       <button
         onClick={() => setActiveModal('dailyGift')}
         title={`${title} • ${need ? `${into}/${need} XP` : 'Cấp tối đa'} • Quà hằng ngày`}
@@ -123,7 +123,7 @@ function FarmerCard() {
           <span className="text-[8px] font-black leading-none">CẤP</span>
           <span className="text-sm font-black leading-none">{level}</span>
         </span>
-        <span className="block h-1.5 w-9 overflow-hidden rounded-full bg-amber-950/25">
+        <span className="block h-1.5 w-9 overflow-hidden rounded-full bg-teal-950/40">
           <span
             className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
             style={{ width: need ? `${(into / need) * 100}%` : '100%' }}
@@ -161,10 +161,10 @@ function Wallet() {
   const festival = isEventActive(localDateKey(new Date()));
 
   return (
-    <div className="parchment-panel pointer-events-auto flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5">
+    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5">
       <div className="flex flex-col gap-0.5">
-        <Coin icon="🪙" label="Vàng" value={gold} valueClass="text-amber-950" />
-        <Coin icon="💎" label="Kim Cương" value={gems} valueClass="text-sky-900" />
+        <Coin icon="🪙" label="Vàng" value={gold} valueClass="text-yellow-200" />
+        <Coin icon="💎" label="Kim Cương" value={gems} valueClass="text-sky-100" />
       </div>
       {festival && (
         <button

@@ -42,6 +42,11 @@ canvas {
   box-shadow: 0 6px 0 var(--bar-drop), 0 10px 20px rgba(0, 0, 0, 0.3),
     inset 0 2px 0 rgba(255, 255, 255, 0.4);
 }
+/* Writing straight on a bar: white with a dark rim so it stays legible on the light top of the gradient */
+.bar-ink {
+  color: #fff;
+  text-shadow: 0 1px 0 var(--bar-drop), 0 0 2px var(--bar-edge);
+}
 .parchment-panel {
   background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%);
   border: 3px solid #a16207;
