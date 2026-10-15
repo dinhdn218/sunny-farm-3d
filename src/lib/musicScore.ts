@@ -1,6 +1,7 @@
 import { MUSIC_THEMES, MusicTheme, PHRASE_BARS, ThemeId } from '@/config/music';
 import { SeasonId, TimePhaseId, Weather, WorldId } from '@/types/game';
 import { isWet } from '@/lib/seasons';
+import { seeded } from '@/lib/random';
 
 // Background sounds that play under the music
 export type Ambience = 'birds' | 'crickets' | 'waves' | 'rain' | 'wind';
@@ -41,17 +42,6 @@ export function musicSceneFor({
   if (weather === 'rain' || weather === 'storm') ambience.push('rain');
   if (weather === 'snow') ambience.push('wind');
   return { theme: night ? (festival ? 'spooky' : 'night') : world, ambience };
-}
-
-// Mulberry32: the same seed always writes the same bar
-function seeded(seed: number) {
-  let a = seed | 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), a | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
 }
 
 const themeSeed = (id: ThemeId) =>

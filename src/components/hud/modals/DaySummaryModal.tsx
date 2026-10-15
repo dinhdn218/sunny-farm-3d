@@ -79,6 +79,7 @@ export function DaySummaryModal() {
                 <span className="text-sky-700">{summary.rainWatered} ô</span>
               </div>
             )}
+            {summary.petNote && <div className="text-emerald-800">{summary.petNote}</div>}
             {summary.batchesReady > 0 && (
               <div className="flex justify-between">
                 <span>🏭 Mẻ chế biến đã xong, chờ thu:</span>

@@ -1,0 +1,54 @@
+import { CropId, TileData, TimePhaseId } from '@/types/game';
+import { CROPS, CROP_LIST } from '@/config/crops';
+import { seeded } from '@/lib/random';
+
+// What the Shiba digs up overnight
+export type ShibaFind =
+  | { kind: 'seeds'; crop: CropId; count: number }
+  | { kind: 'gold'; amount: number }
+  | { kind: 'bread' }
+  | { kind: 'gems'; amount: number };
+
+// The Shiba's gift on the morning of `day`; fixed per day so a reload can't change it
+export function shibaFind(day: number): ShibaFind {
+  const random = seeded(day * 7919 + 17);
+  const roll = random();
+  if (roll < 0.08) return { kind: 'gems', amount: random() < 0.3 ? 2 : 1 };
+  if (roll < 0.42) {
+    return { kind: 'seeds', crop: CROP_LIST[Math.floor(random() * CROP_LIST.length)].id, count: random() < 0.4 ? 2 : 1 };
+  }
+  if (roll < 0.78) return { kind: 'gold', amount: 15 + Math.floor(random() * 26) };
+  return { kind: 'bread' };
+}
+
+export const ROBO_CAT_TILES = 6;
+
+// Robo Cat waters a few dry tiles each morning: growing crops first, then bare tilled soil
+export function roboCatWater(tiles: TileData[]) {
+  const dry = (t: TileData) => !t.watered && !t.sprinkler;
+  const growing = tiles.filter((t) => dry(t) && t.state === 'planted' && t.stage < 3);
+  const soil = tiles.filter((t) => dry(t) && t.state === 'tilled');
+  const chosen = new Set([...growing, ...soil].slice(0, ROBO_CAT_TILES).map((t) => t.id));
+  return {
+    tiles: chosen.size ? tiles.map((t) => (chosen.has(t.id) ? { ...t, watered: true } : t)) : tiles,
+    watered: chosen.size,
+  };
+}
+
+// The bat sees in the dark: at night the fishing catch zone is a quarter wider
+export const reelZoneScale = (pet: string, phase: TimePhaseId) =>
+  pet === 'bat_pet' && phase === 'night' ? 1.25 : 1;
+
+// Line for the morning report
+export function shibaFindLabel(find: ShibaFind) {
+  switch (find.kind) {
+    case 'seeds':
+      return `🐕 Shiba đào được ${find.count} Hạt ${CROPS[find.crop].name}`;
+    case 'gold':
+      return `🐕 Shiba đào được ${find.amount} Vàng 🪙`;
+    case 'bread':
+      return '🐕 Shiba tha về 1 Bánh Mì 🥖';
+    case 'gems':
+      return `🐕 Shiba đào được ${find.amount} Kim Cương 💎!`;
+  }
+}

@@ -25,7 +25,7 @@ import {
   WorldId,
 } from '@/types/game';
 import { CROPS } from '@/config/crops';
-import { ANIMALS } from '@/config/animals';
+import { ANIMALS, DOUBLE_PRODUCT_AFFECTION, DOUBLE_PRODUCT_CHANCE, MAX_ANIMALS } from '@/config/animals';
 import { COSMETICS } from '@/config/cosmetics';
 import { ITEMS } from '@/config/items';
 import { MACHINES, RECIPES, isMachineId } from '@/config/machines';
@@ -78,6 +78,7 @@ import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
 import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
+import { roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -119,6 +120,8 @@ interface DaySummaryData {
   weather: Weather;
   forecast: Weather;
   rainWatered: number;
+  // What the pet you walk with did overnight
+  petNote: string | null;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -1404,9 +1407,9 @@ export const useGameStore = create<GameState>()(
             );
             return;
           }
-          if (animals.length >= 9) {
+          if (animals.length >= MAX_ANIMALS) {
             soundFX.error();
-            get().showToast('🏠 Chuồng trại đã đủ 9 vật nuôi!', 'text-red-400');
+            get().showToast(`🏠 Chuồng trại đã đủ ${MAX_ANIMALS} vật nuôi!`, 'text-red-400');
             return;
           }
 
@@ -1463,6 +1466,9 @@ export const useGameStore = create<GameState>()(
           const az = target.z + oz;
 
           if (target.hasProduct) {
+            // Close friends sometimes give two
+            const count =
+              target.affection >= DOUBLE_PRODUCT_AFFECTION && Math.random() < DOUBLE_PRODUCT_CHANCE ? 2 : 1;
             soundFX.harvest();
             set({
               animals: animals.map((a) =>
@@ -1474,11 +1480,11 @@ export const useGameStore = create<GameState>()(
                     }
                   : a
               ),
-              items: addItems(items, { [cfg.productId]: 1 }),
+              items: addItems(items, { [cfg.productId]: count }),
             });
             spawnParticles(ax, 0.6, az, 0xfacc15, 16);
             get().showToast(
-              `${cfg.productIcon} +1 ${cfg.productName}!`,
+              `${cfg.productIcon} +${count} ${cfg.productName}!${count > 1 ? ' 💕 Quà thân thiết!' : ''}`,
               'text-yellow-300',
               [ax, 0.8, az]
             );
@@ -1550,7 +1556,7 @@ export const useGameStore = create<GameState>()(
         },
 
         nextDay: () => {
-          const { day, tiles, shippingBin, animals, machines, gold } = get();
+          const { day, tiles, shippingBin, animals, machines, gold, gems, breadCount, seeds, cosmetics } = get();
 
           // The shipping bin sells overnight at full price; the bag is kept
           const soldItems = (Object.entries(shippingBin) as [ItemId, number][])
@@ -1610,6 +1616,15 @@ export const useGameStore = create<GameState>()(
             : sprinkledTiles;
           const rainWatered = morningTiles.filter((t) => t.watered).length - sprinklerWatered;
 
+          // The pet you walk with lends a hand overnight
+          const cat = cosmetics.pet === 'robo_cat' ? roboCatWater(morningTiles) : null;
+          const find = cosmetics.pet === 'shiba_inu' ? shibaFind(day + 1) : null;
+          const petNote = find
+            ? shibaFindLabel(find)
+            : cat?.watered
+            ? `🤖 Mèo Máy đã tưới giúp ${cat.watered} ô ruộng`
+            : null;
+
           let animalProductsReady = 0;
           const nextAnimals = animals.map((a) => {
             const ready = a.fedToday || a.hasProduct;
@@ -1630,8 +1645,11 @@ export const useGameStore = create<GameState>()(
             day: day + 1,
             energy: 100,
             timePhaseIndex: 0,
-            gold: gold + totalGoldEarned,
-            tiles: morningTiles,
+            gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0),
+            gems: gems + (find?.kind === 'gems' ? find.amount : 0),
+            breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0),
+            seeds: find?.kind === 'seeds' ? { ...seeds, [find.crop]: (seeds[find.crop] ?? 0) + find.count } : seeds,
+            tiles: cat ? cat.tiles : morningTiles,
             animals: nextAnimals,
             machines: nextMachines,
             shippingBin: {},
@@ -1654,6 +1672,7 @@ export const useGameStore = create<GameState>()(
               weather,
               forecast: weatherOf(day + 2),
               rainWatered,
+              petNote,
             },
             activeModal: 'summary',
           });

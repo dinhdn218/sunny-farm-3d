@@ -38,7 +38,8 @@ export const REEL_START: ReelState = {
   progress: 0.3,
 };
 
-export const zoneWidth = (difficulty: number) => Math.max(0.16, 0.34 - difficulty * 0.02);
+// `scale` widens it (the bat pet at night)
+export const zoneWidth = (difficulty: number, scale = 1) => Math.max(0.16, 0.34 - difficulty * 0.02) * scale;
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
@@ -47,9 +48,10 @@ export function reelStep(
   dt: number,
   holding: boolean,
   difficulty: number,
-  random: () => number = Math.random
+  random: () => number = Math.random,
+  zoneScale = 1
 ): ReelState {
-  const width = zoneWidth(difficulty);
+  const width = zoneWidth(difficulty, zoneScale);
 
   const accel = holding ? 2.4 : -2.0;
   // Turning around brakes twice as hard, so the zone answers the button quickly

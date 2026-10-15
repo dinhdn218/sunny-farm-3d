@@ -35,8 +35,36 @@ export const ANIMALS: Record<AnimalSpecies, AnimalConfig> = {
     productIcon: '🥛',
     productSellPrice: 160,
     glbPath: '/models/cow.glb',
-    description: 'Vật nuôi giá trị cao nhất trang trại! Cho Sữa Tươi cực kỳ lời mỗi sáng.',
+    description: 'Bò sữa hiền lành cho Sữa Tươi cực kỳ lời mỗi sáng.',
+  },
+  duck: {
+    species: 'duck',
+    name: 'Vịt Bầu',
+    icon: '🦆',
+    buyPrice: 180,
+    productId: 'duck_egg',
+    productName: 'Trứng Vịt',
+    productIcon: '🪺',
+    productSellPrice: 60,
+    description: 'Vịt trắng lạch bạch quanh chuồng, đẻ Trứng Vịt to hơn trứng gà.',
+  },
+  pig: {
+    species: 'pig',
+    name: 'Heo Ủn Ỉn',
+    icon: '🐖',
+    buyPrice: 600,
+    productId: 'truffle',
+    productName: 'Nấm Truffle',
+    productIcon: '🍄',
+    productSellPrice: 220,
+    description: 'Mũi thính số một! Mỗi sáng sục đất tìm Nấm Truffle quý hiếm.',
   },
 };
+
+export const MAX_ANIMALS = 12;
+
+// Close friends (affection at least this) sometimes give two products at once
+export const DOUBLE_PRODUCT_AFFECTION = 80;
+export const DOUBLE_PRODUCT_CHANCE = 0.3;
 
 export const ANIMAL_LIST: AnimalConfig[] = Object.values(ANIMALS);

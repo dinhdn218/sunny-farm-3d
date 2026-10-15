@@ -5,6 +5,8 @@ import { useGameStore } from '@/store/useGameStore';
 import { CATCHES, FISHING_ENERGY, RARITY_LABEL, TREASURE_REWARD } from '@/config/fish';
 import { ITEMS } from '@/config/items';
 import { REEL_START, ReelState, reelStep, zoneWidth } from '@/lib/fishing';
+import { reelZoneScale } from '@/lib/pets';
+import { TIME_PHASES } from '@/config/time';
 import { CatchId, FishingSession } from '@/types/game';
 
 function Panel({ children, onPointerDown }: { children: ReactNode; onPointerDown?: () => void }) {
@@ -25,6 +27,7 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
   const landCatch = useGameStore((s) => s.landCatch);
   const loseFish = useGameStore((s) => s.loseFish);
   const { difficulty, icon } = CATCHES[catchId];
+  const zoneScale = useGameStore((s) => reelZoneScale(s.cosmetics.pet, TIME_PHASES[s.timePhaseIndex].id));
   const reel = useRef<ReelState>({ ...REEL_START });
   const holding = useRef(false);
   const [, setFrame] = useState(0);
@@ -35,7 +38,7 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
     const loop = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      reel.current = reelStep(reel.current, dt, holding.current, difficulty);
+      reel.current = reelStep(reel.current, dt, holding.current, difficulty, Math.random, zoneScale);
       if (reel.current.progress >= 1) return landCatch();
       if (reel.current.progress <= 0) return loseFish();
       setFrame((f) => f + 1);
@@ -60,7 +63,7 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
       window.removeEventListener('keyup', onKey);
       window.removeEventListener('pointerup', release);
     };
-  }, [difficulty, landCatch, loseFish]);
+  }, [difficulty, zoneScale, landCatch, loseFish]);
 
   const { barPos, fishPos, progress } = reel.current;
   const hold = () => {
@@ -70,13 +73,16 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
   return (
     <Panel>
       <div className="mb-2 text-sm font-black text-sky-200">🎣 Đang kéo cá! Giữ cá trong vùng xanh</div>
+      {zoneScale > 1 && (
+        <div className="-mt-1 mb-2 text-[11px] font-bold text-purple-200">🦇 Dơi Con soi đường: vùng xanh rộng hơn 25%</div>
+      )}
       <div
         onPointerDown={hold}
         className="relative h-10 w-full touch-none overflow-hidden rounded-xl border-2 border-sky-300/50 bg-sky-950"
       >
         <div
           className="absolute top-0 h-full rounded-lg border-2 border-emerald-200 bg-emerald-400/60"
-          style={{ left: `${barPos * 100}%`, width: `${zoneWidth(difficulty) * 100}%` }}
+          style={{ left: `${barPos * 100}%`, width: `${zoneWidth(difficulty, zoneScale) * 100}%` }}
         />
         <div
           className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl"

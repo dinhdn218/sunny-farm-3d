@@ -1,7 +1,7 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
-import { ANIMAL_LIST, ANIMALS } from '@/config/animals';
+import { ANIMAL_LIST, ANIMALS, DOUBLE_PRODUCT_AFFECTION, MAX_ANIMALS } from '@/config/animals';
 import { ModalShell } from './ModalShell';
 
 export function RanchModal() {
@@ -21,7 +21,7 @@ export function RanchModal() {
     <ModalShell
       icon="🐄"
       title="Chuồng Trại Chăn Nuôi"
-      subtitle={`Nuôi Gà, Cừu, Bò Sữa để thu Trứng, Lông Cừu và Sữa mỗi sáng • Thức ăn: ${animalFeed} 🌾`}
+      subtitle={`Cho ăn hôm nay, sáng mai có sản phẩm • Thân thiết từ ${DOUBLE_PRODUCT_AFFECTION}% có khi cho 2 • Thức ăn: ${animalFeed} 🌾`}
       maxWidth="max-w-3xl"
       headerRight={
         <>
@@ -70,7 +70,7 @@ export function RanchModal() {
 
         <div className="mb-2 mt-4 flex flex-wrap items-center justify-between gap-2">
           <div className="text-xs font-black uppercase text-amber-900">
-            🏡 Đàn Vật Nuôi ({animals.length}/9)
+            🏡 Đàn Vật Nuôi ({animals.length}/{MAX_ANIMALS})
           </div>
           <div className="flex gap-2">
             <button
@@ -122,10 +122,12 @@ export function RanchModal() {
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3">
           <div>
-            <div className="flex gap-3 text-xs font-black text-amber-950">
-              <span>🥚 Trứng: {items.egg ?? 0}</span>
-              <span>🧶 Lông cừu: {items.wool ?? 0}</span>
-              <span>🥛 Sữa: {items.milk ?? 0}</span>
+            <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-black text-amber-950">
+              {ANIMAL_LIST.map((cfg) => (
+                <span key={cfg.productId}>
+                  {cfg.productIcon} {cfg.productName}: {items[cfg.productId] ?? 0}
+                </span>
+              ))}
             </div>
             <div className="mt-0.5 text-[10px] font-bold text-amber-700">
               Gửi Rương ở Kho để bán đủ giá, hoặc đem vào Xưởng làm Phô Mai, Bánh Flan, Khăn Len

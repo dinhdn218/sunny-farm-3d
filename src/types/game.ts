@@ -1,8 +1,8 @@
 export type WorldId = 'farm' | 'park' | 'beach' | 'mall' | 'cinema';
 export type TileState = 'empty' | 'tilled' | 'planted';
 export type CropId = 'carrot' | 'wheat' | 'tomato' | 'pumpkin';
-export type AnimalSpecies = 'chicken' | 'sheep' | 'cow';
-export type AnimalProductId = 'egg' | 'wool' | 'milk';
+export type AnimalSpecies = 'chicken' | 'sheep' | 'cow' | 'duck' | 'pig';
+export type AnimalProductId = 'egg' | 'wool' | 'milk' | 'duck_egg' | 'truffle';
 export type ArtisanId =
   | 'carrot_juice'
   | 'tomato_sauce'
@@ -87,7 +87,8 @@ export interface AnimalConfig {
   productName: string;
   productIcon: string;
   productSellPrice: number;
-  glbPath: string;
+  // Model used when "GLB" models are switched on; the others always use the built-in look
+  glbPath?: string;
   description: string;
 }
 
@@ -210,6 +211,8 @@ export interface CosmeticItem {
   footprint?: number;
   // Festival items are traded for candy at the event shop instead of bought with gold
   priceCandy?: number;
+  // Pets only: how it helps around the farm
+  perk?: string;
 }
 
 export interface PlayerCosmetics {

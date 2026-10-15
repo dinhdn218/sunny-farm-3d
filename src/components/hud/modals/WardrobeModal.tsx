@@ -16,7 +16,7 @@ const ItemPreview = dynamic(() => import('../ItemPreview'), { ssr: false });
 const TABS: { id: string; label: string; categories: CosmeticCategory[] }[] = [
   { id: 'hats', label: '🎩 Mũ & Nón', categories: ['hat'] },
   { id: 'outfits', label: '👕 Trang Phục', categories: ['outfit'] },
-  { id: 'accessories', label: '👼 Cánh & Thú Cưng Shiba', categories: ['wing', 'pet'] },
+  { id: 'accessories', label: '👼 Cánh & Thú Cưng', categories: ['wing', 'pet'] },
   { id: 'farmDecor', label: '🏡 Trang Trí Nông Trại', categories: ['decor'] },
 ];
 
@@ -150,6 +150,11 @@ export function WardrobeModal() {
                       <p className="mt-0.5 text-[11px] font-bold text-amber-800">
                         {item.description}
                       </p>
+                      {item.perk && (
+                        <p className="mt-1 rounded-lg bg-emerald-100 px-1.5 py-0.5 text-[11px] font-black text-emerald-800">
+                          {item.perk}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-2 border-t border-amber-700/20 pt-2">

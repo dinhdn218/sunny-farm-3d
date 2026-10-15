@@ -109,12 +109,100 @@ export function AnimalMesh({
           </mesh>
         </group>
       )}
+
+      {animal.species === 'duck' && (
+        <group position={[0, 0.2, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.36, 0.28, 0.5]} />
+            <meshLambertMaterial color="#f8fafc" />
+          </mesh>
+          {/* Tail tuft */}
+          <mesh position={[0, 0.12, -0.27]} rotation={[0.6, 0, 0]}>
+            <boxGeometry args={[0.18, 0.08, 0.14]} />
+            <meshLambertMaterial color="#f1f5f9" />
+          </mesh>
+          <mesh castShadow position={[0, 0.27, 0.2]}>
+            <boxGeometry args={[0.22, 0.24, 0.22]} />
+            <meshLambertMaterial color="#ffffff" />
+          </mesh>
+          {/* Flat orange bill */}
+          <mesh position={[0, 0.24, 0.36]}>
+            <boxGeometry args={[0.16, 0.05, 0.14]} />
+            <meshLambertMaterial color="#f97316" />
+          </mesh>
+          {[-0.07, 0.07].map((x) => (
+            <mesh key={x} position={[x, 0.31, 0.31]}>
+              <boxGeometry args={[0.04, 0.04, 0.02]} />
+              <meshBasicMaterial color="#0f172a" />
+            </mesh>
+          ))}
+          {[-0.09, 0.09].map((x) => (
+            <mesh key={x} position={[x, -0.16, 0.04]}>
+              <boxGeometry args={[0.1, 0.04, 0.14]} />
+              <meshLambertMaterial color="#f97316" />
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {animal.species === 'pig' && (
+        <group position={[0, 0.4, 0]}>
+          <mesh castShadow>
+            <boxGeometry args={[0.66, 0.52, 0.92]} />
+            <meshLambertMaterial color="#f9a8d4" />
+          </mesh>
+          <mesh castShadow position={[0, 0.1, 0.56]}>
+            <boxGeometry args={[0.46, 0.42, 0.34]} />
+            <meshLambertMaterial color="#fbcfe8" />
+          </mesh>
+          {/* Snout with nostrils */}
+          <mesh position={[0, 0.03, 0.76]}>
+            <boxGeometry args={[0.24, 0.16, 0.08]} />
+            <meshLambertMaterial color="#f472b6" />
+          </mesh>
+          {[-0.05, 0.05].map((x) => (
+            <mesh key={x} position={[x, 0.03, 0.805]}>
+              <boxGeometry args={[0.04, 0.06, 0.01]} />
+              <meshBasicMaterial color="#9d174d" />
+            </mesh>
+          ))}
+          {[-0.13, 0.13].map((x) => (
+            <mesh key={x} position={[x, 0.18, 0.735]}>
+              <boxGeometry args={[0.05, 0.05, 0.02]} />
+              <meshBasicMaterial color="#0f172a" />
+            </mesh>
+          ))}
+          {/* Floppy ears */}
+          {[-0.17, 0.17].map((x) => (
+            <mesh key={x} position={[x, 0.34, 0.5]} rotation={[0.5, 0, x > 0 ? -0.3 : 0.3]}>
+              <boxGeometry args={[0.14, 0.04, 0.16]} />
+              <meshLambertMaterial color="#f472b6" />
+            </mesh>
+          ))}
+          {[
+            [-0.2, 0.3],
+            [0.2, 0.3],
+            [-0.2, -0.3],
+            [0.2, -0.3],
+          ].map(([x, z]) => (
+            <mesh key={`${x}_${z}`} castShadow position={[x, -0.32, z]}>
+              <boxGeometry args={[0.14, 0.16, 0.14]} />
+              <meshLambertMaterial color="#f9a8d4" />
+            </mesh>
+          ))}
+          {/* Curly tail */}
+          <mesh position={[0, 0.16, -0.5]} rotation={[0, 0, Math.PI / 4]}>
+            <torusGeometry args={[0.06, 0.02, 6, 12]} />
+            <meshLambertMaterial color="#f472b6" />
+          </mesh>
+        </group>
+      )}
     </group>
   );
 
   return (
     <group ref={groupRef} position={[animal.x, 0, animal.z]} {...handlers}>
-      {useGlbModels ? (
+      {useGlbModels && cfg.glbPath ? (
         <group>
           <SafeGLTFModel
             url={cfg.glbPath}

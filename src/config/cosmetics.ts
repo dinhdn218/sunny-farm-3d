@@ -172,6 +172,7 @@ export const COSMETICS: CosmeticItem[] = [
     priceGold: 350,
     priceGems: 18,
     description: 'Chó Shiba vàng ngực trắng, đuôi cuộn, chạy lon ton theo bạn!',
+    perk: '🦴 Mỗi sáng đào được quà: hạt giống, vàng, bánh mì, đôi khi cả Kim Cương',
   },
   {
     id: 'robo_cat',
@@ -181,6 +182,7 @@ export const COSMETICS: CosmeticItem[] = [
     priceGold: 480,
     priceGems: 25,
     description: 'Mèo robot mắt neon, ăng-ten phát sáng, bay bằng động cơ phản lực.',
+    perk: '💧 Mỗi sáng tự tưới 6 ô ruộng còn khô',
   },
   {
     id: 'none_pet',
@@ -272,6 +274,7 @@ export const COSMETICS: CosmeticItem[] = [
     priceGems: 0,
     priceCandy: 70,
     description: 'Chú dơi tím mắt vàng vỗ cánh bay quanh vai bạn.',
+    perk: '🌙 Ban đêm vùng kéo cá rộng hơn 25%',
   },
   {
     id: 'decor_jack_lantern',

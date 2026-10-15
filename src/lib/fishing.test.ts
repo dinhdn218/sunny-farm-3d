@@ -77,6 +77,14 @@ describe('reelStep', () => {
     expect(zoneWidth(8)).toBeLessThan(zoneWidth(2));
   });
 
+  it('can be widened (the bat helps at night)', () => {
+    expect(zoneWidth(3, 1.25)).toBeCloseTo(zoneWidth(3) * 1.25);
+    // The fish sits just past the end of the normal zone, but inside the wider one
+    const s = { ...REEL_START, barPos: 0.2, barVel: 0, fishPos: 0.2 + zoneWidth(3) + 0.02, fishTarget: 0.2 + zoneWidth(3) + 0.02 };
+    expect(reelStep(s, 0.1, false, 3, calm).progress).toBeLessThan(s.progress);
+    expect(reelStep(s, 0.1, false, 3, calm, 1.25).progress).toBeGreaterThan(s.progress);
+  });
+
   it('makes the fish swim off to new spots', () => {
     let s = { ...REEL_START, fishPos: 0.5, fishTarget: 0.5 };
     const random = sequence(0.1, 0.9, 0.05, 0.95);

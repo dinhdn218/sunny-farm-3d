@@ -95,6 +95,11 @@ export function CandyShopModal() {
                   <div>
                     <div className="text-sm font-black text-amber-950">{item.name}</div>
                     <p className="text-[11px] font-bold text-amber-800">{item.description}</p>
+                    {item.perk && (
+                      <p className="mt-1 rounded-lg bg-emerald-100 px-1.5 py-0.5 text-[11px] font-black text-emerald-800">
+                        {item.perk}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-amber-700/20 pt-2">
