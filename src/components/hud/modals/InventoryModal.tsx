@@ -7,6 +7,7 @@ import { marketDay, marketPrice } from '@/lib/market';
 import { IN_SEASON_BONUS_PERCENT, SEASONS } from '@/config/seasons';
 import { isInSeason, seasonOf, seasonalPrice } from '@/lib/seasons';
 import { ItemId } from '@/types/game';
+import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { ModalShell } from './ModalShell';
 
 export function InventoryModal() {
@@ -19,6 +20,12 @@ export function InventoryModal() {
   const returnFromBin = useGameStore((s) => s.returnFromBin);
   const depositAllToBin = useGameStore((s) => s.depositAllToBin);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
+  // Complete sets in the collection book whose reward is waiting
+  const setsReady = useGameStore(
+    (s) =>
+      COLLECTION_SETS.filter((set) => setProgress(set, s.collected).complete && !s.collectionClaimed.includes(set.id))
+        .length
+  );
 
   const bag = ITEM_LIST.filter((item) => (items[item.id] ?? 0) > 0);
   const bin = ITEM_LIST.filter((item) => (shippingBin[item.id] ?? 0) > 0);
@@ -41,6 +48,19 @@ export function InventoryModal() {
       icon="📦"
       title="Kho Đồ & Rương Bán Hàng"
       subtitle="Gửi Rương để bán đủ giá khi Qua Ngày, hoặc Bán Ngay lấy tiền liền với 70% giá"
+      headerRight={
+        <button
+          onClick={() => setActiveModal('collection')}
+          className="game-btn relative rounded-xl bg-amber-700 px-3 py-1.5 text-xs font-black text-white hover:bg-amber-600"
+        >
+          📖 Sổ Sưu Tập
+          {setsReady > 0 && (
+            <span className="absolute -right-1.5 -top-1.5 animate-bounce rounded-full border border-white bg-red-600 px-1.5 text-[10px] font-black text-white">
+              !
+            </span>
+          )}
+        </button>
+      }
     >
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border-2 border-rose-400/50 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-900">
         <span>

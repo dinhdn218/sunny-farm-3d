@@ -3,6 +3,7 @@ import { GRID_SIZE, STARTER_PLOTS } from '@/config/farm';
 import { createInitialQuests } from '@/lib/quests';
 import { refillOrders } from '@/lib/orders';
 import { welcomeLetter } from '@/lib/mail';
+import { discoveriesFrom } from '@/lib/collection';
 
 export const createEmptyGrid = (): TileData[] => {
   const grid: TileData[] = [];
@@ -123,6 +124,8 @@ export function createNewGameSave(): SaveData {
     beehiveHoney: 0,
     mail: [welcomeLetter()],
     pendingThanks: null,
+    collected: [],
+    collectionClaimed: [],
   };
-  return { ...save, orders: refillOrders(save) };
+  return { ...save, orders: refillOrders(save), collected: discoveriesFrom(save) };
 }

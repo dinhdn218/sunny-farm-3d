@@ -130,3 +130,12 @@ describe('saveFromCloud', () => {
     expect(save).not.toHaveProperty('userProfile');
   });
 });
+
+describe('migrateSave from version 4', () => {
+  it('starts the collection book from what the save holds', () => {
+    const v4 = { ...createNewGameSave(), items: { tomato: 3 }, shippingBin: {}, fishLog: { tuna: { caught: 2, best: 90 } } };
+    const save = migrateSave(v4, 4);
+    expect([...(save.collected ?? [])].sort()).toEqual(['tomato', 'tuna']);
+    expect(save.collectionClaimed).toEqual([]);
+  });
+});

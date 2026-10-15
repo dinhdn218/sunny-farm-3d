@@ -70,6 +70,9 @@ export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
 export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
 
+// The collection book's sets (lib/collection)
+export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach';
+
 // Calendar festivals (config/festivals)
 export type FestivalId = 'halloween' | 'christmas' | 'tet';
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
@@ -415,6 +418,9 @@ export interface SaveData {
   mail: Letter[];
   // The resident whose order was delivered last since the morning: they write tomorrow
   pendingThanks: string | null;
+  // The collection book (lib/collection): everything ever found, and the sets already paid for
+  collected: ItemId[];
+  collectionClaimed: CollectionSetId[];
 }
 
 export interface RemotePlayer {

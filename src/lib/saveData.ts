@@ -5,9 +5,10 @@ import { defaultDecorPlacements } from '@/lib/farmLayout';
 import { createInitialQuests, reconcileQuests } from '@/lib/quests';
 import { addItems } from '@/lib/inventory';
 import { estimateXp } from '@/lib/leveling';
+import { discoveriesFrom } from '@/lib/collection';
 import { createEmptyGrid, createNewGameSave } from '@/lib/newGame';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 // A save as read back from storage: possibly from an older version, possibly with extra keys
 export type StoredSave = Partial<SaveData> & Record<string, unknown>;
@@ -52,6 +53,8 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   beehiveHoney: true,
   mail: true,
   pendingThanks: true,
+  collected: true,
+  collectionClaimed: true,
 };
 
 export const SAVE_KEYS = Object.keys(SAVE_FIELDS) as (keyof SaveData)[];
@@ -131,6 +134,11 @@ function fromV3(saved: StoredSave): StoredSave {
   return { ...rest, festivalTokens: candy ? { halloween: candy } : {} };
 }
 
+// v4 saves predate the collection book: it starts from what the save holds and has caught
+function fromV4(saved: StoredSave): StoredSave {
+  return { ...saved, collected: discoveriesFrom(saved), collectionClaimed: [] };
+}
+
 // Brings a save written by an older version of the game up to date
 export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
   let save = raw as StoredSave;
@@ -138,6 +146,7 @@ export function migrateSave(raw: Record<string, unknown>, version: number): Stor
   if (version < 2) save = fromV1(save);
   if (version < 3) save = fromV2(save);
   if (version < 4) save = fromV3(save);
+  if (version < 5) save = fromV4(save);
   return save;
 }
 

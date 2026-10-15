@@ -6,6 +6,7 @@ import {
   AnimalSpecies,
   BuildPiece,
   BuildPieceId,
+  CollectionSetId,
   ChatMessage,
   CropId,
   FarmAnimal,
@@ -83,6 +84,7 @@ import { marketPrice } from '@/lib/market';
 import { refillOrders } from '@/lib/orders';
 import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
 import { daysUntilGrown, ripenTrees } from '@/lib/trees';
+import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
@@ -205,6 +207,7 @@ interface GameState extends SaveData {
     | 'claw'
     | 'orders'
     | 'mail'
+    | 'collection'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -277,6 +280,8 @@ interface GameState extends SaveData {
   collectHoney: () => void;
   readLetter: (letterId: string) => void;
   claimLetter: (letterId: string) => void;
+  // The reward for a complete set in the collection book, paid once
+  claimCollection: (setId: CollectionSetId) => void;
 
   openWorkshop: (machine?: MachineId) => void;
   buyMachine: (id: MachineId) => void;
@@ -1240,6 +1245,23 @@ export const useGameStore = create<GameState>()(
               ? { mail: s.mail.map((l) => (l.id === letterId ? { ...l, read: true } : l)) }
               : s
           ),
+
+        claimCollection: (setId) => {
+          const { collected, collectionClaimed, gold, gems, playerPos } = get();
+          const group = COLLECTION_SETS.find((s) => s.id === setId);
+          if (!group || collectionClaimed.includes(setId) || !setProgress(group, collected).complete) return;
+          soundFX.questClaim();
+          set({
+            gold: gold + group.reward.gold,
+            gems: gems + group.reward.gems,
+            collectionClaimed: [...collectionClaimed, setId],
+          });
+          spawnParticles(playerPos.x, 0.8, playerPos.z, 0xfacc15, 25);
+          get().showToast(
+            `📖 Hoàn thành bộ ${group.icon} ${group.name}! +${group.reward.gold}🪙 +${group.reward.gems}💎`,
+            'text-yellow-300'
+          );
+        },
 
         // The gift that came with a letter, handed over once
         claimLetter: (letterId) => {
@@ -2381,6 +2403,15 @@ export const useGameStore = create<GameState>()(
     }
   )
 );
+
+// Anything new in the bag goes in the collection book (lib/collection)
+useGameStore.subscribe((state, prev) => {
+  if (state.items === prev.items) return;
+  const fresh = (Object.keys(state.items) as ItemId[]).filter(
+    (id) => (state.items[id] ?? 0) > 0 && !state.collected.includes(id)
+  );
+  if (fresh.length) useGameStore.setState({ collected: [...state.collected, ...fresh] });
+});
 
 // A farm that changes after a cloud sync needs uploading again (lib/cloudSync does it in the
 // background). Loading or syncing a save sets `cloudLink` in the same update: that is bookkeeping, not play.
