@@ -90,6 +90,8 @@ export function createNewGameSave(): SaveData {
     lastFreeSnackDay: 0,
     fishLog: {},
     xp: 0,
+    toolTiers: { hoe: 0, water: 0 },
+    sprinklers: 0,
     loginStreak: 0,
     lastGiftDate: null,
     cosmetics: {

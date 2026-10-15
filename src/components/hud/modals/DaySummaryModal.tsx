@@ -38,6 +38,12 @@ export function DaySummaryModal() {
               <span>🥚 Vật nuôi có sản phẩm mới:</span>
               <span className="text-sky-700">{summary.animalProductsReady} con</span>
             </div>
+            {summary.sprinklerWatered > 0 && (
+              <div className="flex justify-between">
+                <span>💦 Bình phun đã tưới sẵn:</span>
+                <span className="text-sky-700">{summary.sprinklerWatered} ô</span>
+              </div>
+            )}
             {summary.batchesReady > 0 && (
               <div className="flex justify-between">
                 <span>🏭 Mẻ chế biến đã xong, chờ thu:</span>

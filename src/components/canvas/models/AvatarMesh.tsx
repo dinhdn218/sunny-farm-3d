@@ -567,7 +567,11 @@ function RoboCat() {
 // What the right hand holds: a farm tool, or the fishing rod at the Beach jetty
 export type HeldItem = ToolId | 'rod';
 
-function HeldTool({ tool }: { tool: HeldItem }) {
+// Basic, copper and gold versions of the hoe blade and the watering can
+const HOE_BLADE = ['#94a3b8', '#d97706', '#facc15'];
+const CAN_BODY = ['#0ea5e9', '#b45309', '#eab308'];
+
+function HeldTool({ tool, tier = 0 }: { tool: HeldItem; tier?: number }) {
   if (tool === 'rod') {
     return (
       <group rotation={[-0.75, 0, 0]}>
@@ -591,7 +595,7 @@ function HeldTool({ tool }: { tool: HeldItem }) {
         </mesh>
         <mesh position={[0, -0.1, 0.34]}>
           <boxGeometry args={[0.1, 0.26, 0.08]} />
-          <meshLambertMaterial color="#94a3b8" />
+          <meshLambertMaterial color={HOE_BLADE[tier] ?? HOE_BLADE[0]} />
         </mesh>
       </group>
     );
@@ -600,7 +604,7 @@ function HeldTool({ tool }: { tool: HeldItem }) {
     return (
       <mesh position={[0, 0, 0.18]}>
         <cylinderGeometry args={[0.16, 0.18, 0.3, 8]} />
-        <meshLambertMaterial color="#0ea5e9" />
+        <meshLambertMaterial color={CAN_BODY[tier] ?? CAN_BODY[0]} />
       </mesh>
     );
   }
@@ -627,10 +631,12 @@ interface AvatarMeshProps {
   cosmetics: PlayerCosmetics;
   motion?: AvatarMotion;
   tool?: HeldItem | null;
+  // Upgrade tier of the held hoe or watering can
+  toolTier?: number;
 }
 
 // Blocky character rig from the HTML version; every outfit, hat, back item and pet has its own model
-export function AvatarMesh({ cosmetics, motion, tool }: AvatarMeshProps) {
+export function AvatarMesh({ cosmetics, motion, tool, toolTier }: AvatarMeshProps) {
   const leftLegRef = useRef<THREE.Mesh>(null);
   const rightLegRef = useRef<THREE.Mesh>(null);
   const rightArmRef = useRef<THREE.Group>(null);
@@ -722,7 +728,7 @@ export function AvatarMesh({ cosmetics, motion, tool }: AvatarMeshProps) {
           <OutfitArm id={outfitId} />
         </mesh>
         <group position={[0, -0.4, 0.25]}>
-          {tool && <HeldTool tool={tool} />}
+          {tool && <HeldTool tool={tool} tier={toolTier} />}
         </group>
       </group>
 

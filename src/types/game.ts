@@ -167,6 +167,8 @@ export interface TileData {
   crop: CropId | null;
   stage: number;
   daysWatered: number;
+  // A sprinkler stands on this tile: it can't be worked and waters its neighbours each morning
+  sprinkler?: boolean;
 }
 
 export interface WorldConfig {
@@ -291,6 +293,10 @@ export interface SaveData {
   fishLog: Partial<Record<FishId, { caught: number; best: number }>>;
   // Farmer experience; the level is derived from it (lib/leveling)
   xp: number;
+  // Hoe and watering can upgrades: 0 basic, 1 copper, 2 gold (lib/tools)
+  toolTiers: { hoe: number; water: number };
+  // Sprinklers bought but not placed on the field
+  sprinklers: number;
   // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed
   loginStreak: number;
   lastGiftDate: string | null;

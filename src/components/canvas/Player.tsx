@@ -46,6 +46,9 @@ export function Player() {
   const localEmote = useGameStore((s) => s.localEmote);
   const fishing = useGameStore((s) => !!s.fishing);
   const level = useGameStore((s) => levelInfo(s.xp).level);
+  const toolTier = useGameStore((s) =>
+    s.activeTool === 'hoe' ? s.toolTiers.hoe : s.activeTool === 'water' ? s.toolTiers.water : 0
+  );
 
   useEffect(() => {
     if (localEmote) {
@@ -66,6 +69,11 @@ export function Player() {
       // While fishing, Space belongs to the fishing overlay and Esc reels the line in
       if (store.fishing) {
         if (e.code === 'Escape') store.endFishing();
+        return;
+      }
+
+      if (store.placingSprinkler && e.code === 'Escape') {
+        store.cancelPlacingSprinkler();
         return;
       }
 
@@ -173,6 +181,7 @@ export function Player() {
         cosmetics={cosmetics}
         motion={motion}
         tool={fishing ? 'rod' : currentWorld === 'farm' ? activeTool : null}
+        toolTier={toolTier}
       />
       <PlayerTag name={playerName} chatText={localChatMsg} isSelf level={level} />
     </group>

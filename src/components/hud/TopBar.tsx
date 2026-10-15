@@ -9,6 +9,7 @@ import { soundFX } from '@/lib/audio';
 import { countItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
+import { waterCapacity } from '@/lib/tools';
 
 export function TopBar() {
   const day = useGameStore((s) => s.day);
@@ -18,7 +19,7 @@ export function TopBar() {
   const energy = useGameStore((s) => s.energy);
   const maxEnergy = useGameStore((s) => s.maxEnergy);
   const water = useGameStore((s) => s.water);
-  const maxWater = useGameStore((s) => s.maxWater);
+  const maxWater = useGameStore((s) => waterCapacity(s.toolTiers.water));
   const currentWorld = useGameStore((s) => s.currentWorld);
   const quests = useGameStore((s) => s.quests);
   const items = useGameStore((s) => s.items);

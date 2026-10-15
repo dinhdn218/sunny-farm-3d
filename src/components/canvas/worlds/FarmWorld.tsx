@@ -1,6 +1,7 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
@@ -9,6 +10,7 @@ import { COSMETICS } from '@/config/cosmetics';
 import { MACHINES, RECIPES } from '@/config/machines';
 import { ITEMS } from '@/config/items';
 import { formatCountdown } from '@/lib/format';
+import { areaTiles } from '@/lib/tools';
 import {
   PLOT_SIZE,
   TILE_SIZE,
@@ -48,6 +50,12 @@ const SIDE_NAMES: Record<ExpansionSide, string> = {
 
 function tileTooltip(tile: TileData) {
   const coords = `(${tile.c + 1}, ${tile.r + 1})`;
+  if (tile.sprinkler) {
+    return { title: '💦 Bình Phun Tự Động', desc: 'Tưới 8 ô xung quanh mỗi sáng • dùng Giỏ (3) để cất' };
+  }
+  if (useGameStore.getState().placingSprinkler) {
+    return { title: `Ô đất ${coords}`, desc: '💦 Click để đặt Bình Phun vào ô này' };
+  }
   if (tile.state === 'empty') {
     return { title: `Ô đất ${coords}`, desc: 'Dùng Cuốc (1) để cày đất' };
   }
@@ -65,6 +73,44 @@ function tileTooltip(tile: TileData) {
         ? '✨ ĐÃ CHÍN! Click để thu hoạch!'
         : `Giai đoạn ${tile.stage}/3`,
   };
+}
+
+// Sprinkler standing on a field tile; its head turns slowly
+function Sprinkler() {
+  const headRef = useRef<THREE.Group>(null);
+
+  useFrame((_, delta) => {
+    if (headRef.current) headRef.current.rotation.y += Math.min(delta, 0.1) * 1.5;
+  });
+
+  return (
+    <group position={[0, 0.07, 0]}>
+      <mesh castShadow position={[0, 0.06, 0]}>
+        <cylinderGeometry args={[0.28, 0.32, 0.12, 10]} />
+        <meshLambertMaterial color="#64748b" />
+      </mesh>
+      <mesh position={[0, 0.3, 0]}>
+        <cylinderGeometry args={[0.05, 0.05, 0.4, 8]} />
+        <meshLambertMaterial color="#94a3b8" />
+      </mesh>
+      <group ref={headRef} position={[0, 0.52, 0]}>
+        <mesh>
+          <cylinderGeometry args={[0.12, 0.12, 0.1, 10]} />
+          <meshLambertMaterial color="#0ea5e9" />
+        </mesh>
+        {[0, 1, 2, 3].map((i) => (
+          <mesh
+            key={i}
+            position={[Math.sin((i * Math.PI) / 2) * 0.17, 0, Math.cos((i * Math.PI) / 2) * 0.17]}
+            rotation={[0, (i * Math.PI) / 2, 0]}
+          >
+            <boxGeometry args={[0.06, 0.04, 0.14]} />
+            <meshLambertMaterial color="#38bdf8" />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
 }
 
 const FarmTile = memo(function FarmTile({
@@ -87,7 +133,8 @@ const FarmTile = memo(function FarmTile({
           e.stopPropagation();
           const store = useGameStore.getState();
           if (e.delta > 8 || store.placingDecor) return;
-          store.interactTile(tile.r, tile.c);
+          if (store.placingSprinkler) store.placeSprinkler(tile.r, tile.c);
+          else store.interactTile(tile.r, tile.c);
         }}
         onPointerMove={(e) => {
           e.stopPropagation();
@@ -121,6 +168,7 @@ const FarmTile = memo(function FarmTile({
           <CropMesh crop={tile.crop} stage={tile.stage} seed={tile.r + tile.c} />
         </group>
       )}
+      {tile.sprinkler && <Sprinkler />}
     </group>
   );
 });
@@ -336,6 +384,9 @@ export function FarmWorld() {
   const decorPlacements = useGameStore((s) => s.decorPlacements);
   const machines = useGameStore((s) => s.machines);
   const placingDecor = useGameStore((s) => s.placingDecor);
+  const placingSprinkler = useGameStore((s) => s.placingSprinkler);
+  const activeTool = useGameStore((s) => s.activeTool);
+  const toolTiers = useGameStore((s) => s.toolTiers);
   const refillWater = useGameStore((s) => s.refillWater);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const nextDay = useGameStore((s) => s.nextDay);
@@ -377,8 +428,20 @@ export function FarmWorld() {
   const [wellX, wellZ] = at(FARM_SITES.well);
   const [ranchDx, ranchDz] = ranchOffset(ownedPlots);
 
+  // Outline every owned tile the next click will work (wider with upgraded tools)
   const hovered = hoveredId ? tiles.find((t) => t.id === hoveredId) : undefined;
-  const hoverPos = hovered ? tileToWorld(hovered.r, hovered.c) : null;
+  const hoverTier = placingSprinkler
+    ? 0
+    : activeTool === 'hoe'
+    ? toolTiers.hoe
+    : activeTool === 'water'
+    ? toolTiers.water
+    : 0;
+  const hoverArea = hovered
+    ? areaTiles(hovered.r, hovered.c, hoverTier)
+        .filter(([r, c]) => ownedPlots.includes(plotOfTile(r, c)))
+        .map(([r, c]) => tileToWorld(r, c))
+    : [];
 
   const house = interactable('Nhà Nông Trại (Ngủ qua ngày)', nextDay);
   const shippingBin = interactable('Rương Bán Hàng', () => setActiveModal('inventory'));
@@ -416,12 +479,12 @@ export function FarmWorld() {
         <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} />
       ))}
 
-      {hoverPos && (
-        <lineSegments position={[hoverPos.x, 0.14, hoverPos.z]}>
+      {hoverArea.map((p) => (
+        <lineSegments key={`${p.x}_${p.z}`} position={[p.x, 0.14, p.z]}>
           <edgesGeometry args={[hoverBox]} />
-          <lineBasicMaterial color="#fef08a" />
+          <lineBasicMaterial color={placingSprinkler ? '#7dd3fc' : '#fef08a'} />
         </lineSegments>
-      )}
+      ))}
 
       {signs.map((s) => (
         <ExpansionSign key={s.side} {...s} onOpen={() => openFromSign(s.side)} />

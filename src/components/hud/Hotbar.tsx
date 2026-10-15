@@ -2,6 +2,7 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { placeableInfo } from '@/lib/farmLayout';
+import { TOOL_NAMES, waterCapacity } from '@/lib/tools';
 import { CropId, ToolId } from '@/types/game';
 
 interface HotbarSlot {
@@ -25,6 +26,25 @@ const SLOTS: HotbarSlot[] = [
   { id: 'feed', key: '9', name: 'Chăn Nuôi', icon: '🐄', desc: 'Click vào Gà, Cừu, Bò trong chuồng để cho ăn & thu hoạch' },
 ];
 
+const AREA_NAMES = ['1 ô', '3 ô cùng hàng', '3×3 ô'];
+
+// Upgraded hoes and cans get their tier's name and reach
+function describeSlot(slot: HotbarSlot, tiers: { hoe: number; water: number }) {
+  if (slot.id === 'hoe' && tiers.hoe > 0) {
+    return {
+      name: TOOL_NAMES.hoe[tiers.hoe],
+      desc: `Cày ${AREA_NAMES[tiers.hoe]} một lần (-1 Thể lực mỗi ô)`,
+    };
+  }
+  if (slot.id === 'water' && tiers.water > 0) {
+    return {
+      name: TOOL_NAMES.water[tiers.water],
+      desc: `Tưới ${AREA_NAMES[tiers.water]} một lần, bình ${waterCapacity(tiers.water)} nước (-1 Thể lực mỗi ô)`,
+    };
+  }
+  return { name: slot.name, desc: slot.desc };
+}
+
 // Farm-only hotbar with the active-tool banner above it, as in the HTML version
 export function Hotbar() {
   const currentWorld = useGameStore((s) => s.currentWorld);
@@ -37,10 +57,14 @@ export function Hotbar() {
   const placingDecor = useGameStore((s) => s.placingDecor);
   const rotatePlacingDecor = useGameStore((s) => s.rotatePlacingDecor);
   const cancelPlacingDecor = useGameStore((s) => s.cancelPlacingDecor);
+  const placingSprinkler = useGameStore((s) => s.placingSprinkler);
+  const cancelPlacingSprinkler = useGameStore((s) => s.cancelPlacingSprinkler);
+  const toolTiers = useGameStore((s) => s.toolTiers);
 
   if (currentWorld !== 'farm') return null;
 
-  const active = SLOTS.find((s) => s.id === activeTool) ?? SLOTS[0];
+  const activeSlot = SLOTS.find((s) => s.id === activeTool) ?? SLOTS[0];
+  const active = { ...activeSlot, ...describeSlot(activeSlot, toolTiers) };
   const placingItem = placingDecor ? placeableInfo(placingDecor.id) : undefined;
   const countFor = (slot: HotbarSlot) => {
     if (slot.crop) return seeds[slot.crop] || 0;
@@ -51,7 +75,17 @@ export function Hotbar() {
 
   return (
     <footer className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2">
-      {placingItem ? (
+      {placingSprinkler ? (
+        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-sky-300/80 bg-sky-950/90 px-3.5 py-1 text-xs font-extrabold text-sky-100 shadow-lg">
+          <span>💦 Đang đặt Bình Phun: click một ô ruộng trống • Esc hủy</span>
+          <button
+            onClick={cancelPlacingSprinkler}
+            className="rounded-lg bg-rose-500 px-2 py-0.5 text-xs font-black text-white hover:bg-rose-400"
+          >
+            ✕ Hủy
+          </button>
+        </div>
+      ) : placingItem ? (
         <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-lime-300/80 bg-emerald-950/90 px-3.5 py-1 text-xs font-extrabold text-lime-100 shadow-lg">
           <span>
             🏗️ Đang đặt {placingItem.icon} {placingItem.name}: Click chuột để đặt • R xoay • Esc hủy
@@ -101,7 +135,7 @@ export function Hotbar() {
               </span>
               <span className="mt-1 text-xl leading-none">{slot.icon}</span>
               <span className="max-w-[90%] truncate text-[9px] font-extrabold text-amber-950">
-                {slot.name.replace('Hạt ', '')}
+                {describeSlot(slot, toolTiers).name.replace('Hạt ', '')}
               </span>
               {count !== null && (
                 <span

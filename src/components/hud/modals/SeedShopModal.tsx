@@ -2,7 +2,120 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { CROP_LIST } from '@/config/crops';
+import {
+  MAX_TOOL_TIER,
+  SPRINKLER_PRICE,
+  TOOL_NAMES,
+  TOOL_UPGRADES,
+  UpgradableTool,
+  waterCapacity,
+} from '@/lib/tools';
 import { ModalShell } from './ModalShell';
+
+const TOOL_ICONS: Record<UpgradableTool, string> = { hoe: '⛏️', water: '🚿' };
+
+// What each tier of a tool does, shown on its upgrade card
+const tierEffect = (tool: UpgradableTool, tier: number) => {
+  const area = ['1 ô', '3 ô cùng hàng', '3×3 ô'][tier];
+  const energy = tier === 0 ? '2⚡ mỗi ô' : '1⚡ mỗi ô';
+  return tool === 'hoe'
+    ? `Cày ${area} mỗi lần (${energy})`
+    : `Tưới ${area} mỗi lần, bình ${waterCapacity(tier)} nước (${energy})`;
+};
+
+function ToolUpgradeCard({ tool }: { tool: UpgradableTool }) {
+  const tier = useGameStore((s) => s.toolTiers[tool]);
+  const gold = useGameStore((s) => s.gold);
+  const gems = useGameStore((s) => s.gems);
+  const buyToolUpgrade = useGameStore((s) => s.buyToolUpgrade);
+  const maxed = tier >= MAX_TOOL_TIER;
+  const price = maxed ? null : TOOL_UPGRADES[tool][tier];
+  const affordable = !!price && gold >= price.gold && gems >= price.gems;
+
+  return (
+    <div className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-lime-700/40 bg-lime-50/90 p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-lime-600 bg-lime-200 text-2xl">
+          {TOOL_ICONS[tool]}
+        </div>
+        <div className="flex-1">
+          <div className="text-sm font-black text-amber-950">{TOOL_NAMES[tool][tier]}</div>
+          <p className="text-xs text-amber-800">Đang dùng: {tierEffect(tool, tier)}</p>
+          {!maxed && (
+            <p className="text-[11px] font-black text-emerald-800">
+              ➔ {TOOL_NAMES[tool][tier + 1]}: {tierEffect(tool, tier + 1)}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex justify-end border-t border-lime-700/20 pt-2">
+        {maxed ? (
+          <span className="rounded-xl bg-amber-300 px-3 py-1 text-xs font-black text-amber-950">⭐ Cấp tối đa</span>
+        ) : (
+          <button
+            onClick={() => buyToolUpgrade(tool)}
+            disabled={!affordable}
+            className={`game-btn rounded-xl px-3 py-1 text-xs font-black text-white ${
+              affordable ? 'bg-lime-600 hover:bg-lime-500' : 'bg-slate-400'
+            }`}
+          >
+            Nâng Cấp (🪙{price?.gold}
+            {price?.gems ? ` + 💎${price.gems}` : ''})
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SprinklerCard() {
+  const gold = useGameStore((s) => s.gold);
+  const sprinklers = useGameStore((s) => s.sprinklers);
+  const placed = useGameStore((s) => s.tiles.filter((t) => t.sprinkler).length);
+  const buySprinkler = useGameStore((s) => s.buySprinkler);
+  const startPlacingSprinkler = useGameStore((s) => s.startPlacingSprinkler);
+
+  return (
+    <div className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-sky-700/40 bg-sky-50/90 p-3.5">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-sky-600 bg-sky-200 text-2xl">
+          💦
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between">
+            <span className="text-sm font-black text-amber-950">Bình Phun Tự Động</span>
+            <span className="text-xs font-bold text-amber-800">
+              Kho: {sprinklers} • Đã đặt: {placed}
+            </span>
+          </div>
+          <p className="text-xs text-amber-800">
+            Đặt lên một ô ruộng trống; mỗi sáng tự tưới 8 ô xung quanh. Dùng Giỏ (phím 3) để cất lại.
+          </p>
+        </div>
+      </div>
+      <div className="flex justify-end gap-2 border-t border-sky-700/20 pt-2">
+        <button
+          onClick={buySprinkler}
+          disabled={gold < SPRINKLER_PRICE}
+          className={`game-btn rounded-xl px-3 py-1 text-xs font-black text-white ${
+            gold >= SPRINKLER_PRICE ? 'bg-sky-600 hover:bg-sky-500' : 'bg-slate-400'
+          }`}
+        >
+          Mua (🪙{SPRINKLER_PRICE})
+        </button>
+        <button
+          onClick={startPlacingSprinkler}
+          disabled={sprinklers === 0}
+          className={`game-btn rounded-xl px-3 py-1 text-xs font-black text-white ${
+            sprinklers > 0 ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-400'
+          }`}
+        >
+          Đặt Lên Ruộng
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function SeedShopModal() {
   const gold = useGameStore((s) => s.gold);
@@ -15,75 +128,84 @@ export function SeedShopModal() {
     <ModalShell
       icon="🏪"
       title="Tạp Hóa Hạt Giống Nông Trại"
-      subtitle="Mua hạt giống gieo trồng và thức ăn hồi phục thể lực"
+      subtitle="Mua hạt giống, thức ăn hồi thể lực, nâng cấp công cụ và bình phun"
       headerRight={
         <div className="rounded-xl bg-amber-900 px-3 py-1.5 text-sm font-black text-yellow-300">
           🪙 {gold} Vàng
         </div>
       }
     >
-      <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
-        {CROP_LIST.map((crop) => (
-          <div
-            key={crop.id}
-            className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3.5"
-          >
+      <div className="overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {CROP_LIST.map((crop) => (
+            <div
+              key={crop.id}
+              className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3.5"
+            >
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-amber-600 bg-amber-300 text-2xl">
+                  {crop.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between">
+                    <span className="text-sm font-black text-amber-950">Hạt {crop.name}</span>
+                    <span className="text-xs font-bold text-amber-800">
+                      Có: {seeds[crop.id] || 0}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-800">{crop.description}</p>
+                  <div className="text-[11px] font-black text-emerald-800">
+                    Bán: 🪙 {crop.sellPrice} Vàng
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-amber-700/20 pt-2">
+                <button
+                  onClick={() => buySeed(crop.id, 1)}
+                  className="game-btn rounded-xl bg-emerald-600 px-3 py-1 text-xs font-black text-white"
+                >
+                  Mua 1 (🪙{crop.seedPrice})
+                </button>
+                <button
+                  onClick={() => buySeed(crop.id, 5)}
+                  className="game-btn rounded-xl bg-amber-700 px-3 py-1 text-xs font-black text-white"
+                >
+                  Mua 5 (🪙{crop.seedPrice * 5})
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <div className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3.5">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-amber-600 bg-amber-300 text-2xl">
-                {crop.icon}
+                🥖
               </div>
               <div className="flex-1">
                 <div className="flex justify-between">
-                  <span className="text-sm font-black text-amber-950">Hạt {crop.name}</span>
-                  <span className="text-xs font-bold text-amber-800">
-                    Có: {seeds[crop.id] || 0}
-                  </span>
+                  <span className="text-sm font-black text-amber-950">Bánh Mì Nóng</span>
+                  <span className="text-xs font-bold text-amber-800">Có: {breadCount}</span>
                 </div>
-                <p className="text-xs text-amber-800">{crop.description}</p>
-                <div className="text-[11px] font-black text-emerald-800">
-                  Bán: 🪙 {crop.sellPrice} Vàng
-                </div>
+                <p className="text-xs text-amber-800">Ăn để hồi +45 Thể lực (phím 8).</p>
+                <div className="text-[11px] font-black text-emerald-800">Giá: 🪙 25 Vàng</div>
               </div>
             </div>
             <div className="flex justify-end gap-2 border-t border-amber-700/20 pt-2">
               <button
-                onClick={() => buySeed(crop.id, 1)}
+                onClick={buyBread}
                 className="game-btn rounded-xl bg-emerald-600 px-3 py-1 text-xs font-black text-white"
               >
-                Mua 1 (🪙{crop.seedPrice})
-              </button>
-              <button
-                onClick={() => buySeed(crop.id, 5)}
-                className="game-btn rounded-xl bg-amber-700 px-3 py-1 text-xs font-black text-white"
-              >
-                Mua 5 (🪙{crop.seedPrice * 5})
+                Mua 1 (🪙25)
               </button>
             </div>
           </div>
-        ))}
+        </div>
 
-        <div className="flex flex-col justify-between gap-2 rounded-2xl border-2 border-amber-700/40 bg-amber-100/90 p-3.5">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border-2 border-amber-600 bg-amber-300 text-2xl">
-              🥖
-            </div>
-            <div className="flex-1">
-              <div className="flex justify-between">
-                <span className="text-sm font-black text-amber-950">Bánh Mì Nóng</span>
-                <span className="text-xs font-bold text-amber-800">Có: {breadCount}</span>
-              </div>
-              <p className="text-xs text-amber-800">Ăn để hồi +45 Thể lực (phím 8).</p>
-              <div className="text-[11px] font-black text-emerald-800">Giá: 🪙 25 Vàng</div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 border-t border-amber-700/20 pt-2">
-            <button
-              onClick={buyBread}
-              className="game-btn rounded-xl bg-emerald-600 px-3 py-1 text-xs font-black text-white"
-            >
-              Mua 1 (🪙25)
-            </button>
-          </div>
+        <div className="mb-2 mt-4 text-xs font-black uppercase text-amber-900">🛠️ Nâng Cấp Công Cụ & Tưới Tự Động</div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <ToolUpgradeCard tool="hoe" />
+          <ToolUpgradeCard tool="water" />
+          <SprinklerCard />
         </div>
       </div>
     </ModalShell>

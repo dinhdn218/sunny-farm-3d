@@ -33,6 +33,8 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   lastFreeSnackDay: true,
   fishLog: true,
   xp: true,
+  toolTiers: true,
+  sprinklers: true,
   loginStreak: true,
   lastGiftDate: true,
   cosmetics: true,

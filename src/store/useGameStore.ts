@@ -18,6 +18,7 @@ import {
   RecipeId,
   RemotePlayer,
   SaveData,
+  TileData,
   ToolId,
   UserProfile,
   WorldId,
@@ -74,6 +75,17 @@ import { marketPrice } from '@/lib/market';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
+import {
+  MAX_TOOL_TIER,
+  SPRINKLER_PRICE,
+  TOOL_NAMES,
+  TOOL_UPGRADES,
+  UpgradableTool,
+  applySprinklers,
+  areaTiles,
+  energyPerTile,
+  waterCapacity,
+} from '@/lib/tools';
 import { formatCountdown } from '@/lib/format';
 import { createNewGameSave } from '@/lib/newGame';
 import {
@@ -98,6 +110,8 @@ interface DaySummaryData {
   animalProductsReady: number;
   // Workshop batches the night finished, waiting to be collected
   batchesReady: number;
+  // Tiles the sprinklers watered this morning
+  sprinklerWatered: number;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -118,12 +132,13 @@ interface GameState extends SaveData {
   useGlbModels: boolean;
 
   maxEnergy: number;
-  maxWater: number;
   timePhaseIndex: number;
   currentWorld: WorldId;
   activeTool: ToolId;
   selectedPlot: string | null;
   placingDecor: { id: string; rotY: number } | null;
+  // Choosing a field tile for a sprinkler
+  placingSprinkler: boolean;
   activeModal:
     | 'map'
     | 'quests'
@@ -183,6 +198,11 @@ interface GameState extends SaveData {
   interactFront: () => void;
   buySeed: (crop: CropId, amount?: number) => void;
   buyBread: () => void;
+  buyToolUpgrade: (tool: UpgradableTool) => void;
+  buySprinkler: () => void;
+  startPlacingSprinkler: () => void;
+  cancelPlacingSprinkler: () => void;
+  placeSprinkler: (r: number, c: number) => void;
   sellNow: (id: ItemId, amount?: number) => void;
   sellAllNow: (kind?: ItemConfig['kind']) => void;
   moveToBin: (id: ItemId, amount?: number) => void;
@@ -306,12 +326,12 @@ export const useGameStore = create<GameState>()(
         useGlbModels: false,
 
         maxEnergy: 100,
-        maxWater: 10,
         timePhaseIndex: 0,
         currentWorld: 'farm',
         activeTool: 'hoe',
         selectedPlot: null,
         placingDecor: null,
+        placingSprinkler: false,
         activeModal: null,
         workshopMachine: null,
         fishing: null,
@@ -551,10 +571,11 @@ export const useGameStore = create<GameState>()(
         },
 
         refillWater: () => {
-          const { playerPos } = get();
+          const { playerPos, toolTiers } = get();
+          const capacity = waterCapacity(toolTiers.water);
           soundFX.water();
-          set({ water: 10 });
-          get().showToast('💧 Bình tưới đã đầy (10/10)!', 'text-sky-300', [
+          set({ water: capacity });
+          get().showToast(`💧 Bình tưới đã đầy (${capacity}/${capacity})!`, 'text-sky-300', [
             playerPos.x,
             0.8,
             playerPos.z,
@@ -605,6 +626,25 @@ export const useGameStore = create<GameState>()(
           }
           playerPos.actionTime = Date.now();
 
+          // A sprinkler stands here: the basket picks it back up, other tools leave it be
+          if (targetTile.sprinkler) {
+            if (activeTool === 'basket') {
+              soundFX.plant();
+              set({
+                tiles: tiles.map((t) => (t.id === targetTile.id ? { ...t, sprinkler: false } : t)),
+                sprinklers: state.sprinklers + 1,
+              });
+              get().showToast('💦 Đã cất Bình Phun vào kho', 'text-sky-300', [tx, 0.6, tz]);
+            } else {
+              get().showToast(
+                '💦 Bình Phun tưới 8 ô xung quanh mỗi sáng • dùng Giỏ (phím 3) để cất',
+                'text-sky-300',
+                [tx, 0.6, tz]
+              );
+            }
+            return;
+          }
+
           if (
             targetTile.state === 'planted' &&
             targetTile.stage === 3 &&
@@ -646,7 +686,11 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
-          if (energy < 2) {
+          // Upgraded hoes and cans cost 1 energy per tile, everything else 2
+          const tier =
+            activeTool === 'hoe' ? state.toolTiers.hoe : activeTool === 'water' ? state.toolTiers.water : 0;
+          const perTile = energyPerTile(tier);
+          if (energy < perTile) {
             soundFX.error();
             get().showToast('⚡ Hết thể lực! Hãy ăn Bánh Mì hoặc đi ngủ!', 'text-red-400', [
               tx,
@@ -656,31 +700,37 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
+          // Owned tiles in the tool's reach that pass `fits`, the clicked tile first
+          const owned = new Set(state.ownedPlots);
+          const byId = new Map(tiles.map((t) => [t.id, t]));
+          const reach = (fits: (t: TileData) => boolean) =>
+            areaTiles(r, c, tier)
+              .map(([rr, cc]) => byId.get(`${rr}-${cc}`))
+              .filter(
+                (t): t is TileData =>
+                  !!t && !t.sprinkler && owned.has(plotOfTile(t.r, t.c)) && fits(t)
+              );
+          const burst = (worked: TileData[], y: number, color: number) =>
+            worked.forEach((t) => {
+              const p = tileToWorld(t.r, t.c);
+              spawnParticles(p.x, y, p.z, color, worked.length > 1 ? 8 : 12);
+            });
+
           if (activeTool === 'hoe') {
-            if (targetTile.state === 'empty') {
-              soundFX.till();
-              set({
-                energy: Math.max(0, energy - 2),
-                tiles: tiles.map((t) =>
-                  t.r === r && t.c === c ? { ...t, state: 'tilled' } : t
-                ),
-              });
-              spawnParticles(tx, 0.1, tz, 0x78350f, 12);
-              get().incrementQuest('till', 1);
-            }
+            const worked = reach((t) => t.state === 'empty').slice(0, Math.floor(energy / perTile));
+            if (worked.length === 0) return;
+            const ids = new Set(worked.map((t) => t.id));
+            soundFX.till();
+            set({
+              energy: energy - worked.length * perTile,
+              tiles: tiles.map((t) => (ids.has(t.id) ? { ...t, state: 'tilled' } : t)),
+            });
+            burst(worked, 0.1, 0x78350f);
+            get().incrementQuest('till', worked.length);
             return;
           }
 
           if (activeTool === 'water') {
-            if (targetTile.state === 'empty') {
-              soundFX.error();
-              get().showToast('Cần cuốc đất trước!', 'text-amber-300', [
-                tx,
-                0.4,
-                tz,
-              ]);
-              return;
-            }
             if (water < 1) {
               soundFX.error();
               get().showToast('💧 Hết nước! Hãy ra Giếng múc nước!', 'text-sky-400', [
@@ -690,18 +740,26 @@ export const useGameStore = create<GameState>()(
               ]);
               return;
             }
-            if (!targetTile.watered) {
-              soundFX.water();
-              set({
-                energy: Math.max(0, energy - 2),
-                water: Math.max(0, water - 1),
-                tiles: tiles.map((t) =>
-                  t.r === r && t.c === c ? { ...t, watered: true } : t
-                ),
-              });
-              spawnParticles(tx, 0.2, tz, 0x38bdf8, 14);
-              get().incrementQuest('water', 1);
+            const worked = reach((t) => t.state !== 'empty' && !t.watered).slice(
+              0,
+              Math.min(water, Math.floor(energy / perTile))
+            );
+            if (worked.length === 0) {
+              if (targetTile.state === 'empty') {
+                soundFX.error();
+                get().showToast('Cần cuốc đất trước!', 'text-amber-300', [tx, 0.4, tz]);
+              }
+              return;
             }
+            const ids = new Set(worked.map((t) => t.id));
+            soundFX.water();
+            set({
+              energy: energy - worked.length * perTile,
+              water: water - worked.length,
+              tiles: tiles.map((t) => (ids.has(t.id) ? { ...t, watered: true } : t)),
+            });
+            burst(worked, 0.2, 0x38bdf8);
+            get().incrementQuest('water', worked.length);
             return;
           }
 
@@ -808,6 +866,94 @@ export const useGameStore = create<GameState>()(
           }
           soundFX.coin();
           set({ gold: gold - 25, breadCount: breadCount + 1 });
+        },
+
+        buyToolUpgrade: (tool) => {
+          const { toolTiers, gold, gems } = get();
+          const tier = toolTiers[tool];
+          if (tier >= MAX_TOOL_TIER) return;
+          const price = TOOL_UPGRADES[tool][tier];
+          if (gold < price.gold || gems < price.gems) {
+            soundFX.error();
+            get().showToast(
+              `Cần ${price.gold}🪙${price.gems ? ` + ${price.gems}💎` : ''} để nâng cấp!`,
+              'text-red-400'
+            );
+            return;
+          }
+          const next = tier + 1;
+          soundFX.questClaim();
+          set({
+            gold: gold - price.gold,
+            gems: gems - price.gems,
+            toolTiers: { ...toolTiers, [tool]: next },
+            // A new watering can comes full
+            ...(tool === 'water' ? { water: waterCapacity(next) } : {}),
+          });
+          get().showToast(`🛠️ Đã nâng cấp lên ${TOOL_NAMES[tool][next]}!`, 'text-lime-300');
+        },
+
+        buySprinkler: () => {
+          const { gold, sprinklers } = get();
+          if (gold < SPRINKLER_PRICE) {
+            soundFX.error();
+            get().showToast(`Cần ${SPRINKLER_PRICE} Vàng 🪙 để mua Bình Phun!`, 'text-red-400');
+            return;
+          }
+          soundFX.coin();
+          set({ gold: gold - SPRINKLER_PRICE, sprinklers: sprinklers + 1 });
+          get().showToast('💦 +1 Bình Phun Tự Động!', 'text-sky-300');
+        },
+
+        startPlacingSprinkler: () => {
+          const { sprinklers, currentWorld } = get();
+          if (sprinklers <= 0) {
+            get().showToast('💦 Hãy mua Bình Phun ở Tạp Hóa trước!', 'text-amber-300');
+            return;
+          }
+          if (currentWorld !== 'farm') {
+            get().showToast('🏡 Về Nông Trại để đặt Bình Phun!', 'text-amber-300');
+            return;
+          }
+          set({ placingSprinkler: true, placingDecor: null, activeModal: null, tooltip: null });
+        },
+
+        cancelPlacingSprinkler: () => set({ placingSprinkler: false }),
+
+        // A sprinkler takes up a field tile that has no crop on it
+        placeSprinkler: (r, c) => {
+          const { tiles, sprinklers, ownedPlots, placingSprinkler } = get();
+          if (!placingSprinkler) return;
+          const tile = tiles.find((t) => t.r === r && t.c === c);
+          const { x, z } = tileToWorld(r, c);
+          if (
+            !tile ||
+            !ownedPlots.includes(plotOfTile(r, c)) ||
+            tile.state === 'planted' ||
+            tile.sprinkler
+          ) {
+            soundFX.error();
+            get().showToast('🚫 Chỉ đặt Bình Phun trên ô ruộng trống của bạn!', 'text-red-400', [
+              x,
+              0.5,
+              z,
+            ]);
+            return;
+          }
+          if (sprinklers <= 0) {
+            set({ placingSprinkler: false });
+            return;
+          }
+          soundFX.plant();
+          set({
+            tiles: tiles.map((t) =>
+              t.id === tile.id ? { ...t, sprinkler: true, state: 'empty', watered: false } : t
+            ),
+            sprinklers: sprinklers - 1,
+            placingSprinkler: false,
+          });
+          spawnParticles(x, 0.4, z, 0x38bdf8, 16);
+          get().showToast('💦 Đã đặt Bình Phun!', 'text-sky-300', [x, 0.8, z]);
         },
 
         // Selling on the spot pays 70%; the shipping bin pays full price overnight
@@ -1403,6 +1549,9 @@ export const useGameStore = create<GameState>()(
           const readyCount = nextTiles.filter(
             (t) => t.state === 'planted' && t.stage >= 3
           ).length;
+          // Sprinklers water their neighbours for the new day (so those crops grow tonight)
+          const morningTiles = applySprinklers(nextTiles);
+          const sprinklerWatered = morningTiles.filter((t) => t.watered).length;
 
           let animalProductsReady = 0;
           const nextAnimals = animals.map((a) => {
@@ -1425,7 +1574,7 @@ export const useGameStore = create<GameState>()(
             energy: 100,
             timePhaseIndex: 0,
             gold: gold + totalGoldEarned,
-            tiles: nextTiles,
+            tiles: morningTiles,
             animals: nextAnimals,
             machines: nextMachines,
             shippingBin: {},
@@ -1444,6 +1593,7 @@ export const useGameStore = create<GameState>()(
               readyCount,
               animalProductsReady,
               batchesReady,
+              sprinklerWatered,
             },
             activeModal: 'summary',
           });
