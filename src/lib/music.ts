@@ -6,7 +6,7 @@ import { TIME_PHASES } from '@/config/time';
 import { Ambience, MusicScene, NoteEvent, composeBar, musicSceneFor } from '@/lib/musicScore';
 import { audioContext, soundFX } from '@/lib/audio';
 import { seasonOf, weatherOf } from '@/lib/seasons';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { useGameStore } from '@/store/useGameStore';
 
@@ -326,7 +326,7 @@ export function useBackgroundMusic() {
         phase,
         weather: weatherOf(day),
         season: seasonOf(day),
-        festival: isEventActive(localDateKey(new Date())),
+        festivalNight: activeFestival(localDateKey(new Date()))?.nightTheme ?? null,
       })
     );
   }, [world, phase, day]);

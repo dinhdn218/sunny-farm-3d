@@ -7,7 +7,7 @@ const morningOnTheFarm = {
   phase: 'morning',
   weather: 'sunny',
   season: 'spring',
-  festival: false,
+  festivalNight: null,
 } as const;
 
 const THEME_IDS = Object.keys(MUSIC_THEMES) as ThemeId[];
@@ -21,10 +21,10 @@ describe('musicSceneFor', () => {
     );
   });
 
-  it('switches to a lullaby at night, and to a spooky tune on festival nights', () => {
+  it("switches to a lullaby at night, and to the festival's own tune on festival nights", () => {
     expect(musicSceneFor({ ...morningOnTheFarm, phase: 'night' }).theme).toBe('night');
-    expect(musicSceneFor({ ...morningOnTheFarm, phase: 'night', festival: true }).theme).toBe('spooky');
-    expect(musicSceneFor({ ...morningOnTheFarm, festival: true }).theme).toBe('farm');
+    expect(musicSceneFor({ ...morningOnTheFarm, phase: 'night', festivalNight: 'spooky' }).theme).toBe('spooky');
+    expect(musicSceneFor({ ...morningOnTheFarm, festivalNight: 'spooky' }).theme).toBe('farm');
   });
 
   it('fills the farm and the park with birdsong by day and crickets at night', () => {

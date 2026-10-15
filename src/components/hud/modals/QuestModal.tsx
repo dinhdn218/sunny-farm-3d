@@ -4,7 +4,8 @@ import { Fragment, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { QuestCategory, QuestItem } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
-import { eventDaysLeft, isEventActive } from '@/lib/event';
+import { activeFestival, festivalDaysLeft } from '@/lib/festivals';
+import { FESTIVALS } from '@/config/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { ModalShell } from './ModalShell';
 
@@ -13,7 +14,6 @@ const TABS: { id: QuestCategory; label: string }[] = [
   { id: 'daily', label: '📅 Hằng Ngày' },
   { id: 'achievement', label: '🏆 Thành Tựu' },
 ];
-const EVENT_TAB: { id: QuestCategory; label: string } = { id: 'event', label: '🎃 Lễ Hội' };
 
 function QuestRow({ quest, locked = false }: { quest: QuestItem; locked?: boolean }) {
   const claimQuest = useGameStore((s) => s.claimQuest);
@@ -65,7 +65,11 @@ function QuestRow({ quest, locked = false }: { quest: QuestItem; locked?: boolea
         <div className="flex items-center gap-2 text-xs font-black text-amber-900">
           {quest.rewardGold > 0 && <span>🪙 +{quest.rewardGold}</span>}
           <span>💎 +{quest.rewardGems}</span>
-          {!!quest.rewardCandy && <span className="text-purple-800">🍬 +{quest.rewardCandy}</span>}
+          {!!quest.rewardTokens && quest.festival && (
+            <span className={FESTIVALS[quest.festival].ui.text}>
+              {FESTIVALS[quest.festival].token.icon} +{quest.rewardTokens}
+            </span>
+          )}
         </div>
         {quest.claimed ? (
           <span className="rounded-xl bg-slate-300 px-3 py-1.5 text-xs font-black text-slate-700">
@@ -93,9 +97,9 @@ export function QuestModal() {
   const day = useGameStore((s) => s.day);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const today = localDateKey(new Date());
-  const festival = isEventActive(today);
-  const quests = visibleQuests(allQuests, festival);
-  const tabs = festival ? [...TABS, EVENT_TAB] : TABS;
+  const festival = activeFestival(today);
+  const quests = visibleQuests(allQuests, festival?.id ?? null);
+  const tabs = festival ? [...TABS, { id: 'event' as const, label: `${festival.icon} Lễ Hội` }] : TABS;
   const [tab, setTab] = useState<QuestCategory>('main');
 
   const mains = quests.filter((q) => q.category === 'main');
@@ -187,15 +191,18 @@ export function QuestModal() {
 
         {tab === 'event' && festival && (
           <>
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 border-purple-600/30 bg-purple-50/90 p-3 text-xs font-bold text-purple-900">
+            <div
+              className={`flex flex-wrap items-center justify-between gap-2 rounded-2xl border-2 p-3 text-xs font-bold ${festival.ui.panel}`}
+            >
               <span>
-                🎃 Lễ Hội Bí Ngô còn {eventDaysLeft(today)} ngày • đổi 🍬 Kẹo lấy quà ở Tiệm Kẹo Ma Quái (Công Viên)
+                {festival.icon} {festival.name} còn {festivalDaysLeft(festival, today)} ngày • đổi{' '}
+                {festival.token.icon} {festival.token.name} lấy quà ở {festival.shop.name} (Công Viên)
               </span>
               <button
-                onClick={() => setActiveModal('candyShop')}
-                className="rounded-lg bg-purple-600 px-2.5 py-1 text-xs font-black text-white hover:bg-purple-500"
+                onClick={() => setActiveModal('festivalShop')}
+                className={`rounded-lg px-2.5 py-1 text-xs font-black text-white ${festival.ui.button}`}
               >
-                🍬 Xem Tiệm Kẹo
+                {festival.shop.icon} Xem Quầy
               </button>
             </div>
             {festivalQuests.map((q) => (

@@ -5,7 +5,8 @@ import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { COSMETICS } from '@/config/cosmetics';
 import { CosmeticCategory, CosmeticItem } from '@/types/game';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
+import { FESTIVALS } from '@/config/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { ModalShell } from './ModalShell';
 import { BuildShop } from './BuildShop';
@@ -22,7 +23,10 @@ const TABS: { id: string; label: string; categories: CosmeticCategory[] }[] = [
 ];
 
 function priceLabel(item: CosmeticItem) {
-  if (item.priceCandy !== undefined) return `🍬 ${item.priceCandy} Kẹo`;
+  if (item.festival) {
+    const { token } = FESTIVALS[item.festival];
+    return `${token.icon} ${item.priceTokens ?? 0} ${token.name}`;
+  }
   if (item.priceGold > 0 && item.priceGems > 0) {
     return `🪙 ${item.priceGold} + 💎 ${item.priceGems}`;
   }
@@ -45,12 +49,12 @@ export function WardrobeModal() {
   const [previewId, setPreviewId] = useState<string | null>(null);
 
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
-  // Festival items show up while the festival runs, and afterwards only for those who own them
-  const festival = isEventActive(localDateKey(new Date()));
+  // Festival items show up while their festival runs, and afterwards only for those who own them
+  const festival = activeFestival(localDateKey(new Date()))?.id;
   const items = COSMETICS.filter(
     (c) =>
       tab.categories.includes(c.category) &&
-      (c.priceCandy === undefined || festival || ownedCosmetics.includes(c.id))
+      (!c.festival || c.festival === festival || ownedCosmetics.includes(c.id))
   );
   const isDecorTab = tab.id === 'farmDecor';
 
@@ -191,12 +195,14 @@ export function WardrobeModal() {
                           </button>
                         )}
                       </div>
-                    ) : !owned && item.priceCandy !== undefined ? (
+                    ) : !owned && item.festival ? (
                       <button
-                        onClick={() => setActiveModal('candyShop')}
-                        className="game-btn rounded-xl bg-purple-600 px-3 py-1.5 text-xs font-black text-white"
+                        onClick={() => setActiveModal('festivalShop')}
+                        className={`game-btn rounded-xl px-3 py-1.5 text-xs font-black text-white ${
+                          FESTIVALS[item.festival].ui.button
+                        }`}
                       >
-                        🍬 Tiệm Kẹo
+                        {FESTIVALS[item.festival].token.icon} Đổi Quà
                       </button>
                     ) : (
                       <button

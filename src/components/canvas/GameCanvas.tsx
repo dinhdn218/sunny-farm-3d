@@ -20,10 +20,10 @@ import { MallWorld } from './worlds/MallWorld';
 import { CinemaWorld } from './worlds/CinemaWorld';
 import { CasinoWorld } from './worlds/CasinoWorld';
 import { FishingTackle } from './FishingTackle';
-import { HalloweenScene } from './environment/Halloween';
+import { FestivalScene } from './environment/Festivals';
 import { WeatherEffects } from './environment/WeatherEffects';
 import { PhotoRig } from './PhotoRig';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { weatherOf } from '@/lib/seasons';
 import { islandShape } from '@/lib/farmLayout';
@@ -41,13 +41,14 @@ function SkyAndLights() {
   const weather = useGameStore((s) => weatherOf(s.day));
   const phase = TIME_PHASES[timePhaseIndex];
   const sunRef = useRef<THREE.DirectionalLight>(null);
-  // Festival nights turn purple; wet days are overcast
-  const festiveNight = phase.id === 'night' && isEventActive(localDateKey(new Date()));
+  // A festival can colour its nights (Lễ Hội Bí Ngô turns them purple); wet days are overcast
+  const festiveNight =
+    phase.id === 'night' ? activeFestival(localDateKey(new Date()))?.nightSky ?? null : null;
   const overcast = WET_SKY[weather];
   const tint = (color: string) =>
     overcast ? `#${new THREE.Color(color).lerp(new THREE.Color(overcast), 0.6).getHexString()}` : color;
-  const sky = festiveNight ? '#1e1036' : tint(phase.sky);
-  const fog = festiveNight ? '#2e1065' : tint(phase.fog);
+  const sky = festiveNight ? festiveNight.sky : tint(phase.sky);
+  const fog = festiveNight ? festiveNight.fog : tint(phase.fog);
   // Clouds dim the sun and thicken the haze
   const sunIntensity = phase.sunIntensity * (overcast ? 0.55 : 1);
   const ambientIntensity = phase.ambientIntensity * (overcast ? 0.85 : 1);
@@ -130,7 +131,7 @@ export default function GameCanvas() {
         {currentWorld === 'cinema' && <CinemaWorld />}
         {currentWorld === 'casino' && <CasinoWorld />}
         <FishingTackle />
-        <HalloweenScene />
+        <FestivalScene />
         <WeatherEffects />
 
         <Player />

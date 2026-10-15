@@ -83,7 +83,8 @@ import { refillOrders } from '@/lib/orders';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
-import { CANDY_PER_NIGHT_FISH, CANDY_PER_PUMPKIN, isEventActive } from '@/lib/event';
+import { activeFestival, festivalTokensFor } from '@/lib/festivals';
+import { FESTIVALS } from '@/config/festivals';
 import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
 import { petMorningGift, roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
 import { pieceAt, snapToCell } from '@/lib/build';
@@ -187,7 +188,7 @@ interface GameState extends SaveData {
     | 'market'
     | 'fishJournal'
     | 'dailyGift'
-    | 'candyShop'
+    | 'festivalShop'
     | 'luckyWheel'
     | 'claw'
     | 'orders'
@@ -302,7 +303,7 @@ interface GameState extends SaveData {
   incrementQuest: (type: QuestType, amount?: number, crop?: CropId) => void;
   claimQuest: (questId: string) => void;
   claimDailyGift: () => void;
-  buyCandyItem: (itemId: string) => void;
+  buyFestivalItem: (itemId: string) => void;
   // Pick up one of today's finds on the Beach (a spot of config/forage)
   collectBeachFind: (spot: number) => void;
   // The casino's free daily spin: the slice it lands on (prizes paid at once), or null if already spun today
@@ -330,8 +331,8 @@ const publicZonesVisited = (visited: WorldId[]) =>
 
 const clampVolume = (volume: number) => Math.min(1, Math.max(0, volume));
 
-// Lễ Hội Bí Ngô runs by the device's calendar date
-const festivalActive = () => isEventActive(localDateKey(new Date()));
+// Festivals run by the device's calendar date
+const runningFestival = () => activeFestival(localDateKey(new Date()));
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -774,19 +775,9 @@ export const useGameStore = create<GameState>()(
               };
             });
 
-            // Every pumpkin brings festival candy while Lễ Hội Bí Ngô runs
-            const candy = cropKey === 'pumpkin' && festivalActive() ? CANDY_PER_PUMPKIN : 0;
-            set({
-              tiles: updatedTiles,
-              items: addItems(items, { [cropKey]: 1 }),
-              candy: state.candy + candy,
-            });
+            set({ tiles: updatedTiles, items: addItems(items, { [cropKey]: 1 }) });
             spawnParticles(tx, 0.45, tz, 0xfacc15, 20);
-            get().showToast(
-              `${cropCfg.icon} +1 ${cropCfg.name}${candy ? ` +${candy}🍬` : ''}!`,
-              'text-yellow-300',
-              [tx, 0.65, tz]
-            );
+            get().showToast(`${cropCfg.icon} +1 ${cropCfg.name}!`, 'text-yellow-300', [tx, 0.65, tz]);
             get().incrementQuest('harvest', 1, cropKey);
             return;
           }
@@ -1397,13 +1388,9 @@ export const useGameStore = create<GameState>()(
           get().showToast(`${cfg.icon} +1 ${cfg.name} (${fishing.size} cm)!`, 'text-sky-300');
           if (cfg.rarity !== 'junk') {
             get().incrementQuest('fish', 1);
-            // Night fishing: its own quests, plus candy during the festival
+            // Night fishing has its own quests (and festival rewards)
             if (TIME_PHASES[get().timePhaseIndex].id === 'night') {
               get().incrementQuest('night_fish', 1);
-              if (festivalActive()) {
-                set((s) => ({ candy: s.candy + CANDY_PER_NIGHT_FISH }));
-                get().showToast(`🌙 Cá đêm hội +${CANDY_PER_NIGHT_FISH}🍬`, 'text-purple-300');
-              }
             }
           }
         },
@@ -1940,10 +1927,11 @@ export const useGameStore = create<GameState>()(
             return;
           }
 
-          // Festival items are only traded for candy at the event shop
-          if (item.priceCandy !== undefined) {
+          // Festival items are only traded for that festival's tokens at its stall
+          if (item.festival) {
+            const { token, shop } = FESTIVALS[item.festival];
             soundFX.error();
-            get().showToast('🍬 Đổi bằng Kẹo ở Tiệm Kẹo Ma Quái (Công Viên)!', 'text-purple-300');
+            get().showToast(`${token.icon} Đổi bằng ${token.name} ở ${shop.name} (Công Viên)!`, 'text-purple-300');
             return;
           }
 
@@ -1980,32 +1968,50 @@ export const useGameStore = create<GameState>()(
           }
         },
 
-        // Every gameplay event goes through here: quest progress and farmer experience
+        // Every gameplay event goes through here: quest progress, farmer experience and festival tokens
         incrementQuest: (type, amount = 1, crop) => {
           if (amount <= 0) return;
           const completed: QuestItem[] = [];
           set((s) => ({ quests: advanceQuests(s.quests, type, amount, crop, completed) }));
           announceCompleted(completed);
           gainXp(xpFor(type, amount));
+          const festival = runningFestival();
+          const tokens = festival ? festivalTokensFor(festival, type, amount, crop) : 0;
+          if (festival && tokens > 0) {
+            const { playerPos } = get();
+            set((s) => ({
+              festivalTokens: { ...s.festivalTokens, [festival.id]: (s.festivalTokens[festival.id] ?? 0) + tokens },
+            }));
+            get().showToast(`${festival.token.icon} +${tokens} ${festival.token.name}`, 'text-purple-300', [
+              playerPos.x,
+              1.7,
+              playerPos.z,
+            ]);
+          }
         },
 
         claimQuest: (questId) => {
-          const { quests, gold, gems, candy, playerPos } = get();
+          const { quests, gold, gems, festivalTokens, playerPos } = get();
           const q = quests.find((item) => item.id === questId);
           if (!q || q.claimed || q.progress < q.target) return;
-          if (q.category === 'event' && !festivalActive()) return;
+          // A festival's quests pay out only while it runs
+          if (q.category === 'event' && (!q.festival || runningFestival()?.id !== q.festival)) return;
 
-          const rewardCandy = q.rewardCandy ?? 0;
+          const rewardTokens = q.festival ? q.rewardTokens ?? 0 : 0;
           soundFX.questClaim();
           set({
             gold: gold + q.rewardGold,
             gems: gems + q.rewardGems,
-            candy: candy + rewardCandy,
+            festivalTokens:
+              q.festival && rewardTokens
+                ? { ...festivalTokens, [q.festival]: (festivalTokens[q.festival] ?? 0) + rewardTokens }
+                : festivalTokens,
             quests: quests.map((item) => (item.id === questId ? afterClaim(item) : item)),
           });
           spawnParticles(playerPos.x, 0.6, playerPos.z, 0xfacc15, 25);
+          const tokenIcon = q.festival ? FESTIVALS[q.festival].token.icon : '';
           get().showToast(
-            `🎉 +${q.rewardGold}🪙 +${q.rewardGems}💎${rewardCandy ? ` +${rewardCandy}🍬` : ''}!`,
+            `🎉 +${q.rewardGold}🪙 +${q.rewardGems}💎${rewardTokens ? ` +${rewardTokens}${tokenIcon}` : ''}!`,
             'text-yellow-300',
             [playerPos.x, 1.3, playerPos.z]
           );
@@ -2013,35 +2019,37 @@ export const useGameStore = create<GameState>()(
           if (q.category === 'main') syncVisitQuest();
         },
 
-        // Tiệm Kẹo Ma Quái: festival items for candy, at its stall in the Park while the festival runs
-        buyCandyItem: (itemId) => {
-          const { candy, ownedCosmetics, cosmetics, currentWorld, playerPos } = get();
+        // A festival's items for its tokens, at its stall in the Park while it runs
+        buyFestivalItem: (itemId) => {
+          const { festivalTokens, ownedCosmetics, cosmetics, currentWorld, playerPos } = get();
           const item = cosmeticById(itemId);
-          if (!item || item.priceCandy === undefined || ownedCosmetics.includes(itemId)) return;
-          if (!festivalActive()) {
-            get().showToast('🎃 Lễ Hội Bí Ngô đã kết thúc!', 'text-amber-300');
+          if (!item?.festival || item.priceTokens === undefined || ownedCosmetics.includes(itemId)) return;
+          const festival = FESTIVALS[item.festival];
+          if (runningFestival()?.id !== festival.id) {
+            get().showToast(`${festival.icon} ${festival.name} đã kết thúc!`, 'text-amber-300');
             return;
           }
           if (currentWorld !== 'park') {
             soundFX.error();
-            get().showToast('🌸 Hãy đến Tiệm Kẹo Ma Quái ở Công Viên để đổi quà!', 'text-purple-300');
+            get().showToast(`🌸 Hãy đến ${festival.shop.name} ở Công Viên để đổi quà!`, 'text-purple-300');
             return;
           }
-          if (candy < item.priceCandy) {
+          const balance = festivalTokens[festival.id] ?? 0;
+          if (balance < item.priceTokens) {
             soundFX.error();
-            get().showToast(`Cần ${item.priceCandy}🍬 để đổi ${item.name}!`, 'text-red-400');
+            get().showToast(`Cần ${item.priceTokens}${festival.token.icon} để đổi ${item.name}!`, 'text-red-400');
             return;
           }
           const isDecor = item.category === 'decor';
           soundFX.questClaim();
           set({
-            candy: candy - item.priceCandy,
+            festivalTokens: { ...festivalTokens, [festival.id]: balance - item.priceTokens },
             ownedCosmetics: [...ownedCosmetics, itemId],
             cosmetics: isDecor ? cosmetics : { ...cosmetics, [item.category]: itemId },
           });
-          spawnParticles(playerPos.x, 0.9, playerPos.z, 0xa855f7, 22);
+          spawnParticles(playerPos.x, 0.9, playerPos.z, Number.parseInt(festival.stall.trim.slice(1), 16), 22);
           get().showToast(
-            `🎃 Đã đổi ${item.icon} ${item.name}!${isDecor ? ' Về nông trại để đặt.' : ''}`,
+            `${festival.icon} Đã đổi ${item.icon} ${item.name}!${isDecor ? ' Về nông trại để đặt.' : ''}`,
             'text-purple-300'
           );
           get().incrementQuest(isDecor ? 'buy_decor' : 'buy_cosmetic', 1);

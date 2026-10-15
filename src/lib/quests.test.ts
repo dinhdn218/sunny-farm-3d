@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { QuestItem } from '@/types/game';
 import { MAIN_QUESTS } from '@/config/quests';
-import { achievementQuest, createInitialQuests, reconcileQuests } from '@/lib/quests';
+import { achievementQuest, createInitialQuests, reconcileQuests, visibleQuests } from '@/lib/quests';
 
 const byId = (quests: QuestItem[], id: string) => quests.find((q) => q.id === id);
 
@@ -64,5 +64,17 @@ describe('reconcileQuests', () => {
     const done = { ...achievementQuest('a_days', 2, 30), claimed: true };
     const saved = createInitialQuests(1).map((q) => (q.id === 'a_days' ? done : q));
     expect(byId(reconcileQuests(saved, 1), 'a_days')).toMatchObject({ tier: 2, claimed: true });
+  });
+});
+
+describe('visibleQuests', () => {
+  const quests = createInitialQuests(1);
+
+  it("shows the running festival's quests", () => {
+    expect(visibleQuests(quests, 'halloween').some((q) => q.id === 'e_pumpkins')).toBe(true);
+  });
+
+  it('hides festival quests while no festival runs', () => {
+    expect(visibleQuests(quests, null).some((q) => q.category === 'event')).toBe(false);
   });
 });

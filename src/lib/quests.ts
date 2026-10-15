@@ -1,4 +1,4 @@
-import { CropId, QuestCategory, QuestItem, QuestType } from '@/types/game';
+import { CropId, FestivalId, QuestCategory, QuestItem, QuestType } from '@/types/game';
 import {
   ACHIEVEMENTS,
   DAILY_POOL,
@@ -21,7 +21,8 @@ function fromDef(def: QuestDef, category: QuestCategory, id = def.id): QuestItem
     claimed: false,
     rewardGold: def.rewardGold,
     rewardGems: def.rewardGems,
-    rewardCandy: def.rewardCandy,
+    festival: def.festival,
+    rewardTokens: def.rewardTokens,
     crop: def.crop,
     chapter: def.chapter,
   };
@@ -76,9 +77,9 @@ export function createInitialQuests(
   ];
 }
 
-// Festival quests stay in the save but are only shown (and claimable) while the festival runs
-export const visibleQuests = (quests: QuestItem[], eventActive: boolean) =>
-  eventActive ? quests : quests.filter((q) => q.category !== 'event');
+// Festival quests stay in the save but are only shown (and claimable) while their festival runs
+export const visibleQuests = (quests: QuestItem[], festival: FestivalId | null) =>
+  quests.filter((q) => q.category !== 'event' || q.festival === festival);
 
 // Brings saved quests in line with the current game: story, festival quests and achievements follow
 // the config (new ones added in order, texts refreshed) while progress, tiers and claims are kept

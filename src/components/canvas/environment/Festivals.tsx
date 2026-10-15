@@ -5,16 +5,17 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { TIME_PHASES } from '@/config/time';
+import { FestivalId } from '@/types/game';
 import { FIELD_BORDER } from '@/config/farm';
 import { fieldRect } from '@/lib/farmLayout';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { DecorModel } from '../models/DecorModel';
 
 const BAT_COUNT = 6;
 
-// Lanterns along the field's border strip, where nothing else can be placed
-function fieldLanterns(ownedPlots: string[]): [number, number][] {
+// Spots along the field's border strip, where nothing else can be placed
+function fieldSpots(ownedPlots: string[]): [number, number][] {
   const f = fieldRect(ownedPlots);
   const inset = FIELD_BORDER / 2;
   const xs = [f.minX + inset, (f.minX + f.maxX) / 2, f.maxX - inset];
@@ -24,8 +25,8 @@ function fieldLanterns(ownedPlots: string[]): [number, number][] {
   );
 }
 
-// Ring of lanterns just outside the Park's plaza
-const PARK_LANTERNS: [number, number][] = Array.from({ length: 8 }, (_, i) => {
+// Ring of spots just outside the Park's plaza
+const PARK_SPOTS: [number, number][] = Array.from({ length: 8 }, (_, i) => {
   const a = ((i + 0.5) / 8) * Math.PI * 2;
   return [Math.cos(a) * 6.9, Math.sin(a) * 6.9];
 });
@@ -79,23 +80,18 @@ function Bats({ center }: { center: [number, number] }) {
   );
 }
 
-// Lễ Hội Bí Ngô decorations on the farm and in the Park while the festival runs
-export function HalloweenScene() {
-  const currentWorld = useGameStore((s) => s.currentWorld);
-  const ownedPlots = useGameStore((s) => s.ownedPlots);
-  const night = useGameStore((s) => TIME_PHASES[s.timePhaseIndex].id === 'night');
+interface DressingProps {
+  // Spots around the field (or the Park's plaza), and the middle of it
+  spots: [number, number][];
+  center: [number, number];
+  night: boolean;
+}
 
-  if (!isEventActive(localDateKey(new Date()))) return null;
-  if (currentWorld !== 'farm' && currentWorld !== 'park') return null;
-
-  const lanterns = currentWorld === 'farm' ? fieldLanterns(ownedPlots) : PARK_LANTERNS;
-  const f = fieldRect(ownedPlots);
-  const center: [number, number] =
-    currentWorld === 'farm' ? [(f.minX + f.maxX) / 2, (f.minZ + f.maxZ) / 2] : [0, 0];
-
+// Lễ Hội Bí Ngô: jack-o'-lanterns all round, bats circling at night
+function HalloweenDressing({ spots, center, night }: DressingProps) {
   return (
     <group>
-      {lanterns.map(([x, z]) => (
+      {spots.map(([x, z]) => (
         <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={0.42}>
           <DecorModel id="decor_jack_lantern" />
         </group>
@@ -103,4 +99,27 @@ export function HalloweenScene() {
       {night && <Bats center={center} />}
     </group>
   );
+}
+
+const DRESSING: Record<FestivalId, (props: DressingProps) => JSX.Element> = {
+  halloween: HalloweenDressing,
+};
+
+// The running festival's decorations on the farm and in the Park
+export function FestivalScene() {
+  const currentWorld = useGameStore((s) => s.currentWorld);
+  const ownedPlots = useGameStore((s) => s.ownedPlots);
+  const night = useGameStore((s) => TIME_PHASES[s.timePhaseIndex].id === 'night');
+
+  const festival = activeFestival(localDateKey(new Date()));
+  if (!festival) return null;
+  if (currentWorld !== 'farm' && currentWorld !== 'park') return null;
+
+  const spots = currentWorld === 'farm' ? fieldSpots(ownedPlots) : PARK_SPOTS;
+  const f = fieldRect(ownedPlots);
+  const center: [number, number] =
+    currentWorld === 'farm' ? [(f.minX + f.maxX) / 2, (f.minZ + f.maxZ) / 2] : [0, 0];
+  const Dressing = DRESSING[festival.id];
+
+  return <Dressing spots={spots} center={center} night={night} />;
 }

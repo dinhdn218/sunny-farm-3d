@@ -90,6 +90,15 @@ describe('migrateSave from version 2', () => {
   });
 });
 
+describe('migrateSave from version 3', () => {
+  it('moves the Halloween candy into the festival purse', () => {
+    const v3 = { ...createNewGameSave(), candy: 12 };
+    const save = migrateSave(v3, 3);
+    expect(save.festivalTokens).toEqual({ halloween: 12 });
+    expect(save).not.toHaveProperty('candy');
+  });
+});
+
 describe('saveFromCloud', () => {
   it('gives an older cloud save the story quests added since', () => {
     const quests = createNewGameSave().quests.filter((q) => q.id !== 'm_machine');

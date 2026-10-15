@@ -3,7 +3,8 @@
 import { useGameStore } from '@/store/useGameStore';
 import { QuestCategory } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
+import { FESTIVALS } from '@/config/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { ZonePanel } from './ZonePanel';
 
@@ -11,13 +12,13 @@ const CATEGORY_TAG: Record<QuestCategory, string> = {
   main: '📖',
   daily: '📅',
   achievement: '🏆',
-  event: '🎃',
+  event: '🎪',
 };
 
 export function QuestTracker() {
   const allQuests = useGameStore((s) => s.quests);
-  const festival = isEventActive(localDateKey(new Date()));
-  const quests = visibleQuests(allQuests, festival);
+  const festival = activeFestival(localDateKey(new Date()));
+  const quests = visibleQuests(allQuests, festival?.id ?? null);
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
@@ -68,7 +69,9 @@ export function QuestTracker() {
                 >
                   <div className="flex items-center justify-between gap-1 font-extrabold">
                     <span className="truncate text-amber-200">
-                      <span className="mr-1 text-[10px]">{CATEGORY_TAG[q.category]}</span>
+                      <span className="mr-1 text-[10px]">
+                        {q.festival ? FESTIVALS[q.festival].icon : CATEGORY_TAG[q.category]}
+                      </span>
                       {q.icon} {q.title}
                     </span>
                     <span

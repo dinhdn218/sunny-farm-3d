@@ -6,7 +6,8 @@ import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
+import { FestivalConfig } from '@/config/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { FISHING_ENERGY, FISHING_SPOTS } from '@/config/fish';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
@@ -62,25 +63,24 @@ const LOTUS: [number, number][] = [
   [-16.4, -1.2],
 ];
 
-const CANDY_JARS: [number, string][] = [
-  [-0.9, '#f472b6'],
-  [-0.3, '#a855f7'],
-  [0.3, '#22c55e'],
-];
-
-// Lễ Hội Bí Ngô: candy-for-prizes stall, only up while the festival runs
-function CandyShopStall({ onOpen }: { onOpen: () => void }) {
-  const stall = interactable('🍬 Tiệm Kẹo Ma Quái', onOpen, 'Click để đổi kẹo lấy quà Lễ Hội Bí Ngô');
+// The festival's stall: its tokens traded for festival items, only up while it runs
+function FestivalStall({ festival, onOpen }: { festival: FestivalConfig; onOpen: () => void }) {
+  const { shop, token, stall: look } = festival;
+  const stall = interactable(
+    `${shop.icon} ${shop.name}`,
+    onOpen,
+    `Click để đổi ${token.name} lấy quà ${festival.name}`
+  );
 
   return (
     <group position={[-7, 0, 8]}>
       <mesh castShadow position={[0, 0.5, 0]} {...stall}>
         <boxGeometry args={[2.8, 1.0, 1.0]} />
-        <meshLambertMaterial color="#4c1d95" />
+        <meshLambertMaterial color={look.counter} />
       </mesh>
       <mesh position={[0, 0.55, 0.51]}>
         <boxGeometry args={[2.6, 0.16, 0.02]} />
-        <meshLambertMaterial color="#f97316" />
+        <meshLambertMaterial color={look.trim} />
       </mesh>
       {[-1.3, 1.3].flatMap((x) =>
         [-0.45, 0.45].map((z) => (
@@ -93,11 +93,11 @@ function CandyShopStall({ onOpen }: { onOpen: () => void }) {
       {[-1.25, -0.75, -0.25, 0.25, 0.75, 1.25].map((x, i) => (
         <mesh key={x} castShadow position={[x, 2.45, 0.1]} rotation={[-0.15, 0, 0]} {...stall}>
           <boxGeometry args={[0.5, 0.08, 1.5]} />
-          <meshLambertMaterial color={i % 2 === 0 ? '#f97316' : '#111827'} />
+          <meshLambertMaterial color={look.stripes[i % 2]} />
         </mesh>
       ))}
-      {CANDY_JARS.map(([x, color]) => (
-        <group key={x} position={[x, 1.0, 0]}>
+      {look.goods.map((color, i) => (
+        <group key={color} position={[-0.9 + i * 0.6, 1.0, 0]}>
           <mesh position={[0, 0.2, 0]}>
             <cylinderGeometry args={[0.18, 0.18, 0.4, 10]} />
             <meshLambertMaterial color="#e0f2fe" transparent opacity={0.55} />
@@ -109,8 +109,10 @@ function CandyShopStall({ onOpen }: { onOpen: () => void }) {
         </group>
       ))}
       <Html position={[0, 3.05, 0]} zIndexRange={[15, 0]}>
-        <div className="player-tag w-max rounded-full border border-white bg-purple-700 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
-          🍬 Tiệm Kẹo Ma Quái
+        <div
+          className={`player-tag w-max rounded-full border border-white px-2.5 py-0.5 text-[11px] font-black text-white shadow ${festival.ui.tag}`}
+        >
+          {shop.icon} {shop.name}
         </div>
       </Html>
     </group>
@@ -299,7 +301,7 @@ export function ParkWorld() {
   const gazebo = interactable('Đài Nhiệm Vụ Trung Tâm (Nhận Thưởng)', () =>
     walkTo({ x: gx, z: gz, reach, act: () => setActiveModal('quests') })
   );
-  const festival = isEventActive(localDateKey(new Date()));
+  const festival = activeFestival(localDateKey(new Date()));
 
   return (
     <group>
@@ -397,7 +399,7 @@ export function ParkWorld() {
       <LotusPond />
       <IceCreamCart />
       <Carousel />
-      {festival && <CandyShopStall onOpen={() => setActiveModal('candyShop')} />}
+      {festival && <FestivalStall festival={festival} onOpen={() => setActiveModal('festivalShop')} />}
     </group>
   );
 }

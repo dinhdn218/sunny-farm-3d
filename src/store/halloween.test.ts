@@ -4,6 +4,7 @@ import { useGameStore } from '@/store/useGameStore';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+const candy = () => store().festivalTokens.halloween ?? 0;
 
 const DURING = new Date(2026, 9, 20, 10, 0);
 const AFTER = new Date(2026, 11, 1, 10, 0);
@@ -45,69 +46,69 @@ const ripePumpkin = () =>
 describe('candy', () => {
   it('comes with every pumpkin harvested during the festival', () => {
     ripePumpkin();
-    useGameStore.setState({ candy: 0 });
+    useGameStore.setState({ festivalTokens: {} });
     store().interactTile(6, 6);
-    expect(store().candy).toBe(3);
+    expect(candy()).toBe(3);
   });
 
   it('is not handed out once the festival is over', () => {
     vi.setSystemTime(AFTER);
     ripePumpkin();
-    useGameStore.setState({ candy: 0 });
+    useGameStore.setState({ festivalTokens: {} });
     store().interactTile(6, 6);
-    expect(store().candy).toBe(0);
+    expect(candy()).toBe(0);
   });
 
   it('comes with fish caught at night, which also counts for night fishing quests', () => {
     useGameStore.setState({
-      candy: 0,
+      festivalTokens: {},
       timePhaseIndex: NIGHT,
       quests: [questOf('night_fish')],
       fishing: { spot: 'beach', stage: 'reeling', catchId: 'squid', size: 30, until: 0 },
     });
     store().landCatch();
-    expect(store().candy).toBe(2);
+    expect(candy()).toBe(2);
     expect(store().quests[0].progress).toBe(1);
   });
 
   it('does not come with fish caught in the daytime', () => {
     useGameStore.setState({
-      candy: 0,
+      festivalTokens: {},
       timePhaseIndex: 0,
       fishing: { spot: 'beach', stage: 'reeling', catchId: 'anchovy', size: 8, until: 0 },
     });
     store().landCatch();
-    expect(store().candy).toBe(0);
+    expect(candy()).toBe(0);
   });
 });
 
 describe('the candy shop', () => {
   it('trades candy for a festival hat and puts it on', () => {
-    useGameStore.setState({ currentWorld: 'park', candy: 30, quests: [questOf('event_shop')] });
-    store().buyCandyItem('pumpkin_hat');
+    useGameStore.setState({ currentWorld: 'park', festivalTokens: { halloween: 30 }, quests: [questOf('event_shop')] });
+    store().buyFestivalItem('pumpkin_hat');
     expect(store().ownedCosmetics).toContain('pumpkin_hat');
     expect(store().cosmetics.hat).toBe('pumpkin_hat');
-    expect(store().candy).toBe(5);
+    expect(candy()).toBe(5);
     expect(store().quests[0].progress).toBe(1);
   });
 
   it('only trades at its stall in the Park', () => {
-    useGameStore.setState({ currentWorld: 'farm', candy: 30 });
-    store().buyCandyItem('pumpkin_hat');
+    useGameStore.setState({ currentWorld: 'farm', festivalTokens: { halloween: 30 } });
+    store().buyFestivalItem('pumpkin_hat');
     expect(store().ownedCosmetics).not.toContain('pumpkin_hat');
-    expect(store().candy).toBe(30);
+    expect(candy()).toBe(30);
   });
 
   it('needs enough candy', () => {
-    useGameStore.setState({ currentWorld: 'park', candy: 10 });
-    store().buyCandyItem('pumpkin_hat');
+    useGameStore.setState({ currentWorld: 'park', festivalTokens: { halloween: 10 } });
+    store().buyFestivalItem('pumpkin_hat');
     expect(store().ownedCosmetics).not.toContain('pumpkin_hat');
   });
 
   it('is closed after the festival', () => {
     vi.setSystemTime(AFTER);
-    useGameStore.setState({ currentWorld: 'park', candy: 30 });
-    store().buyCandyItem('pumpkin_hat');
+    useGameStore.setState({ currentWorld: 'park', festivalTokens: { halloween: 30 } });
+    store().buyFestivalItem('pumpkin_hat');
     expect(store().ownedCosmetics).not.toContain('pumpkin_hat');
   });
 
@@ -121,20 +122,28 @@ describe('the candy shop', () => {
 
 describe('festival quests', () => {
   const doneEventQuest = () =>
-    questOf('harvest', { id: 'e_pumpkins', category: 'event', target: 5, progress: 5, rewardCandy: 15, rewardGems: 5 });
+    questOf('harvest', {
+      id: 'e_pumpkins',
+      category: 'event',
+      festival: 'halloween',
+      target: 5,
+      progress: 5,
+      rewardTokens: 15,
+      rewardGems: 5,
+    });
 
   it('pay their candy reward', () => {
-    useGameStore.setState({ candy: 0, gems: 0, quests: [doneEventQuest()] });
+    useGameStore.setState({ festivalTokens: {}, gems: 0, quests: [doneEventQuest()] });
     store().claimQuest('e_pumpkins');
-    expect(store().candy).toBe(15);
+    expect(candy()).toBe(15);
     expect(store().gems).toBe(5);
   });
 
   it('cannot be claimed once the festival is over', () => {
     vi.setSystemTime(AFTER);
-    useGameStore.setState({ candy: 0, gems: 0, quests: [doneEventQuest()] });
+    useGameStore.setState({ festivalTokens: {}, gems: 0, quests: [doneEventQuest()] });
     store().claimQuest('e_pumpkins');
-    expect(store().candy).toBe(0);
+    expect(candy()).toBe(0);
     expect(store().quests[0].claimed).toBe(false);
   });
 });

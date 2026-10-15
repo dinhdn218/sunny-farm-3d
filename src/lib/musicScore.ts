@@ -25,13 +25,14 @@ export function musicSceneFor({
   phase,
   weather,
   season,
-  festival,
+  festivalNight,
 }: {
   world: WorldId;
   phase: TimePhaseId;
   weather: Weather;
   season: SeasonId;
-  festival: boolean;
+  // The running festival's night tune, if one runs
+  festivalNight: ThemeId | null;
 }): MusicScene {
   const night = phase === 'night';
   const ambience: Ambience[] = [];
@@ -41,7 +42,7 @@ export function musicSceneFor({
   }
   if (weather === 'rain' || weather === 'storm') ambience.push('rain');
   if (weather === 'snow') ambience.push('wind');
-  return { theme: night ? (festival ? 'spooky' : 'night') : world, ambience };
+  return { theme: night ? festivalNight ?? 'night' : world, ambience };
 }
 
 const themeSeed = (id: ThemeId) =>

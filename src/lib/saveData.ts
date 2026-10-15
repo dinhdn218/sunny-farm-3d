@@ -7,7 +7,7 @@ import { addItems } from '@/lib/inventory';
 import { estimateXp } from '@/lib/leveling';
 import { createEmptyGrid, createNewGameSave } from '@/lib/newGame';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 // A save as read back from storage: possibly from an older version, possibly with extra keys
 export type StoredSave = Partial<SaveData> & Record<string, unknown>;
@@ -38,7 +38,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   xp: true,
   toolTiers: true,
   sprinklers: true,
-  candy: true,
+  festivalTokens: true,
   loginStreak: true,
   lastGiftDate: true,
   cosmetics: true,
@@ -122,12 +122,19 @@ function fromV2(saved: StoredSave): StoredSave {
   };
 }
 
+// v3 saves had one festival and kept its candy on its own
+function fromV3(saved: StoredSave): StoredSave {
+  const { candy, ...rest } = saved as StoredSave & { candy?: number };
+  return { ...rest, festivalTokens: candy ? { halloween: candy } : {} };
+}
+
 // Brings a save written by an older version of the game up to date
 export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
   let save = raw as StoredSave;
   if (version < 1) save = fromV0(save);
   if (version < 2) save = fromV1(save);
   if (version < 3) save = fromV2(save);
+  if (version < 4) save = fromV3(save);
   return save;
 }
 

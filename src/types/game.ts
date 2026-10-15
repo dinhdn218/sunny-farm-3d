@@ -53,6 +53,9 @@ export type RecipeId =
 export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
 export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
+
+// Calendar festivals (config/festivals)
+export type FestivalId = 'halloween';
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
 
 export type ToolId =
@@ -224,8 +227,9 @@ export interface CosmeticItem {
   description: string;
   // Decor only: radius kept clear around the item when placing it on the farm
   footprint?: number;
-  // Festival items are traded for candy at the event shop instead of bought with gold
-  priceCandy?: number;
+  // Festival items are traded for that festival's tokens at its stall instead of bought with gold
+  festival?: FestivalId;
+  priceTokens?: number;
   // Pets only: how it helps around the farm
   perk?: string;
 }
@@ -287,8 +291,9 @@ export interface QuestItem {
   claimed: boolean;
   rewardGold: number;
   rewardGems: number;
-  // Festival candy (event quests)
-  rewardCandy?: number;
+  // Event quests: the festival they belong to, and its tokens as a reward
+  festival?: FestivalId;
+  rewardTokens?: number;
   // Only events for this crop count
   crop?: CropId;
   // Story chapter label (main quests)
@@ -355,8 +360,8 @@ export interface SaveData {
   toolTiers: { hoe: number; water: number };
   // Sprinklers bought but not placed on the field
   sprinklers: number;
-  // Festival candy (lib/event)
-  candy: number;
+  // Each festival's own currency (config/festivals), kept after it ends
+  festivalTokens: Partial<Record<FestivalId, number>>;
   // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed
   loginStreak: number;
   lastGiftDate: string | null;

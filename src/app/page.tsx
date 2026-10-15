@@ -31,7 +31,7 @@ import { FishJournalModal } from '@/components/hud/modals/FishJournalModal';
 import { FishingOverlay } from '@/components/hud/FishingOverlay';
 import { PhotoOverlay } from '@/components/hud/PhotoOverlay';
 import { DailyGiftModal } from '@/components/hud/modals/DailyGiftModal';
-import { CandyShopModal } from '@/components/hud/modals/CandyShopModal';
+import { FestivalShopModal } from '@/components/hud/modals/FestivalShopModal';
 import { LuckyWheelModal } from '@/components/hud/modals/LuckyWheelModal';
 import { ClawModal } from '@/components/hud/modals/ClawModal';
 import { OrderBoardModal } from '@/components/hud/modals/OrderBoardModal';
@@ -109,7 +109,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       {activeModal === 'market' && <MarketModal />}
       {activeModal === 'fishJournal' && <FishJournalModal />}
       {activeModal === 'dailyGift' && <DailyGiftModal />}
-      {activeModal === 'candyShop' && <CandyShopModal />}
+      {activeModal === 'festivalShop' && <FestivalShopModal />}
       {activeModal === 'luckyWheel' && <LuckyWheelModal />}
       {activeModal === 'claw' && <ClawModal />}
       {activeModal === 'orders' && <OrderBoardModal />}

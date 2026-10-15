@@ -9,7 +9,7 @@ import { countItems, hasItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 import { waterCapacity } from '@/lib/tools';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
 import { visibleQuests } from '@/lib/quests';
 import { SEASONS, SEASON_DAYS, WEATHERS } from '@/config/seasons';
 import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
@@ -152,13 +152,13 @@ function Coin({ icon, label, value, valueClass }: { icon: string; label: string;
   );
 }
 
-// Gold over gems and, while Lễ Hội Bí Ngô runs, candy (which opens the candy shop)
+// Gold over gems and, while a festival runs, its tokens (which open its stall)
 function Wallet() {
   const gold = useGameStore((s) => s.gold);
   const gems = useGameStore((s) => s.gems);
-  const candy = useGameStore((s) => s.candy);
+  const festival = activeFestival(localDateKey(new Date()));
+  const tokens = useGameStore((s) => (festival ? s.festivalTokens[festival.id] ?? 0 : 0));
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const festival = isEventActive(localDateKey(new Date()));
 
   return (
     <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5">
@@ -168,13 +168,13 @@ function Wallet() {
       </div>
       {festival && (
         <button
-          onClick={() => setActiveModal('candyShop')}
-          title={`Kẹo Lễ Hội Bí Ngô: ${candy} (mở Tiệm Kẹo Ma Quái)`}
-          aria-label={`Kẹo: ${candy}, mở Tiệm Kẹo Ma Quái`}
-          className="game-btn flex items-center gap-1 self-center rounded-xl border-2 border-purple-950 bg-purple-700 px-2 py-1.5 text-white hover:bg-purple-600"
+          onClick={() => setActiveModal('festivalShop')}
+          title={`${festival.token.name} ${festival.name}: ${tokens} (mở ${festival.shop.name})`}
+          aria-label={`${festival.token.name}: ${tokens}, mở ${festival.shop.name}`}
+          className={`game-btn flex items-center gap-1 self-center rounded-xl border-2 border-black/30 px-2 py-1.5 text-white ${festival.ui.button}`}
         >
-          <span className="text-base leading-none">🍬</span>
-          <span className="text-sm font-black leading-none tabular-nums">{candy}</span>
+          <span className="text-base leading-none">{festival.token.icon}</span>
+          <span className="text-sm font-black leading-none tabular-nums">{tokens}</span>
         </button>
       )}
     </div>
@@ -241,7 +241,7 @@ function MenuTray() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const openExpand = useGameStore((s) => s.openExpand);
   const openWorkshop = useGameStore((s) => s.openWorkshop);
-  const festival = isEventActive(localDateKey(new Date()));
+  const festival = activeFestival(localDateKey(new Date()))?.id ?? null;
   const hasClaimable = visibleQuests(quests, festival).some((q) => !q.claimed && q.progress >= q.target);
 
   return (

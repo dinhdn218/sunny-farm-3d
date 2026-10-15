@@ -10,7 +10,7 @@ import { CLAW_PRICE } from '@/config/claw';
 import { BEACH_FINDS_PER_DAY } from '@/config/forage';
 import { TABLE_LIST, humans } from '@/lib/casino';
 import { goToTable } from '@/lib/casinoNet';
-import { isEventActive } from '@/lib/event';
+import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 
 function ZoneButton({
@@ -51,7 +51,7 @@ export function ZonePanel() {
   );
   const wheelReady = useGameStore((s) => s.lastWheelDate !== localDateKey(new Date()));
   const tables = useCasinoStore((s) => s.tables);
-  const festival = isEventActive(localDateKey(new Date()));
+  const festival = activeFestival(localDateKey(new Date()));
   const world = WORLDS[currentWorld];
 
   const go = (spot: ZoneSpot, act: () => void) => walkTo({ ...spot, act });
@@ -85,8 +85,8 @@ export function ZonePanel() {
           </ZoneButton>
           {journalButton}
           {festival && (
-            <ZoneButton onClick={() => setActiveModal('candyShop')} color="bg-purple-600 hover:bg-purple-500">
-              🍬 Tiệm Kẹo Ma Quái
+            <ZoneButton onClick={() => setActiveModal('festivalShop')} color={festival.ui.button}>
+              {festival.shop.icon} {festival.shop.name}
             </ZoneButton>
           )}
         </>
