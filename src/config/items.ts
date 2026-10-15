@@ -42,6 +42,12 @@ const animalItems = Object.fromEntries(
   })
 ) as Record<ItemConfig['id'], ItemConfig>;
 
+// Fruit from the trees planted on the farm (lib/trees), sold with the crops
+const fruitItems = {
+  mango: { id: 'mango', name: 'Xoài', icon: '🥭', sellPrice: 120, kind: 'crop' },
+  orange: { id: 'orange', name: 'Cam', icon: '🍊', sellPrice: 100, kind: 'crop' },
+} as Record<ItemConfig['id'], ItemConfig>;
+
 // Honey from the hive on the farm (lib/beehive), sold with the animal products
 const hiveItems = {
   honey: { id: 'honey', name: 'Mật Ong', icon: '🍯', sellPrice: 90, kind: 'animal' },
@@ -54,6 +60,7 @@ const forageItems = Object.fromEntries(
 
 export const ITEMS = {
   ...cropItems,
+  ...fruitItems,
   ...animalItems,
   ...hiveItems,
   ...fishItems,

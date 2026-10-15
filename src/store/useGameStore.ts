@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   AnimalSpecies,
+  BuildPiece,
   BuildPieceId,
   ChatMessage,
   CropId,
@@ -81,6 +82,7 @@ import {
 import { marketPrice } from '@/lib/market';
 import { refillOrders } from '@/lib/orders';
 import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
+import { daysUntilGrown, ripenTrees } from '@/lib/trees';
 import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
@@ -145,6 +147,8 @@ interface DaySummaryData {
   honeyMade: number;
   // Letters that came with the morning post
   newLetters: number;
+  // Fruit the trees bore overnight
+  fruitRipened: number;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -304,6 +308,8 @@ interface GameState extends SaveData {
   stopBuilding: () => void;
   // Build (or erase) in the grid cell at this point
   buildAt: (x: number, z: number) => void;
+  // Pick the fruit off the tree standing in that cell
+  pickFruit: (x: number, z: number) => void;
 
   buyAnimal: (species: AnimalSpecies) => void;
   buyAnimalFeed: (amount?: number) => void;
@@ -1669,10 +1675,41 @@ export const useGameStore = create<GameState>()(
             return;
           }
           soundFX.plant();
+          // A fruit tree starts growing the day it is planted
+          const piece: BuildPiece = cfg.fruit
+            ? { kind, x: cx, z: cz, rotY, planted: get().day, fruit: 0 }
+            : { kind, x: cx, z: cz, rotY };
           set({
-            buildPieces: [...buildPieces, { kind, x: cx, z: cz, rotY }],
+            buildPieces: [...buildPieces, piece],
             buildStock: { ...buildStock, [kind]: (buildStock[kind] ?? 0) - 1 },
           });
+        },
+
+        pickFruit: (x, z) => {
+          const { buildPieces, items, day } = get();
+          const tree = pieceAt(buildPieces, snapToCell(x), snapToCell(z));
+          const fruit = tree && BUILD_PIECES[tree.kind].fruit;
+          if (!tree || !fruit) return;
+          const at: [number, number, number] = [tree.x, 1.6, tree.z];
+          const count = tree.fruit ?? 0;
+          if (count <= 0) {
+            const growing = daysUntilGrown(tree, day) ?? 0;
+            get().showToast(
+              growing > 0 ? `🌱 Cây còn non, ${growing} ngày nữa mới ra trái` : '🌳 Sáng mai cây sẽ ra trái mới',
+              'text-amber-300',
+              at
+            );
+            return;
+          }
+          const item = ITEMS[fruit.item];
+          soundFX.harvest();
+          set({
+            buildPieces: buildPieces.map((p) => (p === tree ? { ...p, fruit: 0 } : p)),
+            items: addItems(items, { [fruit.item]: count }),
+          });
+          spawnParticles(tree.x, 1.2, tree.z, 0xfacc15, 18);
+          get().showToast(`${item.icon} +${count} ${item.name}!`, 'text-yellow-300', at);
+          get().incrementQuest('harvest', count);
         },
 
         buyAnimal: (species) => {
@@ -1925,6 +1962,9 @@ export const useGameStore = create<GameState>()(
           const orders = refillOrders({ ...get(), day: day + 1 });
           const newOrders = orders.length - get().orders.length;
 
+          // The fruit trees bear overnight
+          const trees = ripenTrees(get().buildPieces, day + 1);
+
           // The bees fill the hive overnight, up to what it holds
           const { decorPlacements, ownedCosmetics, buildPieces, beehiveHoney, mail, pendingThanks } = get();
           const hiveHoney = Math.min(
@@ -1961,6 +2001,7 @@ export const useGameStore = create<GameState>()(
             ],
             dailyDay: day + 1,
             orders,
+            buildPieces: trees.pieces,
             beehiveHoney: hiveHoney,
             mail: nextMail,
             pendingThanks: null,
@@ -1983,6 +2024,7 @@ export const useGameStore = create<GameState>()(
               petNote,
               newOrders,
               honeyMade: hiveHoney - beehiveHoney,
+              fruitRipened: trees.ripened,
               newLetters,
             },
             activeModal: 'summary',

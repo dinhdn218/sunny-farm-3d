@@ -80,6 +80,12 @@ export function DaySummaryModal() {
               </div>
             )}
             {summary.petNote && <div className="text-emerald-800">{summary.petNote}</div>}
+            {summary.fruitRipened > 0 && (
+              <div className="flex justify-between">
+                <span>🍊 Cây ăn quả ra thêm trái:</span>
+                <span className="text-orange-600">{summary.fruitRipened} trái</span>
+              </div>
+            )}
             {summary.honeyMade > 0 && (
               <div className="flex justify-between">
                 <span>🍯 Tổ Ong làm thêm Mật Ong:</span>

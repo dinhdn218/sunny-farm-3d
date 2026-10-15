@@ -39,15 +39,15 @@ export function BuildShop() {
             <div className="text-2xl leading-none">{piece.icon}</div>
             <div className="text-[11px] font-black text-amber-950">{piece.name}</div>
             <div className="text-[10px] font-bold text-amber-700">
-              🪙{piece.price}/mảnh • Kho: {stock[piece.id] ?? 0}
+              🪙{piece.price}/{piece.fruit ? 'cây' : 'mảnh'} • Kho: {stock[piece.id] ?? 0}
             </div>
             <div className="flex gap-1">
               <button
-                onClick={() => buyBuildPieces(piece.id, 5)}
-                disabled={gold < piece.price * 5}
+                onClick={() => buyBuildPieces(piece.id, piece.buyCount ?? 5)}
+                disabled={gold < piece.price * (piece.buyCount ?? 5)}
                 className="rounded-lg bg-amber-600 px-2 py-0.5 text-[10px] font-black text-white hover:bg-amber-500 disabled:bg-slate-400"
               >
-                Mua 5
+                Mua {piece.buyCount ?? 5}
               </button>
               <button
                 onClick={() => startBuilding(piece.id)}

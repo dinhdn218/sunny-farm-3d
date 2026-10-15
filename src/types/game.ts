@@ -45,7 +45,9 @@ export type ForageId = 'shell' | 'starfish' | 'coral' | 'pearl';
 // Everything that goes in the bag and can be sold
 // Made by the bees in the hive (lib/beehive)
 export type HiveProductId = 'honey';
-export type ItemId = CropId | AnimalProductId | HiveProductId | ArtisanId | FishId | ForageId;
+// Picked from the fruit trees planted on the farm (lib/trees)
+export type FruitId = 'mango' | 'orange';
+export type ItemId = CropId | FruitId | AnimalProductId | HiveProductId | ArtisanId | FishId | ForageId;
 // Where a line can be cast: the sea off the Beach jetty or the lotus pond in the Park
 export type FishingSpotId = 'beach' | 'park';
 export type ItemCounts = Partial<Record<ItemId, number>>;
@@ -343,7 +345,7 @@ export interface Order {
 
 // Gameplay state that makes up a farm: what is saved on this device and in the cloud.
 // Identity (player id, Google account) and device settings live outside it.
-export type BuildPieceId = 'fence' | 'path' | 'lamp' | 'flowerbed' | 'bush';
+export type BuildPieceId = 'fence' | 'path' | 'lamp' | 'flowerbed' | 'bush' | 'mango_tree' | 'orange_tree';
 
 // A building piece on the farm grid (one per cell, see lib/build)
 export interface BuildPiece {
@@ -351,6 +353,9 @@ export interface BuildPiece {
   x: number;
   z: number;
   rotY: number;
+  // Fruit trees (lib/trees): the day planted and the fruit hanging on it
+  planted?: number;
+  fruit?: number;
 }
 
 export interface SaveData {

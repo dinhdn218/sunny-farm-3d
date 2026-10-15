@@ -66,12 +66,12 @@ export function BuildBar() {
                 </span>
               </button>
               <button
-                onClick={() => buyBuildPieces(piece.id, BUY_COUNT)}
-                disabled={gold < piece.price * BUY_COUNT}
-                title={`Mua ${BUY_COUNT} ${piece.name}`}
+                onClick={() => buyBuildPieces(piece.id, piece.buyCount ?? BUY_COUNT)}
+                disabled={gold < piece.price * (piece.buyCount ?? BUY_COUNT)}
+                title={`Mua ${piece.buyCount ?? BUY_COUNT} ${piece.name}`}
                 className="rounded-md bg-amber-600 px-1.5 text-[9px] font-black text-white hover:bg-amber-500 disabled:bg-slate-400"
               >
-                +{BUY_COUNT} 🪙{piece.price * BUY_COUNT}
+                +{piece.buyCount ?? BUY_COUNT} 🪙{piece.price * (piece.buyCount ?? BUY_COUNT)}
               </button>
             </div>
           );

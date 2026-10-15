@@ -21,12 +21,17 @@ export function BuildPieceModel({
   leaves = '#4d7c0f',
   winter = false,
   night = false,
+  grown = false,
+  fruit = 0,
 }: {
   kind: BuildPieceId;
   ghost?: boolean;
   leaves?: string;
   winter?: boolean;
   night?: boolean;
+  // Fruit trees: grown yet, and the fruit hanging on it
+  grown?: boolean;
+  fruit?: number;
 }) {
   switch (kind) {
     // White picket fence along the cell; posts on the cell edges meet the next piece's
@@ -115,5 +120,61 @@ export function BuildPieceModel({
           </mesh>
         </group>
       );
+
+    case 'mango_tree':
+    case 'orange_tree':
+      return <FruitTree kind={kind} ghost={ghost} grown={grown} fruit={fruit} />;
   }
+}
+
+const FRUIT_LOOK = {
+  mango_tree: { leaves: '#166534', fruit: '#f59e0b', stretch: 1.35 },
+  orange_tree: { leaves: '#15803d', fruit: '#f97316', stretch: 1 },
+};
+// Where the fruit hang on the crown
+const FRUIT_SPOTS: [number, number, number][] = [
+  [0.42, 1.25, 0.22],
+  [-0.38, 1.35, 0.26],
+  [0.05, 1.18, 0.48],
+];
+
+// A sapling until it has grown, then a round crown with its fruit
+function FruitTree({
+  kind,
+  ghost,
+  grown,
+  fruit,
+}: {
+  kind: 'mango_tree' | 'orange_tree';
+  ghost?: boolean;
+  grown: boolean;
+  fruit: number;
+}) {
+  const look = FRUIT_LOOK[kind];
+  if (!grown) {
+    return (
+      <group>
+        <Block size={[0.08, 0.5, 0.08]} at={[0, 0.25, 0]} color="#78350f" ghost={ghost} />
+        <mesh position={[0, 0.58, 0]}>
+          <dodecahedronGeometry args={[0.22, 0]} />
+          <Mat color={look.leaves} ghost={ghost} />
+        </mesh>
+      </group>
+    );
+  }
+  return (
+    <group>
+      <Block size={[0.18, 0.9, 0.18]} at={[0, 0.45, 0]} color="#78350f" ghost={ghost} shadow />
+      <mesh position={[0, 1.3, 0]} castShadow={!ghost}>
+        <dodecahedronGeometry args={[0.55, 1]} />
+        <Mat color={look.leaves} ghost={ghost} />
+      </mesh>
+      {FRUIT_SPOTS.slice(0, fruit).map((at) => (
+        <mesh key={at.join()} position={at} scale={[1, look.stretch, 1]}>
+          <sphereGeometry args={[0.1, 10, 8]} />
+          <Mat color={look.fruit} ghost={ghost} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
