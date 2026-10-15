@@ -54,12 +54,13 @@ export function shibaFindLabel(find: ShibaFind) {
   }
 }
 
-// What the bunny, the sea turtle, the panda and the reindeer bring home on the morning of `day` (fixed per day)
+// What the bunny, the sea turtle, the panda, the reindeer and the lucky cat bring home on the morning of `day` (fixed per day)
 export interface PetGift {
   items?: ItemCounts;
   feed?: number;
   // Loaves for the hotbar's bread slot
   bread?: number;
+  gold?: number;
   label: string;
 }
 
@@ -80,6 +81,10 @@ export function petMorningGift(pet: string, day: number): PetGift | null {
       return { feed: 2, label: '🐼 Gấu Trúc gom được 2 phần Thức Ăn Chăn Nuôi 🌾' };
     case 'reindeer_pet':
       return { bread: 2, label: '🦌 Tuần Lộc kéo xe trượt tuyết mang về 2 Bánh Mì 🥖' };
+    case 'lucky_cat': {
+      const gold = 20 + Math.floor(random() * 31);
+      return { gold, label: `🐱 Mèo Thần Tài vẫy tay mời lộc: +${gold} Vàng 🪙` };
+    }
     default:
       return null;
   }

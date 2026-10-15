@@ -1865,7 +1865,7 @@ export const useGameStore = create<GameState>()(
             day: day + 1,
             energy: 100,
             timePhaseIndex: 0,
-            gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0),
+            gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0) + (gift?.gold ?? 0),
             gems: gems + (find?.kind === 'gems' ? find.amount : 0),
             breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0) + (gift?.bread ?? 0),
             seeds: find?.kind === 'seeds' ? { ...seeds, [find.crop]: (seeds[find.crop] ?? 0) + find.count } : seeds,

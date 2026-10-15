@@ -86,6 +86,11 @@ export const EVENT_QUESTS: QuestDef[] = [
   { id: 'x_orders', festival: 'christmas', title: 'Giao Quà Giáng Sinh', desc: 'Giao 3 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
   { id: 'x_feed', festival: 'christmas', title: 'Sưởi Ấm Chuồng Trại', desc: 'Cho vật nuôi ăn 6 lần.', icon: '🐄', type: 'feed_animal', target: 6, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 'x_shop', festival: 'christmas', title: 'Món Quà Dưới Gốc Thông', desc: 'Đổi 1 món ở Xưởng Quà Ông Già Noel (Công Viên).', icon: '🎁', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardTokens: 0 },
+  { id: 't_harvest', festival: 'tet', title: 'Mâm Ngũ Quả', desc: 'Thu hoạch 12 nông sản.', icon: '🍊', type: 'harvest', target: 12, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 't_fish', festival: 'tet', title: 'Cá Chép Đầu Xuân', desc: 'Câu được 5 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎏', type: 'fish', target: 5, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 't_orders', festival: 'tet', title: 'Biếu Quà Tết', desc: 'Giao 3 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
+  { id: 't_visit', festival: 'tet', title: 'Du Xuân', desc: 'Dịch chuyển đến 4 khu vực công cộng.', icon: '🌸', type: 'visit_world', target: 4, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 't_shop', festival: 'tet', title: 'Sắm Tết', desc: 'Đổi 1 món ở Chợ Hoa Ngày Tết (Công Viên).', icon: '🌼', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardTokens: 0 },
 ];
 
 // Long-term goals with three tiers each (cumulative progress)

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
@@ -10,6 +10,7 @@ import { FIELD_BORDER } from '@/config/farm';
 import { fieldRect } from '@/lib/farmLayout';
 import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
+import { camControl } from '@/lib/controls';
 import { DecorModel } from '../models/DecorModel';
 
 const BAT_COUNT = 6;
@@ -114,9 +115,149 @@ function ChristmasDressing({ spots }: DressingProps) {
   );
 }
 
+// A red lantern hanging from a bamboo pole
+function PoleLantern() {
+  return (
+    <group>
+      <mesh position={[0, 1.1, 0]}>
+        <cylinderGeometry args={[0.04, 0.05, 2.2, 6]} />
+        <meshLambertMaterial color="#a16207" />
+      </mesh>
+      <mesh position={[0.25, 2.1, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.025, 0.025, 0.55, 6]} />
+        <meshLambertMaterial color="#a16207" />
+      </mesh>
+      <mesh position={[0.45, 1.75, 0]} scale={[1, 1.25, 1]}>
+        <sphereGeometry args={[0.2, 12, 10]} />
+        <meshBasicMaterial color="#ef4444" />
+      </mesh>
+      {[1.99, 1.51].map((y) => (
+        <mesh key={y} position={[0.45, y, 0]}>
+          <cylinderGeometry args={[0.1, 0.1, 0.05, 10]} />
+          <meshLambertMaterial color="#facc15" />
+        </mesh>
+      ))}
+      <mesh position={[0.45, 1.4, 0]}>
+        <cylinderGeometry args={[0.02, 0.005, 0.18, 4]} />
+        <meshLambertMaterial color="#facc15" />
+      </mesh>
+    </group>
+  );
+}
+
+const FIREWORK_COLORS = [0xfacc15, 0xef4444, 0xf472b6, 0x22d3ee, 0xa3e635, 0xffffff];
+const SPARKS_PER_BURST = 60;
+const MAX_SPARKS = 320;
+const SPARK_LIFE = 1.6;
+
+interface Spark {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  life: number;
+  color: number;
+}
+
+// Bursts of sparks in front of the camera, one every second or so
+function Fireworks() {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const sparks = useRef<Spark[]>([]);
+  const nextBurst = useRef(0);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const color = useMemo(() => new THREE.Color(), []);
+
+  useLayoutEffect(() => {
+    if (meshRef.current) meshRef.current.count = 0;
+  }, []);
+
+  useFrame((state, delta) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const dt = Math.min(delta, 0.1);
+    const now = state.clock.elapsedTime;
+    if (now >= nextBurst.current) {
+      nextBurst.current = now + 0.8 + Math.random() * 0.9;
+      // Round the camera's focus and low enough to stay under the top of the view
+      const x = camControl.target.x + (Math.random() - 0.5) * 12;
+      const y = 4.5 + Math.random() * 2;
+      const z = camControl.target.z - 2 + Math.random() * 4;
+      const burstColor = FIREWORK_COLORS[Math.floor(Math.random() * FIREWORK_COLORS.length)];
+      for (let i = 0; i < SPARKS_PER_BURST; i++) {
+        // An even spray in every direction
+        const up = Math.random() * 2 - 1;
+        const around = Math.random() * Math.PI * 2;
+        const flat = Math.sqrt(1 - up * up);
+        const speed = 3.5 + Math.random() * 1.5;
+        sparks.current.push({
+          x,
+          y,
+          z,
+          vx: flat * Math.cos(around) * speed,
+          vy: up * speed,
+          vz: flat * Math.sin(around) * speed,
+          life: SPARK_LIFE,
+          color: burstColor,
+        });
+      }
+    }
+
+    // Air slows the sparks, gravity pulls them down and they shrink as they burn out
+    const drag = Math.max(0, 1 - 1.8 * dt);
+    sparks.current = sparks.current
+      .filter((s) => {
+        s.life -= dt;
+        if (s.life <= 0) return false;
+        s.vx *= drag;
+        s.vy = s.vy * drag - 1.5 * dt;
+        s.vz *= drag;
+        s.x += s.vx * dt;
+        s.y += s.vy * dt;
+        s.z += s.vz * dt;
+        return true;
+      })
+      .slice(-MAX_SPARKS);
+
+    sparks.current.forEach((s, i) => {
+      dummy.position.set(s.x, s.y, s.z);
+      dummy.scale.setScalar(s.life / SPARK_LIFE);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      mesh.setColorAt(i, color.setHex(s.color));
+    });
+    mesh.count = sparks.current.length;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, MAX_SPARKS]}>
+      <sphereGeometry args={[0.13, 6, 4]} />
+      <meshBasicMaterial />
+    </instancedMesh>
+  );
+}
+
+// Tết: potted mai trees and red lanterns taking turns round the spots, fireworks at night
+function TetDressing({ spots, night }: DressingProps) {
+  return (
+    <group>
+      {spots.map(([x, z], i) => (
+        <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={i % 2 === 0 ? 0.55 : 0.6}>
+          {i % 2 === 0 ? <DecorModel id="decor_mai_tree" /> : <PoleLantern />}
+        </group>
+      ))}
+      {night && <Fireworks />}
+    </group>
+  );
+}
+
 const DRESSING: Record<FestivalId, (props: DressingProps) => JSX.Element> = {
   halloween: HalloweenDressing,
   christmas: ChristmasDressing,
+  tet: TetDressing,
 };
 
 // The running festival's decorations on the farm and in the Park

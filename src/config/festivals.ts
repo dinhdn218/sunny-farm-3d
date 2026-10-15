@@ -99,6 +99,34 @@ export const FESTIVALS: Record<FestivalId, FestivalConfig> = {
       tag: 'bg-red-700',
     },
   },
+  tet: {
+    id: 'tet',
+    name: 'Tết Nguyên Đán',
+    icon: '🧧',
+    // A week before mùng 1 Tết Đinh Mùi (6/2/2027) until Rằm tháng Giêng
+    start: '2027-01-30',
+    end: '2027-02-20',
+    token: { name: 'Lì Xì', icon: '🧧' },
+    shop: { name: 'Chợ Hoa Ngày Tết', icon: '🌼' },
+    earn: [
+      { type: 'harvest', tokens: 1, label: '🌾 Thu hoạch nông sản' },
+      { type: 'fish', tokens: 2, label: '🎣 Câu được cá' },
+      { type: 'deliver_order', tokens: 4, label: '📦 Giao một đơn hàng' },
+    ],
+    nightSky: { sky: '#1f0a1e', fog: '#4a1030' },
+    nightTheme: 'tet',
+    stall: { counter: '#b91c1c', trim: '#facc15', stripes: ['#facc15', '#dc2626'], goods: ['#facc15', '#f472b6', '#22c55e'] },
+    ui: {
+      button: 'bg-amber-600 hover:bg-amber-500',
+      chip: 'bg-red-800 text-yellow-300',
+      panel: 'border-amber-500/50 bg-amber-50 text-red-900',
+      text: 'text-red-700',
+      tile: 'border-red-700 bg-yellow-200',
+      selected: 'border-red-500 bg-yellow-50',
+      preview: 'border-red-700/40 from-yellow-200 to-rose-100',
+      tag: 'bg-red-600',
+    },
+  },
 };
 
 export const FESTIVAL_LIST: FestivalConfig[] = Object.values(FESTIVALS);

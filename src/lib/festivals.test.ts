@@ -61,3 +61,22 @@ describe('festivalTokensFor at Giáng Sinh', () => {
     expect(festivalTokensFor(christmas, 'harvest', 1, 'pumpkin')).toBe(0);
   });
 });
+
+describe('Tết Nguyên Đán', () => {
+  it('runs from a week before mùng 1 (6 February 2027) until Rằm tháng Giêng', () => {
+    expect(activeFestival('2027-01-29')).toBeNull();
+    expect(activeFestival('2027-01-30')?.id).toBe('tet');
+    expect(activeFestival('2027-02-06')?.id).toBe('tet');
+    expect(activeFestival('2027-02-20')?.id).toBe('tet');
+    expect(activeFestival('2027-02-21')).toBeNull();
+    expect(nextFestival('2027-01-05')?.id).toBe('tet');
+  });
+
+  it('pays lucky money for any harvest, any fish and every delivered order', () => {
+    const tet = FESTIVALS.tet;
+    expect(festivalTokensFor(tet, 'harvest', 3, 'carrot')).toBe(3);
+    expect(festivalTokensFor(tet, 'fish', 1)).toBe(2);
+    expect(festivalTokensFor(tet, 'deliver_order', 1)).toBe(4);
+    expect(festivalTokensFor(tet, 'craft', 1)).toBe(0);
+  });
+});

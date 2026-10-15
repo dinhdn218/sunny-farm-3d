@@ -873,6 +873,83 @@ function Snowman({ ghost }: { ghost?: boolean }) {
   );
 }
 
+// Blossoms over a dome-shaped crown, spread round by the golden angle
+const MAI_BLOSSOMS: Vec3[] = Array.from({ length: 46 }, (_, i) => {
+  const polar = Math.acos(1 - ((i + 0.5) / 46) * 1.3);
+  const az = i * 2.39996;
+  return [Math.sin(polar) * Math.cos(az) * 0.6, 1.15 + Math.cos(polar) * 0.48, Math.sin(polar) * Math.sin(az) * 0.6];
+});
+
+// Tết: a potted mai tree in full yellow bloom, hung with red lucky-money envelopes
+function MaiTree({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      <mesh castShadow={!ghost} position={[0, 0.2, 0]}>
+        <cylinderGeometry args={[0.36, 0.28, 0.4, 14]} />
+        <Mat color="#1e40af" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 0.39, 0]}>
+        <cylinderGeometry args={[0.37, 0.37, 0.04, 14]} />
+        <Mat color="#facc15" ghost={ghost} />
+      </mesh>
+      <mesh position={[0, 0.41, 0]}>
+        <cylinderGeometry args={[0.33, 0.33, 0.02, 14]} />
+        <Mat color="#422006" ghost={ghost} />
+      </mesh>
+      <Block size={[0.1, 0.62, 0.1]} at={[0.03, 0.7, 0]} rot={[0, 0, -0.1]} color="#57534e" ghost={ghost} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <group key={i} position={[0.05, 1.0, 0]} rotation={[0, (i / 5) * Math.PI * 2 + 0.3, 0]}>
+          <group rotation={[0, 0, -0.85]}>
+            <Block size={[0.05, 0.55, 0.05]} at={[0, 0.27, 0]} color="#57534e" ghost={ghost} />
+          </group>
+        </group>
+      ))}
+      {MAI_BLOSSOMS.map((at, i) => (
+        <mesh key={i} position={at}>
+          <octahedronGeometry args={[0.065, 0]} />
+          <Mat color={i % 3 === 0 ? '#fde047' : '#facc15'} ghost={ghost} />
+        </mesh>
+      ))}
+      {[0.5, 2.1, 3.6, 5.2].map((a) => (
+        <group key={a} position={[Math.cos(a) * 0.5, 1.02, Math.sin(a) * 0.5]} rotation={[0, -a, 0]}>
+          <Block size={[0.09, 0.13, 0.02]} at={[0, 0, 0]} color="#dc2626" ghost={ghost} />
+          <Block size={[0.04, 0.04, 0.025]} at={[0, 0.01, 0]} color="#facc15" ghost={ghost} />
+        </group>
+      ))}
+    </group>
+  );
+}
+
+// Tết: a low bamboo table set with square bánh chưng tied with bamboo strips
+const CAKES: Vec3[] = [
+  [-0.15, 0.45, -0.13],
+  [0.15, 0.45, -0.13],
+  [-0.15, 0.45, 0.13],
+  [0.15, 0.45, 0.13],
+  [0, 0.57, 0],
+];
+
+function BanhChung({ ghost }: { ghost?: boolean }) {
+  return (
+    <group>
+      <Block size={[0.9, 0.06, 0.6]} at={[0, 0.36, 0]} color="#a16207" ghost={ghost} shadow />
+      {[-0.38, 0.38].flatMap((x) =>
+        [-0.24, 0.24].map((z) => (
+          <Block key={`${x}${z}`} size={[0.06, 0.33, 0.06]} at={[x, 0.165, z]} color="#854d0e" ghost={ghost} />
+        ))
+      )}
+      {CAKES.map((at) => (
+        <group key={`${at[0]}${at[1]}${at[2]}`} position={at}>
+          <Block size={[0.24, 0.12, 0.24]} at={[0, 0, 0]} color="#166534" ghost={ghost} shadow />
+          <Block size={[0.25, 0.125, 0.03]} at={[0, 0, 0]} color="#d9f99d" ghost={ghost} />
+          <Block size={[0.03, 0.125, 0.25]} at={[0, 0, 0]} color="#d9f99d" ghost={ghost} />
+        </group>
+      ))}
+      <Block size={[0.12, 0.01, 0.08]} at={[0.36, 0.395, 0.2]} rot={[0, 0.4, 0]} color="#dc2626" ghost={ghost} />
+    </group>
+  );
+}
+
 export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
   if (isMachineId(id)) return <MachineModel id={id} ghost={ghost} />;
   switch (id) {
@@ -908,6 +985,10 @@ export function DecorModel({ id, ghost }: { id: string; ghost?: boolean }) {
       return <XmasTree ghost={ghost} />;
     case 'decor_snowman':
       return <Snowman ghost={ghost} />;
+    case 'decor_mai_tree':
+      return <MaiTree ghost={ghost} />;
+    case 'decor_banh_chung':
+      return <BanhChung ghost={ghost} />;
     default:
       return null;
   }

@@ -99,3 +99,9 @@ describe('advanceQuests', () => {
     expect(progressOf(null)).toBe(0);
   });
 });
+
+describe('visibleQuests at Tết', () => {
+  it("shows Tết's quests", () => {
+    expect(visibleQuests(createInitialQuests(1), 'tet').map((q) => q.id)).toContain('t_orders');
+  });
+});

@@ -115,3 +115,13 @@ describe('reindeer', () => {
     expect(petMorningGift('reindeer_pet', 6)?.bread).toBe(2);
   });
 });
+
+describe('lucky cat', () => {
+  it('brings home 20–50 gold every morning, the same amount whenever the day is replayed', () => {
+    const golds = Array.from({ length: 60 }, (_, i) => petMorningGift('lucky_cat', i + 1)?.gold ?? 0);
+    expect(Math.min(...golds)).toBeGreaterThanOrEqual(20);
+    expect(Math.max(...golds)).toBeLessThanOrEqual(50);
+    expect(new Set(golds).size).toBeGreaterThan(5);
+    expect(petMorningGift('lucky_cat', 7)).toEqual(petMorningGift('lucky_cat', 7));
+  });
+});

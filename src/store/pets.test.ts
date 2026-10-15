@@ -168,3 +168,13 @@ describe('reindeer', () => {
     expect(store().lastDaySummary?.petNote).toContain('Bánh Mì');
   });
 });
+
+describe('lucky cat', () => {
+  it('brings its gold home overnight', () => {
+    withPet('lucky_cat');
+    useGameStore.setState({ day: 9, gold: 0, shippingBin: {} });
+    const gift = petMorningGift('lucky_cat', 10)!;
+    store().nextDay();
+    expect(store().gold).toBe(gift.gold);
+  });
+});

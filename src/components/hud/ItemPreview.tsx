@@ -32,6 +32,8 @@ const DECOR_FRAMING: Record<string, Framing> = {
   decor_hot_air_balloon: { position: [0, 3.6, 10.5], target: [0, 2.5, 0] },
   decor_xmas_tree: { position: [0, 1.7, 4.8], target: [0, 1.1, 0] },
   decor_snowman: { position: [0, 1.4, 3.8], target: [0, 0.85, 0] },
+  decor_mai_tree: { position: [0, 1.6, 4.0], target: [0, 0.95, 0] },
+  decor_banh_chung: { position: [0, 1.3, 2.6], target: [0, 0.4, 0] },
   machine_oven: { position: [0, 2.0, 4.2], target: [0, 0.55, 0] },
   machine_kitchen: { position: [0, 2.2, 4.4], target: [0, 0.8, 0] },
   machine_cheese: { position: [0, 2.2, 4.4], target: [0, 0.85, 0] },
