@@ -1,5 +1,6 @@
-import { TileData } from '@/types/game';
+import { CropId, TileData, ToolId } from '@/types/game';
 import { GRID_SIZE } from '@/config/farm';
+import { CROP_LIST } from '@/config/crops';
 
 export type UpgradableTool = 'hoe' | 'water';
 
@@ -55,6 +56,13 @@ export const waterCapacity = (tier: number) => [10, 20, 40][Math.min(tier, MAX_T
 
 // Upgraded tools are easier on the back: 1 energy per tile instead of 2
 export const energyPerTile = (tier: number) => (tier >= 1 ? 1 : 2);
+
+// The hotbar's one seed slot: it takes out the seeds used last, and again moves on to the next crop's
+export function nextSeedTool(activeTool: ToolId, lastSeedCrop: CropId): ToolId {
+  if (!activeTool.startsWith('seed_')) return `seed_${lastSeedCrop}`;
+  const current = CROP_LIST.findIndex((c) => `seed_${c.id}` === activeTool);
+  return `seed_${CROP_LIST[(current + 1) % CROP_LIST.length].id}`;
+}
 
 const NEIGHBOURS: [number, number][] = AREA_OFFSETS[2].slice(1);
 

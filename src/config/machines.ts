@@ -31,6 +31,13 @@ export const RECIPES: Record<RecipeId, RecipeConfig> = {
     output: { id: 'fish_stew', count: 1 },
     seconds: 120,
   },
+  strawberry_jam: {
+    id: 'strawberry_jam',
+    machine: 'machine_kitchen',
+    inputs: { strawberry: 3 },
+    output: { id: 'strawberry_jam', count: 1 },
+    seconds: 120,
+  },
   honey_cake: {
     id: 'honey_cake',
     machine: 'machine_oven',
@@ -64,8 +71,8 @@ export const MACHINES: Record<MachineId, MachineConfig> = {
     icon: '🍳',
     price: 350,
     footprint: 1.1,
-    description: 'Bếp củi nấu nước ép, sốt cà chua, bánh flan và cá kho tộ.',
-    recipes: ['carrot_juice', 'tomato_sauce', 'flan', 'fish_stew'],
+    description: 'Bếp củi nấu nước ép, sốt cà chua, mứt dâu, bánh flan và cá kho tộ.',
+    recipes: ['carrot_juice', 'tomato_sauce', 'strawberry_jam', 'flan', 'fish_stew'],
   },
   machine_cheese: {
     id: 'machine_cheese',

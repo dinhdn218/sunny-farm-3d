@@ -173,6 +173,8 @@ interface GameState extends SaveData {
   timePhaseIndex: number;
   currentWorld: WorldId;
   activeTool: ToolId;
+  // The crop whose seeds the seed slot takes out (not saved)
+  lastSeedCrop: CropId;
   selectedPlot: string | null;
   placingDecor: { id: string; rotY: number } | null;
   // Choosing a field tile for a sprinkler
@@ -420,6 +422,7 @@ export const useGameStore = create<GameState>()(
         timePhaseIndex: 0,
         currentWorld: 'farm',
         activeTool: 'hoe',
+        lastSeedCrop: 'carrot',
         selectedPlot: null,
         placingDecor: null,
         placingSprinkler: false,
@@ -634,7 +637,11 @@ export const useGameStore = create<GameState>()(
             get().eatBread();
             return;
           }
-          set({ activeTool: tool });
+          set(
+            tool.startsWith('seed_')
+              ? { activeTool: tool, lastSeedCrop: tool.replace('seed_', '') as CropId }
+              : { activeTool: tool }
+          );
         },
 
         setActiveModal: (modal) => set({ activeModal: modal }),

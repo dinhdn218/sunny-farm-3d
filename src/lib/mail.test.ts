@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Letter } from '@/types/game';
 import { FESTIVALS } from '@/config/festivals';
+import { CROP_LIST } from '@/config/crops';
 import { deliverLetters, festivalLetter, thankYouLetter } from '@/lib/mail';
 
 const letter = (id: string): Letter => ({ id, from: 'A', title: 'T', body: '', day: 1, read: false });
@@ -53,7 +54,7 @@ describe('thankYouLetter', () => {
       if (gift.items) {
         const entries = Object.entries(gift.items);
         expect(entries).toHaveLength(1);
-        expect(['carrot', 'wheat', 'tomato', 'pumpkin']).toContain(entries[0][0]);
+        expect(CROP_LIST.map((c) => c.id)).toContain(entries[0][0]);
         expect([2, 3]).toContain(entries[0][1]);
       }
     });

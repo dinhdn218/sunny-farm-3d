@@ -1,6 +1,14 @@
 export type WorldId = 'farm' | 'park' | 'beach' | 'mall' | 'cinema' | 'casino';
 export type TileState = 'empty' | 'tilled' | 'planted';
-export type CropId = 'carrot' | 'wheat' | 'tomato' | 'pumpkin';
+export type CropId =
+  | 'carrot'
+  | 'wheat'
+  | 'tomato'
+  | 'pumpkin'
+  | 'strawberry'
+  | 'watermelon'
+  | 'corn'
+  | 'cabbage';
 export type AnimalSpecies = 'chicken' | 'sheep' | 'cow' | 'duck' | 'pig';
 export type AnimalProductId = 'egg' | 'wool' | 'milk' | 'duck_egg' | 'truffle';
 export type ArtisanId =
@@ -11,7 +19,8 @@ export type ArtisanId =
   | 'wool_scarf'
   | 'pumpkin_pie'
   | 'fish_stew'
-  | 'honey_cake';
+  | 'honey_cake'
+  | 'strawberry_jam';
 export type FishId =
   | 'carp'
   | 'tilapia'
@@ -52,7 +61,8 @@ export type RecipeId =
   | 'cheese'
   | 'wool_scarf'
   | 'fish_stew'
-  | 'honey_cake';
+  | 'honey_cake'
+  | 'strawberry_jam';
 
 export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
@@ -62,16 +72,8 @@ export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
 export type FestivalId = 'halloween' | 'christmas' | 'tet';
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
 
-export type ToolId =
-  | 'hoe'
-  | 'water'
-  | 'basket'
-  | 'seed_carrot'
-  | 'seed_wheat'
-  | 'seed_tomato'
-  | 'seed_pumpkin'
-  | 'bread'
-  | 'feed';
+// Every crop's seeds are a tool of their own (one hotbar slot, see lib/tools)
+export type ToolId = 'hoe' | 'water' | 'basket' | `seed_${CropId}` | 'bread' | 'feed';
 
 export interface UserProfile {
   id: string;

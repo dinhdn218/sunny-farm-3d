@@ -198,7 +198,7 @@ export function SeedShopModal() {
                   <span className="text-sm font-black text-amber-950">Bánh Mì Nóng</span>
                   <span className="text-xs font-bold text-amber-800">Có: {breadCount}</span>
                 </div>
-                <p className="text-xs text-amber-800">Ăn để hồi +45 Thể lực (phím 8).</p>
+                <p className="text-xs text-amber-800">Ăn để hồi +45 Thể lực (phím 5).</p>
                 <div className="text-[11px] font-black text-emerald-800">Giá: 🪙 25 Vàng</div>
               </div>
             </div>

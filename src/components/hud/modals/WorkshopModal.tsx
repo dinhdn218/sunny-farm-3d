@@ -14,7 +14,7 @@ const ItemPreview = dynamic(() => import('../ItemPreview'), { ssr: false });
 
 const outputLabel = (recipe: RecipeConfig) =>
   recipe.output.id === 'bread'
-    ? { icon: '🥖', name: 'Bánh Mì', note: '+45⚡ mỗi ổ (phím 8)' }
+    ? { icon: '🥖', name: 'Bánh Mì', note: '+45⚡ mỗi ổ (phím 5)' }
     : {
         icon: ITEMS[recipe.output.id].icon,
         name: ITEMS[recipe.output.id].name,

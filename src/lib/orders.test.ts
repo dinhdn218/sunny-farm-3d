@@ -27,6 +27,8 @@ const farm = (over: Partial<OrderFarm> = {}): OrderFarm => ({
 });
 
 const sorted = (ids: ItemId[]) => [...ids].sort();
+// Every crop has seeds in the shop, so every farm can grow any of them
+const CROPS: ItemId[] = ['cabbage', 'carrot', 'corn', 'pumpkin', 'strawberry', 'tomato', 'watermelon', 'wheat'];
 const lines = (order: Order) => Object.entries(order.items) as [ItemId, number][];
 
 // Every order posted over a couple of months, one fresh board per day
@@ -39,7 +41,7 @@ const LEVEL_10_XP = 2700;
 
 describe('orderableItems', () => {
   it('asks a young farm only for crops and what its animals give', () => {
-    expect(sorted(orderableItems(farm()))).toEqual(['carrot', 'egg', 'pumpkin', 'tomato', 'wheat']);
+    expect(sorted(orderableItems(farm()))).toEqual(sorted([...CROPS, 'egg']));
   });
 
   it('adds goods from the machines owned, when the farm can get their ingredients', () => {
@@ -55,19 +57,9 @@ describe('orderableItems', () => {
         },
       })
     );
-    expect(sorted(pool)).toEqual([
-      'carrot',
-      'carrot_juice',
-      'cheese',
-      'egg',
-      'flan',
-      'milk',
-      'pumpkin',
-      'pumpkin_pie',
-      'tomato',
-      'tomato_sauce',
-      'wheat',
-    ]);
+    expect(sorted(pool)).toEqual(
+      sorted([...CROPS, 'carrot_juice', 'cheese', 'egg', 'flan', 'milk', 'pumpkin_pie', 'strawberry_jam', 'tomato_sauce'])
+    );
   });
 
   it('asks for fish the farmer has caught, but never rare fish or junk', () => {
@@ -75,7 +67,7 @@ describe('orderableItems', () => {
     const pool = orderableItems(
       farm({ animals: [], fishLog: { carp: caught, mackerel: caught, tuna: caught, old_boot: caught } })
     );
-    expect(sorted(pool)).toEqual(['carp', 'carrot', 'mackerel', 'pumpkin', 'tomato', 'wheat']);
+    expect(sorted(pool)).toEqual(sorted([...CROPS, 'carp', 'mackerel']));
   });
 
   it('cooks fish stew only for a farmer who has caught mackerel', () => {
@@ -88,7 +80,7 @@ describe('orderableItems', () => {
 
   it('asks for beach finds once the farmer has been to the beach, but not for pearls', () => {
     const pool = orderableItems(farm({ animals: [], visitedWorlds: ['farm', 'beach'] }));
-    expect(sorted(pool)).toEqual(['carrot', 'coral', 'pumpkin', 'shell', 'starfish', 'tomato', 'wheat']);
+    expect(sorted(pool)).toEqual(sorted([...CROPS, 'coral', 'shell', 'starfish']));
   });
 });
 
@@ -144,7 +136,7 @@ describe('refillOrders', () => {
   });
 
   it('only asks for goods the farm can produce', () => {
-    const allowed = ['carrot', 'wheat', 'tomato', 'pumpkin', 'egg'];
+    const allowed = [...CROPS, 'egg'];
     ordersOver(40).forEach((order) => lines(order).forEach(([id]) => expect(allowed).toContain(id)));
   });
 
@@ -161,6 +153,10 @@ describe('refillOrders', () => {
       wheat: [2, 4],
       tomato: [2, 4],
       pumpkin: [1, 2],
+      strawberry: [2, 4],
+      watermelon: [1, 2],
+      corn: [2, 4],
+      cabbage: [2, 4],
     };
     ordersOver(60, { animals: [] }).forEach((order) =>
       lines(order).forEach(([id, n]) => {
@@ -179,7 +175,17 @@ describe('refillOrders', () => {
   });
 
   it('pays more than the shipping bin would for the same goods', () => {
-    const price: Partial<Record<ItemId, number>> = { carrot: 40, wheat: 70, tomato: 65, pumpkin: 210, egg: 45 };
+    const price: Partial<Record<ItemId, number>> = {
+      carrot: 40,
+      wheat: 70,
+      tomato: 65,
+      pumpkin: 210,
+      strawberry: 55,
+      watermelon: 190,
+      corn: 80,
+      cabbage: 85,
+      egg: 45,
+    };
     ordersOver(40).forEach((order) => {
       const binValue = lines(order).reduce((sum, [id, n]) => sum + price[id]! * n, 0);
       expect(order.rewardGold).toBeGreaterThan(binValue);

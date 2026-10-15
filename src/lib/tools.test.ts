@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { TileData } from '@/types/game';
-import { applySprinklers, areaTiles, waterCapacity } from '@/lib/tools';
+import { TileData, ToolId } from '@/types/game';
+import { CROP_LIST } from '@/config/crops';
+import { applySprinklers, areaTiles, nextSeedTool, waterCapacity } from '@/lib/tools';
 
 const tile = (r: number, c: number, patch: Partial<TileData> = {}): TileData => ({
   id: `${r}-${c}`,
@@ -59,5 +60,22 @@ describe('applySprinklers', () => {
       .filter((t) => t.watered)
       .map((t) => t.id);
     expect(watered).toEqual(['4-4', '6-5']);
+  });
+});
+
+describe('nextSeedTool', () => {
+  it('takes out the seeds used last when another tool is in hand', () => {
+    expect(nextSeedTool('hoe', 'tomato')).toBe('seed_tomato');
+  });
+
+  it('goes through every crop in turn and comes back round', () => {
+    let tool: ToolId = 'seed_carrot';
+    const seen: ToolId[] = [];
+    CROP_LIST.forEach(() => {
+      tool = nextSeedTool(tool, 'carrot');
+      seen.push(tool);
+    });
+    expect(new Set(seen).size).toBe(CROP_LIST.length);
+    expect(tool).toBe('seed_carrot');
   });
 });

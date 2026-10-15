@@ -10,19 +10,18 @@ import { WALK_MARGIN, insideIsland, islandShape } from '@/lib/farmLayout';
 import { WALK_SPEED, walkStep } from '@/lib/walk';
 import { ToolId } from '@/types/game';
 import { levelInfo } from '@/lib/leveling';
+import { nextSeedTool } from '@/lib/tools';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
 
-const HOTBAR_KEYS: Record<string, ToolId> = {
+// 4 is the seed slot: it takes out the last seeds, then moves on to the next crop's
+const HOTBAR_KEYS: Record<string, ToolId | 'seeds'> = {
   Digit1: 'hoe',
   Digit2: 'water',
   Digit3: 'basket',
-  Digit4: 'seed_carrot',
-  Digit5: 'seed_wheat',
-  Digit6: 'seed_tomato',
-  Digit7: 'seed_pumpkin',
-  Digit8: 'bread',
-  Digit9: 'feed',
+  Digit4: 'seeds',
+  Digit5: 'bread',
+  Digit6: 'feed',
 };
 
 const MODAL_KEYS = {
@@ -105,7 +104,7 @@ export function Player() {
 
       const tool = HOTBAR_KEYS[e.code];
       if (tool) {
-        store.setActiveTool(tool);
+        store.setActiveTool(tool === 'seeds' ? nextSeedTool(store.activeTool, store.lastSeedCrop) : tool);
       } else if ((e.code === 'Space' || e.code === 'KeyE') && !store.activeModal) {
         e.preventDefault();
         store.interactFront();

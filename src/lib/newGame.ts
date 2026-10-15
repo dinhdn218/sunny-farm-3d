@@ -82,7 +82,7 @@ export function createNewGameSave(): SaveData {
     visitedWorlds: ['farm'],
     tiles: createInitialGrid(),
     ownedPlots: [...STARTER_PLOTS],
-    seeds: { carrot: 6, wheat: 4, tomato: 3, pumpkin: 2 },
+    seeds: { carrot: 6, wheat: 4, tomato: 3, pumpkin: 2, strawberry: 0, watermelon: 0, corn: 0, cabbage: 0 },
     items: { carrot: 2, wheat: 1, egg: 1 },
     shippingBin: {},
     breadCount: 2,

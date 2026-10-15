@@ -14,6 +14,7 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   pumpkin_pie: { id: 'pumpkin_pie', name: 'Bánh Bí Ngô', icon: '🥧', sellPrice: 480, kind: 'artisan' },
   fish_stew: { id: 'fish_stew', name: 'Cá Kho Tộ', icon: '🍲', sellPrice: 230, kind: 'artisan' },
   honey_cake: { id: 'honey_cake', name: 'Bánh Mật Ong', icon: '🍰', sellPrice: 320, kind: 'artisan' },
+  strawberry_jam: { id: 'strawberry_jam', name: 'Mứt Dâu', icon: '🫙', sellPrice: 250, kind: 'artisan' },
 };
 
 // Everything off the fishing line except treasure chests, which are opened on the spot
