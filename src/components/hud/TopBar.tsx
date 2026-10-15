@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
@@ -44,6 +44,18 @@ export function TopBar() {
 
   const [muted, setMuted] = useState(soundFX.muted);
   const worldCfg = WORLDS[currentWorld];
+  const headerRef = useRef<HTMLElement>(null);
+
+  // The quest tracker sits just below the bar, however many rows the buttons wrap into
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+    const observer = new ResizeObserver(() =>
+      document.documentElement.style.setProperty('--hud-top', `${header.offsetHeight}px`)
+    );
+    observer.observe(header);
+    return () => observer.disconnect();
+  }, []);
 
   const onlineCount =
     1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
@@ -57,7 +69,7 @@ export function TopBar() {
   const weather = WEATHERS[weatherOf(day)];
 
   return (
-    <header className="pointer-events-none fixed left-0 right-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
+    <header ref={headerRef} className="pointer-events-none fixed left-0 right-0 top-0 z-20 flex flex-wrap items-start justify-between gap-2 p-2 sm:p-3">
       {/* Left status group: zone, day/time, gold, gems, stamina */}
       <div className="pointer-events-auto flex flex-wrap items-center gap-2">
         <button

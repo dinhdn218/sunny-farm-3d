@@ -40,7 +40,10 @@ export function QuestTracker() {
   const worldCfg = WORLDS[currentWorld];
 
   return (
-    <aside className="pointer-events-none fixed left-3 top-20 z-20 flex max-w-[260px] flex-col gap-2">
+    <aside
+      className="pointer-events-none fixed left-3 z-20 flex max-w-[260px] flex-col gap-2"
+      style={{ top: 'calc(var(--hud-top, 80px) + 4px)' }}
+    >
       {/* Mini quest tracker */}
       <div className="glass-panel pointer-events-auto rounded-2xl p-3 text-white">
         <div className="mb-2 flex items-center justify-between border-b border-white/15 pb-1.5">
