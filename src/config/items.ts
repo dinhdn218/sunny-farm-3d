@@ -13,6 +13,7 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   wool_scarf: { id: 'wool_scarf', name: 'Khăn Len', icon: '🧣', sellPrice: 300, kind: 'artisan' },
   pumpkin_pie: { id: 'pumpkin_pie', name: 'Bánh Bí Ngô', icon: '🥧', sellPrice: 480, kind: 'artisan' },
   fish_stew: { id: 'fish_stew', name: 'Cá Kho Tộ', icon: '🍲', sellPrice: 230, kind: 'artisan' },
+  honey_cake: { id: 'honey_cake', name: 'Bánh Mật Ong', icon: '🍰', sellPrice: 320, kind: 'artisan' },
 };
 
 // Everything off the fishing line except treasure chests, which are opened on the spot
@@ -40,6 +41,11 @@ const animalItems = Object.fromEntries(
   })
 ) as Record<ItemConfig['id'], ItemConfig>;
 
+// Honey from the hive on the farm (lib/beehive), sold with the animal products
+const hiveItems = {
+  honey: { id: 'honey', name: 'Mật Ong', icon: '🍯', sellPrice: 90, kind: 'animal' },
+} as Record<ItemConfig['id'], ItemConfig>;
+
 // Beach finds, without their spawn weights
 const forageItems = Object.fromEntries(
   Object.values(FORAGE_ITEMS).map(({ weight: _weight, ...item }) => [item.id, item])
@@ -48,6 +54,7 @@ const forageItems = Object.fromEntries(
 export const ITEMS = {
   ...cropItems,
   ...animalItems,
+  ...hiveItems,
   ...fishItems,
   ...forageItems,
   ...ARTISAN_GOODS,

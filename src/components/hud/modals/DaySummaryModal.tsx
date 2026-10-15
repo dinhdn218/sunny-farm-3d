@@ -80,6 +80,18 @@ export function DaySummaryModal() {
               </div>
             )}
             {summary.petNote && <div className="text-emerald-800">{summary.petNote}</div>}
+            {summary.honeyMade > 0 && (
+              <div className="flex justify-between">
+                <span>🍯 Tổ Ong làm thêm Mật Ong:</span>
+                <span className="text-amber-700">{summary.honeyMade} hũ</span>
+              </div>
+            )}
+            {summary.newLetters > 0 && (
+              <div className="flex justify-between">
+                <span>✉️ Thư mới trong Hộp Thư:</span>
+                <span className="text-sky-700">{summary.newLetters} thư</span>
+              </div>
+            )}
             {summary.newOrders > 0 && (
               <div className="flex justify-between">
                 <span>📦 Đơn hàng mới trên Bảng Đơn Hàng:</span>

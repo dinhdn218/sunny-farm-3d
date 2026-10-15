@@ -328,7 +328,7 @@ function MenuTray() {
   );
 }
 
-// Quiet utilities: players online & profile, photo mode, sound. A column in the corner on phones.
+// Quiet utilities: players online & profile, mail, photo mode, sound. A column in the corner on phones.
 function SystemButtons() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
@@ -336,6 +336,8 @@ function SystemButtons() {
   const cloudError = useGameStore((s) => !!s.cloudError);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const togglePhotoMode = useGameStore((s) => s.togglePhotoMode);
+  // Letters still unread, or with a gift not yet claimed
+  const newMail = useGameStore((s) => s.mail.filter((l) => !l.read || (l.gift && !l.claimed)).length);
   const onlineCount = 1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
 
   return (
@@ -356,6 +358,15 @@ function SystemButtons() {
             }`}
           />
         )}
+      </button>
+      <button
+        onClick={() => setActiveModal('mail')}
+        title="Hộp Thư"
+        aria-label={`Hộp thư, ${newMail} thư mới`}
+        className={`${SYSTEM_BUTTON} w-8 md:w-9`}
+      >
+        ✉️
+        {newMail > 0 && <Badge>{newMail}</Badge>}
       </button>
       <button
         onClick={togglePhotoMode}

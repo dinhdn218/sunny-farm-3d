@@ -2,6 +2,7 @@ import { FarmAnimal, SaveData, TileData } from '@/types/game';
 import { GRID_SIZE, STARTER_PLOTS } from '@/config/farm';
 import { createInitialQuests } from '@/lib/quests';
 import { refillOrders } from '@/lib/orders';
+import { welcomeLetter } from '@/lib/mail';
 
 export const createEmptyGrid = (): TileData[] => {
   const grid: TileData[] = [];
@@ -119,6 +120,9 @@ export function createNewGameSave(): SaveData {
     quests: createInitialQuests(1),
     dailyDay: 1,
     orders: [],
+    beehiveHoney: 0,
+    mail: [welcomeLetter()],
+    pendingThanks: null,
   };
   return { ...save, orders: refillOrders(save) };
 }

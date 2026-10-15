@@ -35,6 +35,7 @@ import { FestivalShopModal } from '@/components/hud/modals/FestivalShopModal';
 import { LuckyWheelModal } from '@/components/hud/modals/LuckyWheelModal';
 import { ClawModal } from '@/components/hud/modals/ClawModal';
 import { OrderBoardModal } from '@/components/hud/modals/OrderBoardModal';
+import { MailModal } from '@/components/hud/modals/MailModal';
 import { TienLenTable } from '@/components/hud/casino/TienLenTable';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 
@@ -113,6 +114,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       {activeModal === 'luckyWheel' && <LuckyWheelModal />}
       {activeModal === 'claw' && <ClawModal />}
       {activeModal === 'orders' && <OrderBoardModal />}
+      {activeModal === 'mail' && <MailModal />}
       <TienLenTable />
     </>
   );

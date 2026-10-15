@@ -10,7 +10,8 @@ export type ArtisanId =
   | 'cheese'
   | 'wool_scarf'
   | 'pumpkin_pie'
-  | 'fish_stew';
+  | 'fish_stew'
+  | 'honey_cake';
 export type FishId =
   | 'carp'
   | 'tilapia'
@@ -33,7 +34,9 @@ export type CatchId = FishId | 'treasure';
 // Found on the sand at the Beach
 export type ForageId = 'shell' | 'starfish' | 'coral' | 'pearl';
 // Everything that goes in the bag and can be sold
-export type ItemId = CropId | AnimalProductId | ArtisanId | FishId | ForageId;
+// Made by the bees in the hive (lib/beehive)
+export type HiveProductId = 'honey';
+export type ItemId = CropId | AnimalProductId | HiveProductId | ArtisanId | FishId | ForageId;
 // Where a line can be cast: the sea off the Beach jetty or the lotus pond in the Park
 export type FishingSpotId = 'beach' | 'park';
 export type ItemCounts = Partial<Record<ItemId, number>>;
@@ -48,7 +51,8 @@ export type RecipeId =
   | 'flan'
   | 'cheese'
   | 'wool_scarf'
-  | 'fish_stew';
+  | 'fish_stew'
+  | 'honey_cake';
 
 export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
@@ -303,6 +307,28 @@ export interface QuestItem {
   tiers?: number;
 }
 
+// What comes with a letter, claimed from the mailbox
+export interface LetterGift {
+  gold?: number;
+  gems?: number;
+  items?: ItemCounts;
+  // A festival's tokens
+  festival?: FestivalId;
+  tokens?: number;
+}
+
+// A letter in the farm's mailbox (lib/mail)
+export interface Letter {
+  id: string;
+  from: string;
+  title: string;
+  body: string;
+  day: number;
+  read: boolean;
+  gift?: LetterGift;
+  claimed?: boolean;
+}
+
 // A resident's order on the order board: the goods are delivered from the bag (lib/orders)
 export interface Order {
   id: string;
@@ -376,6 +402,12 @@ export interface SaveData {
   dailyDay: number;
   // The order board: open orders stay until delivered or refused, empty slots refill each morning
   orders: Order[];
+  // Jars of honey waiting in the hive (lib/beehive)
+  beehiveHoney: number;
+  // The mailbox, newest letter first (lib/mail)
+  mail: Letter[];
+  // The resident whose order was delivered last since the morning: they write tomorrow
+  pendingThanks: string | null;
 }
 
 export interface RemotePlayer {

@@ -4,6 +4,7 @@ import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { isMachineId } from '@/config/machines';
+import { useGameStore } from '@/store/useGameStore';
 import { MachineModel } from './MachineModel';
 
 type Vec3 = [number, number, number];
@@ -439,7 +440,9 @@ function Cauldron({ ghost }: { ghost?: boolean }) {
 }
 
 // Country mailbox on a post, its red flag up
+// The red flag stands up while a letter waits unread
 function Mailbox({ ghost }: { ghost?: boolean }) {
+  const hasMail = useGameStore((s) => s.mail.some((l) => !l.read));
   return (
     <group>
       <Block size={[0.12, 1.0, 0.12]} at={[0, 0.5, 0]} color="#92400e" ghost={ghost} shadow />
@@ -449,8 +452,10 @@ function Mailbox({ ghost }: { ghost?: boolean }) {
         <Mat color="#2563eb" ghost={ghost} />
       </mesh>
       <Block size={[0.18, 0.025, 0.01]} at={[0, 1.18, 0.265]} color="#1e293b" ghost={ghost} />
-      <Block size={[0.035, 0.32, 0.03]} at={[0.2, 1.3, 0.08]} color="#dc2626" ghost={ghost} />
-      <Block size={[0.14, 0.09, 0.02]} at={[0.26, 1.41, 0.08]} color="#dc2626" ghost={ghost} />
+      <group position={[0.2, 1.14, 0.08]} rotation={[hasMail ? 0 : Math.PI / 2, 0, 0]}>
+        <Block size={[0.035, 0.32, 0.03]} at={[0, 0.16, 0]} color="#dc2626" ghost={ghost} />
+        <Block size={[0.14, 0.09, 0.02]} at={[0.06, 0.27, 0]} color="#dc2626" ghost={ghost} />
+      </group>
     </group>
   );
 }

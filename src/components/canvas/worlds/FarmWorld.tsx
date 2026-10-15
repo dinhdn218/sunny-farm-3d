@@ -37,6 +37,8 @@ import {
 import { DecorPlacement, MachineId, MachineJob, TileData } from '@/types/game';
 import { interactable } from '@/lib/interact';
 import { REACH, STAND_GAP } from '@/lib/walk';
+import { BEEHIVE_ID } from '@/lib/beehive';
+import { MAILBOX_ID } from '@/lib/mail';
 import { CropMesh } from '../models/CropMesh';
 import { AnimalMesh } from '../models/AnimalMesh';
 import { DecorModel } from '../models/DecorModel';
@@ -315,21 +317,60 @@ function ExpansionSign({
   );
 }
 
-function PlacedDecor({ id, placement }: { id: string; placement: DecorPlacement }) {
+// Jars waiting in the hive, bouncing over it
+function HoneyBadge() {
+  const honey = useGameStore((s) => s.beehiveHoney);
+  if (honey <= 0) return null;
+  return (
+    <Html position={[0, 1.55, 0]} zIndexRange={[15, 0]}>
+      <div className="player-tag w-max animate-bounce rounded-full border border-white bg-amber-500 px-2 py-0.5 text-[11px] font-black text-white shadow">
+        🍯 {honey}
+      </div>
+    </Html>
+  );
+}
+
+// The beehive and the mailbox do their job when clicked (moved from the fashion shop); other decor moves
+function decorHandlers(id: string, placement: DecorPlacement) {
   const item = COSMETICS.find((c) => c.id === id);
-  const handlers = interactable(
-    `${item?.icon} ${item?.name}`,
+  const title = `${item?.icon} ${item?.name}`;
+  const walkThen = (act: () => void) => () =>
+    useGameStore.getState().walkTo({
+      x: placement.x,
+      z: placement.z,
+      reach: (item?.footprint ?? 1) + STAND_GAP,
+      act,
+    });
+  if (id === BEEHIVE_ID) {
+    return interactable(
+      title,
+      walkThen(() => useGameStore.getState().collectHoney()),
+      'Click để thu Mật Ong • Di chuyển trong Thời Trang & Decor'
+    );
+  }
+  if (id === MAILBOX_ID) {
+    return interactable(
+      title,
+      walkThen(() => useGameStore.getState().setActiveModal('mail')),
+      'Click để đọc thư • Di chuyển trong Thời Trang & Decor'
+    );
+  }
+  return interactable(
+    title,
     () => useGameStore.getState().startPlacingDecor(id),
     'Click để di chuyển • Cất kho trong Thời Trang & Decor'
   );
+}
 
+function PlacedDecor({ id, placement }: { id: string; placement: DecorPlacement }) {
   return (
     <group
       position={[placement.x, 0, placement.z]}
       rotation={[0, placement.rotY, 0]}
-      {...handlers}
+      {...decorHandlers(id, placement)}
     >
       <DecorModel id={id} />
+      {id === BEEHIVE_ID && <HoneyBadge />}
     </group>
   );
 }

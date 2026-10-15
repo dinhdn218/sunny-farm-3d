@@ -80,6 +80,8 @@ import {
 } from '@/lib/inventory';
 import { marketPrice } from '@/lib/market';
 import { refillOrders } from '@/lib/orders';
+import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
+import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
@@ -139,6 +141,10 @@ interface DaySummaryData {
   petNote: string | null;
   // Orders posted on the board this morning
   newOrders: number;
+  // Jars the bees added to the hive overnight
+  honeyMade: number;
+  // Letters that came with the morning post
+  newLetters: number;
 }
 
 // Popcorn at the cinema: the first one each day is free
@@ -192,6 +198,7 @@ interface GameState extends SaveData {
     | 'luckyWheel'
     | 'claw'
     | 'orders'
+    | 'mail'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -261,6 +268,9 @@ interface GameState extends SaveData {
   sellAtMarket: (id: ItemId, amount?: number) => void;
   deliverOrder: (orderId: string) => void;
   discardOrder: (orderId: string) => void;
+  collectHoney: () => void;
+  readLetter: (letterId: string) => void;
+  claimLetter: (letterId: string) => void;
 
   openWorkshop: (machine?: MachineId) => void;
   buyMachine: (id: MachineId) => void;
@@ -1174,6 +1184,7 @@ export const useGameStore = create<GameState>()(
             gold: gold + order.rewardGold,
             gems: gems + order.rewardGems,
             orders: orders.filter((o) => o.id !== orderId),
+            pendingThanks: order.customer,
           });
           spawnParticles(playerPos.x, 0.6, playerPos.z, 0xfacc15, 20);
           get().showToast(
@@ -1192,6 +1203,53 @@ export const useGameStore = create<GameState>()(
           if (!order) return;
           set((s) => ({ orders: s.orders.filter((o) => o.id !== orderId) }));
           get().showToast(`Đã từ chối đơn của ${order.customer}. Sáng mai sẽ có đơn mới.`, 'text-amber-300');
+        },
+
+        // Honey waiting in the hive goes to the bag
+        collectHoney: () => {
+          const { beehiveHoney, items, decorPlacements } = get();
+          const hive = decorPlacements[BEEHIVE_ID];
+          const at: [number, number, number] | undefined = hive ? [hive.x, 1.3, hive.z] : undefined;
+          if (beehiveHoney <= 0) {
+            get().showToast('🐝 Ong đang làm mật, sáng mai quay lại nhé!', 'text-amber-300', at);
+            return;
+          }
+          soundFX.harvest();
+          set({ beehiveHoney: 0, items: addItems(items, { honey: beehiveHoney }) });
+          if (hive) spawnParticles(hive.x, 0.9, hive.z, 0xfacc15, 18);
+          get().showToast(`🍯 +${beehiveHoney} Mật Ong!`, 'text-yellow-300', at);
+          get().incrementQuest('collect_animal', beehiveHoney);
+        },
+
+        readLetter: (letterId) =>
+          set((s) =>
+            s.mail.some((l) => l.id === letterId && !l.read)
+              ? { mail: s.mail.map((l) => (l.id === letterId ? { ...l, read: true } : l)) }
+              : s
+          ),
+
+        // The gift that came with a letter, handed over once
+        claimLetter: (letterId) => {
+          const { mail, gold, gems, items, festivalTokens, playerPos } = get();
+          const letter = mail.find((l) => l.id === letterId);
+          if (!letter?.gift || letter.claimed) return;
+          const { gift } = letter;
+          soundFX.questClaim();
+          set({
+            gold: gold + (gift.gold ?? 0),
+            gems: gems + (gift.gems ?? 0),
+            items: gift.items ? addItems(items, gift.items) : items,
+            festivalTokens:
+              gift.festival && gift.tokens
+                ? { ...festivalTokens, [gift.festival]: (festivalTokens[gift.festival] ?? 0) + gift.tokens }
+                : festivalTokens,
+            mail: mail.map((l) => (l.id === letterId ? { ...l, claimed: true, read: true } : l)),
+          });
+          spawnParticles(playerPos.x, 0.8, playerPos.z, 0xfacc15, 18);
+          get().showToast(
+            `✉️ ${letterGiftLabel(gift, gift.festival ? FESTIVALS[gift.festival].token.icon : '')}`,
+            'text-yellow-300'
+          );
         },
 
         openWorkshop: (machine) =>
@@ -1860,6 +1918,21 @@ export const useGameStore = create<GameState>()(
           const orders = refillOrders({ ...get(), day: day + 1 });
           const newOrders = orders.length - get().orders.length;
 
+          // The bees fill the hive overnight, up to what it holds
+          const { decorPlacements, ownedCosmetics, buildPieces, beehiveHoney, mail, pendingThanks } = get();
+          const hiveHoney = Math.min(
+            HIVE_CAPACITY,
+            beehiveHoney + hiveHoneyToday(decorPlacements, ownedCosmetics, buildPieces)
+          );
+          // The morning post: the running festival's letter, and thanks for yesterday's orders to a farm with a mailbox
+          const festival = runningFestival();
+          const hasMailbox = !!decorPlacements[MAILBOX_ID] && ownedCosmetics.includes(MAILBOX_ID);
+          const nextMail = deliverLetters(mail, [
+            ...(festival ? [festivalLetter(festival, day + 1)] : []),
+            ...(pendingThanks && hasMailbox ? [thankYouLetter(pendingThanks, day + 1)] : []),
+          ]);
+          const newLetters = nextMail.filter((l) => !mail.includes(l)).length;
+
           soundFX.questClaim();
           set({
             day: day + 1,
@@ -1881,6 +1954,9 @@ export const useGameStore = create<GameState>()(
             ],
             dailyDay: day + 1,
             orders,
+            beehiveHoney: hiveHoney,
+            mail: nextMail,
+            pendingThanks: null,
             placingDecor: null,
             buildMode: null,
             fishing: null,
@@ -1899,6 +1975,8 @@ export const useGameStore = create<GameState>()(
               rainWatered,
               petNote,
               newOrders,
+              honeyMade: hiveHoney - beehiveHoney,
+              newLetters,
             },
             activeModal: 'summary',
           });

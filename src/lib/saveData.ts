@@ -49,6 +49,9 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   quests: true,
   dailyDay: true,
   orders: true,
+  beehiveHoney: true,
+  mail: true,
+  pendingThanks: true,
 };
 
 export const SAVE_KEYS = Object.keys(SAVE_FIELDS) as (keyof SaveData)[];

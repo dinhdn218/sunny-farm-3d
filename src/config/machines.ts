@@ -31,6 +31,13 @@ export const RECIPES: Record<RecipeId, RecipeConfig> = {
     output: { id: 'fish_stew', count: 1 },
     seconds: 120,
   },
+  honey_cake: {
+    id: 'honey_cake',
+    machine: 'machine_oven',
+    inputs: { wheat: 1, honey: 1, egg: 1 },
+    output: { id: 'honey_cake', count: 1 },
+    seconds: 150,
+  },
   cheese: { id: 'cheese', machine: 'machine_cheese', inputs: { milk: 1 }, output: { id: 'cheese', count: 1 }, seconds: 120 },
   wool_scarf: {
     id: 'wool_scarf',
@@ -48,8 +55,8 @@ export const MACHINES: Record<MachineId, MachineConfig> = {
     icon: '🔥',
     price: 250,
     footprint: 1.0,
-    description: 'Lò gạch nướng bánh mì nóng giòn và bánh bí ngô thơm lừng.',
-    recipes: ['bread', 'pumpkin_pie'],
+    description: 'Lò gạch nướng bánh mì nóng giòn, bánh bí ngô thơm lừng và bánh mật ong.',
+    recipes: ['bread', 'pumpkin_pie', 'honey_cake'],
   },
   machine_kitchen: {
     id: 'machine_kitchen',
