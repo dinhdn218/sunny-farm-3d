@@ -109,7 +109,7 @@ import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
 import { activeFestival, festivalTokensFor } from '@/lib/festivals';
 import { FESTIVALS } from '@/config/festivals';
-import { isWet, seasonalPrice, weatherOf } from '@/lib/seasons';
+import { isWet, seasonOf, seasonalPrice, weatherOf } from '@/lib/seasons';
 import { petMorningGift, roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
 import { pieceAt, snapToCell } from '@/lib/build';
 import { BUILD_PIECES } from '@/config/build';
@@ -1563,9 +1563,10 @@ export const useGameStore = create<GameState>()(
           get().incrementQuest('craft', 1);
         },
 
-        // Cast at the Beach jetty or the Park pond; what bites is decided now, by the waters and the time of day
+        // Cast at the Beach jetty or the Park pond; what bites is decided now, by the waters, the time of day
+        // and the season
         startFishing: (spotId) => {
-          const { currentWorld, energy, timePhaseIndex, playerPos, fishing } = get();
+          const { currentWorld, energy, timePhaseIndex, day, playerPos, fishing } = get();
           // A cast already in progress is finished first (re-casting is offered on the result card)
           if (fishing && fishing.stage !== 'result') return;
           const spot = spotId ? FISHING_SPOTS[spotId] : fishingSpotIn(currentWorld);
@@ -1578,7 +1579,7 @@ export const useGameStore = create<GameState>()(
             get().showToast('⚡ Không đủ thể lực để quăng cần!', 'text-red-400');
             return;
           }
-          const catchId = rollCatch(TIME_PHASES[timePhaseIndex].id, spot.waters);
+          const catchId = rollCatch(TIME_PHASES[timePhaseIndex].id, spot.waters, seasonOf(day));
           playerPos.x = spot.x;
           playerPos.z = spot.z;
           playerPos.rotY = spot.rotY;

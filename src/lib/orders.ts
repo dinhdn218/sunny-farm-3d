@@ -9,6 +9,7 @@ import { NPC_PRESETS } from '@/config/npcs';
 import { hiveHoneyToday } from '@/lib/beehive';
 import { levelInfo } from '@/lib/leveling';
 import { seeded } from '@/lib/random';
+import { seasonOf } from '@/lib/seasons';
 import { daysUntilGrown } from '@/lib/trees';
 
 // What the order board needs to know about the farm
@@ -64,15 +65,17 @@ function dailySupply(farm: OrderFarm): ItemCounts {
 export function orderableItems(farm: OrderFarm): ItemId[] {
   const species = new Set(farm.animals.map((a) => a.species));
   const supply = dailySupply(farm);
+  const season = seasonOf(farm.day);
   const basics: ItemId[] = [
     ...CROP_LIST.map((c) => c.id),
     ...ANIMAL_LIST.filter((a) => species.has(a.species)).map((a) => a.productId),
     // Fruit from trees that bear, and honey from the hive
     ...(['mango', 'orange', 'honey'] as ItemId[]).filter((id) => supply[id]),
-    // Fish the farmer has landed before, but no rare ones (or junk)
+    // Fish the farmer has landed before and that bite this season, but no rare ones (or junk)
     ...CATCH_LIST.filter(
       (c) =>
         (c.rarity === 'common' || c.rarity === 'uncommon') &&
+        c.seasons.includes(season) &&
         (farm.fishLog[c.id as FishId]?.caught ?? 0) > 0
     ).map((c) => c.id as FishId),
     ...(farm.visitedWorlds.includes('beach') ? BEACH_FINDS : []),

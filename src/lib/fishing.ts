@@ -1,15 +1,18 @@
-import { CatchId, TimePhaseId } from '@/types/game';
+import { CatchConfig, CatchId, SeasonId, TimePhaseId } from '@/types/game';
 import { CATCHES, CATCH_LIST } from '@/config/fish';
 
-// Picks what is on the line, weighted among what bites in these waters at this time of day
+// Whether it bites in these waters at this time of day, in this season
+export const bitesNow = (c: CatchConfig, phase: TimePhaseId, waters: 'sea' | 'pond', season: SeasonId) =>
+  c.waters.includes(waters) && (c.phases.length === 0 || c.phases.includes(phase)) && c.seasons.includes(season);
+
+// Picks what is on the line, weighted among what bites in these waters at this time of day and season
 export function rollCatch(
   phase: TimePhaseId,
-  waters: 'sea' | 'pond' = 'sea',
+  waters: 'sea' | 'pond',
+  season: SeasonId,
   random: () => number = Math.random
 ): CatchId {
-  const pool = CATCH_LIST.filter(
-    (c) => c.waters.includes(waters) && (c.phases.length === 0 || c.phases.includes(phase))
-  );
+  const pool = CATCH_LIST.filter((c) => bitesNow(c, phase, waters, season));
   const total = pool.reduce((sum, c) => sum + c.weight, 0);
   let r = random() * total;
   for (const c of pool) {

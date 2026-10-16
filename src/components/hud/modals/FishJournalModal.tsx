@@ -2,7 +2,9 @@
 
 import { useGameStore } from '@/store/useGameStore';
 import { CATCH_LIST, RARITY_LABEL, WATER_NAMES } from '@/config/fish';
-import { FishId, TimePhaseId } from '@/types/game';
+import { SEASONS, SEASON_ORDER } from '@/config/seasons';
+import { seasonOf } from '@/lib/seasons';
+import { CatchConfig, FishId, TimePhaseId } from '@/types/game';
 import { ModalShell } from './ModalShell';
 
 const PHASE_NAMES: Record<TimePhaseId, string> = {
@@ -14,16 +16,25 @@ const PHASE_NAMES: Record<TimePhaseId, string> = {
 
 const SPECIES = CATCH_LIST.filter((c) => c.id !== 'treasure');
 
+// "Quanh năm", or the seasons it bites in through the year, e.g. "🌸 Xuân, 🍂 Thu"
+const seasonsLabel = (c: CatchConfig) =>
+  c.seasons.length === 4
+    ? 'Quanh năm'
+    : SEASON_ORDER.filter((id) => c.seasons.includes(id))
+        .map((id) => `${SEASONS[id].icon} ${SEASONS[id].name.replace('Mùa ', '')}`)
+        .join(', ');
+
 // Every kind of catch: what has been caught (count and record size) and hints for the rest
 export function FishJournalModal() {
   const fishLog = useGameStore((s) => s.fishLog);
+  const season = useGameStore((s) => seasonOf(s.day));
   const found = SPECIES.filter((c) => fishLog[c.id as FishId]).length;
 
   return (
     <ModalShell
       icon="📖"
       title="Sổ Tay Câu Cá"
-      subtitle={`Đã câu được ${found}/${SPECIES.length} loài • Biển ở Bãi Biển, Hồ Sen ở Công Viên • đổi giờ (nút 🌤️) để gặp loài khác`}
+      subtitle={`Đã câu được ${found}/${SPECIES.length} loài • Biển ở Bãi Biển, Hồ Sen ở Công Viên • mỗi mùa, mỗi giờ (nút 🌤️) có loài riêng • Đang là ${SEASONS[season].icon} ${SEASONS[season].name}`}
     >
       <div className="grid grid-cols-1 gap-2.5 overflow-y-auto pr-1 sm:grid-cols-2">
         {SPECIES.map((c) => {
@@ -43,6 +54,14 @@ export function FishJournalModal() {
                 <div className="text-sm font-black text-amber-950">{log ? c.name : '???'}</div>
                 <div className="text-[11px] font-bold text-amber-700">
                   {RARITY_LABEL[c.rarity]} • {c.waters.map((w) => WATER_NAMES[w]).join(' & ')} • {when}
+                </div>
+                <div className="flex flex-wrap items-center gap-1 text-[11px] font-bold text-amber-700">
+                  <span>{seasonsLabel(c)}</span>
+                  {c.seasons.includes(season) ? (
+                    <span className="rounded-full bg-emerald-600 px-1.5 text-[10px] font-black text-white">Đang có mùa này</span>
+                  ) : (
+                    <span className="rounded-full bg-slate-400 px-1.5 text-[10px] font-black text-white">Hết mùa</span>
+                  )}
                 </div>
                 {log && (
                   <div className="text-[11px] font-black text-sky-800">

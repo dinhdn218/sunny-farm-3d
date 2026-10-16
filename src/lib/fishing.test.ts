@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CATCHES } from '@/config/fish';
-import { REEL_START, reelStep, rollCatch, rollSize, zoneWidth } from '@/lib/fishing';
+import { SeasonId, TimePhaseId } from '@/types/game';
+import { CATCHES, CATCH_LIST } from '@/config/fish';
+import { SEASON_ORDER } from '@/config/seasons';
+import { TIME_PHASES } from '@/config/time';
+import { REEL_START, bitesNow, reelStep, rollCatch, rollSize, zoneWidth } from '@/lib/fishing';
 
 // Deterministic stand-in for Math.random
 const sequence = (...values: number[]) => {
@@ -8,28 +11,30 @@ const sequence = (...values: number[]) => {
   return () => values[i++ % values.length];
 };
 
+// Every cast over the whole range of the dice
+const castsAt = (phase: TimePhaseId, waters: 'sea' | 'pond', season: SeasonId) =>
+  new Set(Array.from({ length: 1000 }, (_, i) => rollCatch(phase, waters, season, () => i / 1000)));
+
 describe('rollCatch', () => {
   it('only brings up what bites at this time of day', () => {
     for (let r = 0; r < 1; r += 0.01) {
-      const id = rollCatch('morning', 'sea', () => r);
+      const id = rollCatch('morning', 'sea', 'spring', () => r);
       const phases = CATCHES[id].phases;
       expect(phases.length === 0 || phases.includes('morning')).toBe(true);
     }
   });
 
   it('can bring up the night-only legendary fish at night but never in the morning', () => {
-    const night = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('night', 'sea', () => i / 1000)));
-    const morning = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('morning', 'sea', () => i / 1000)));
-    expect(night.has('moonfish')).toBe(true);
-    expect(morning.has('moonfish')).toBe(false);
+    expect(castsAt('night', 'sea', 'autumn').has('moonfish')).toBe(true);
+    expect(castsAt('morning', 'sea', 'autumn').has('moonfish')).toBe(false);
   });
 
   it('keeps sea fish in the sea and pond fish in the pond', () => {
     for (let r = 0; r < 1; r += 0.01) {
-      expect(CATCHES[rollCatch('night', 'pond', () => r)].waters).toContain('pond');
-      expect(CATCHES[rollCatch('night', 'sea', () => r)].waters).toContain('sea');
+      expect(CATCHES[rollCatch('night', 'pond', 'spring', () => r)].waters).toContain('pond');
+      expect(CATCHES[rollCatch('night', 'sea', 'spring', () => r)].waters).toContain('sea');
     }
-    const pond = new Set(Array.from({ length: 1000 }, (_, i) => rollCatch('night', 'pond', () => i / 1000)));
+    const pond = castsAt('night', 'pond', 'spring');
     expect(pond.has('dragon_carp')).toBe(true);
     expect(pond.has('moonfish')).toBe(false);
   });
@@ -37,10 +42,33 @@ describe('rollCatch', () => {
   it('brings up common fish far more often than rare ones', () => {
     const counts: Record<string, number> = {};
     for (let i = 0; i < 1000; i++) {
-      const id = rollCatch('noon', 'sea', () => i / 1000);
+      const id = rollCatch('noon', 'sea', 'spring', () => i / 1000);
       counts[id] = (counts[id] ?? 0) + 1;
     }
     expect(counts.anchovy).toBeGreaterThan(counts.tuna * 3);
+  });
+
+  it('only brings up what bites this season: each legend in its own', () => {
+    SEASON_ORDER.forEach((season) =>
+      (['sea', 'pond'] as const).forEach((waters) =>
+        castsAt('night', waters, season).forEach((id) => expect(CATCHES[id].seasons, id).toContain(season))
+      )
+    );
+    expect(SEASON_ORDER.filter((season) => castsAt('night', 'pond', season).has('dragon_carp'))).toEqual(['spring']);
+    expect(SEASON_ORDER.filter((season) => castsAt('night', 'sea', season).has('moonfish'))).toEqual(['autumn']);
+  });
+
+  it('always has a fish biting, whatever the waters, time and season', () => {
+    SEASON_ORDER.forEach((season) =>
+      TIME_PHASES.forEach(({ id: phase }) =>
+        (['sea', 'pond'] as const).forEach((waters) => {
+          const fish = CATCH_LIST.filter(
+            (c) => bitesNow(c, phase, waters, season) && c.rarity !== 'junk' && c.rarity !== 'treasure'
+          );
+          expect(fish.length, `${season} ${phase} ${waters}`).toBeGreaterThan(0);
+        })
+      )
+    );
   });
 });
 

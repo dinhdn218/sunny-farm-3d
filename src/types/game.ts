@@ -163,6 +163,8 @@ export interface CatchConfig {
   sellPrice: number;
   // Salt water off the jetty, fresh water in the pond (junk and treasure turn up in both)
   waters: ('sea' | 'pond')[];
+  // Seasons it bites in
+  seasons: SeasonId[];
 }
 
 // One cast of the line: wait for a bite, strike in time, then reel the fish in

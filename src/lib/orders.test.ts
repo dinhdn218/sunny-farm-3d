@@ -119,6 +119,15 @@ describe('orderableItems', () => {
     expect(sorted(pool)).toEqual(sorted([...CROPS, 'carp', 'mackerel']));
   });
 
+  it('asks only for fish that bite this season', () => {
+    const caught = { caught: 1, best: 40 };
+    const fishLog = { mackerel: caught, crab: caught };
+    // Day 1 is in spring, day 8 in summer, when the mackerel are gone
+    expect(orderableItems(farm({ day: 1, fishLog }))).toEqual(expect.arrayContaining(['mackerel', 'crab']));
+    expect(orderableItems(farm({ day: 8, fishLog }))).not.toContain('mackerel');
+    expect(orderableItems(farm({ day: 8, fishLog }))).toContain('crab');
+  });
+
   it('cooks fish stew only for a farmer who has caught mackerel', () => {
     const kitchen = { machine_kitchen: { job: null } };
     expect(orderableItems(farm({ machines: kitchen }))).not.toContain('fish_stew');
