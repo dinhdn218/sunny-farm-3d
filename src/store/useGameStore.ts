@@ -227,6 +227,7 @@ interface GameState extends SaveData {
     | 'collection'
     | 'resident'
     | 'leaderboard'
+    | 'visit'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;

@@ -14,10 +14,13 @@ import { SafeGLTFModel } from './GLTFModel';
 export function AnimalMesh({
   animal,
   offset = [0, 0],
+  interactive = true,
 }: {
   animal: FarmAnimal;
   // Shift of the ranch when the farm has been expanded
   offset?: [number, number];
+  // Off on a farm being visited: no clicks and no name tags
+  interactive?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const interactAnimal = useGameStore((s) => s.interactAnimal);
@@ -214,7 +217,7 @@ export function AnimalMesh({
   );
 
   return (
-    <group ref={groupRef} position={[animal.x, 0, animal.z]} {...handlers}>
+    <group ref={groupRef} position={[animal.x, 0, animal.z]} {...(interactive ? handlers : {})}>
       {useGlbModels && cfg.glbPath ? (
         <group>
           <SafeGLTFModel
@@ -229,24 +232,26 @@ export function AnimalMesh({
         proceduralAnimal
       )}
 
-      <Html position={[0, 1.45, 0]} zIndexRange={[15, 0]}>
-        <div className="player-tag flex w-max flex-col items-center">
-          {animal.hasProduct ? (
-            <div className="mb-1 animate-bounce rounded-full border border-white bg-amber-400 px-2 py-0.5 text-[10px] font-black text-amber-950 shadow">
-              {cfg.productIcon} Thu hoạch!
+      {interactive && (
+        <Html position={[0, 1.45, 0]} zIndexRange={[15, 0]}>
+          <div className="player-tag flex w-max flex-col items-center">
+            {animal.hasProduct ? (
+              <div className="mb-1 animate-bounce rounded-full border border-white bg-amber-400 px-2 py-0.5 text-[10px] font-black text-amber-950 shadow">
+                {cfg.productIcon} Thu hoạch!
+              </div>
+            ) : animal.fedToday ? (
+              <div className="mb-0.5 text-sm">❤️</div>
+            ) : (
+              <div className="mb-1 rounded-full border border-white/30 bg-slate-900/85 px-2 py-0.5 text-[10px] font-black text-amber-200 shadow">
+                🌾 Đói bụng
+              </div>
+            )}
+            <div className="rounded-full border border-white/30 bg-slate-900/85 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
+              {cfg.icon} {animal.name}
             </div>
-          ) : animal.fedToday ? (
-            <div className="mb-0.5 text-sm">❤️</div>
-          ) : (
-            <div className="mb-1 rounded-full border border-white/30 bg-slate-900/85 px-2 py-0.5 text-[10px] font-black text-amber-200 shadow">
-              🌾 Đói bụng
-            </div>
-          )}
-          <div className="rounded-full border border-white/30 bg-slate-900/85 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
-            {cfg.icon} {animal.name}
           </div>
-        </div>
-      </Html>
+        </Html>
+      )}
     </group>
   );
 }

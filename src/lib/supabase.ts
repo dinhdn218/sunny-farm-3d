@@ -2,9 +2,10 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SaveData, UserProfile } from '@/types/game';
-import { SAVE_VERSION } from '@/lib/saveData';
+import { SAVE_VERSION, saveFromCloud } from '@/lib/saveData';
 import { CloudSave, parseCloudRow } from '@/lib/cloudSave';
 import { BoardCategory, BoardEntry, boardFromRows } from '@/lib/leaderboard';
+import { FarmListing, FarmView, farmListFromRows, farmViewOf } from '@/lib/visit';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -105,4 +106,27 @@ export async function fetchLeaderboard(category: BoardCategory, week: string): P
   const { data, error } = await query.limit(20);
   if (error) throw error;
   return boardFromRows(data ?? [], category, week);
+}
+
+// Farms played lately, from everyone's public profile row
+export async function fetchFarmList(ownId: string): Promise<FarmListing[]> {
+  const { data, error } = await requireClient()
+    .from('profiles')
+    .select('id, full_name, day, xp:game_state->xp')
+    .order('updated_at', { ascending: false })
+    .limit(20);
+  if (error) throw error;
+  return farmListFromRows(data ?? [], ownId);
+}
+
+// Another farmer's farm as last uploaded, brought up to date like one's own cloud save
+export async function fetchFarm(id: string): Promise<FarmView | null> {
+  const { data, error } = await requireClient()
+    .from('profiles')
+    .select('game_state, updated_at')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw error;
+  const cloud = parseCloudRow(data);
+  return cloud ? farmViewOf(saveFromCloud(cloud.data, cloud.version)) : null;
 }

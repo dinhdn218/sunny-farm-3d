@@ -7,6 +7,7 @@ import { ModalShell } from './ModalShell';
 export function WorldMapModal() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const setWorld = useGameStore((s) => s.setWorld);
+  const setActiveModal = useGameStore((s) => s.setActiveModal);
 
   return (
     <ModalShell
@@ -14,6 +15,14 @@ export function WorldMapModal() {
       title="Bản Đồ Sảnh Thế Giới 3D"
       subtitle="Chọn thành phố hoặc khu vực bạn muốn dịch chuyển đến tham quan & gặp gỡ bạn bè!"
       maxWidth="max-w-3xl"
+      headerRight={
+        <button
+          onClick={() => setActiveModal('visit')}
+          className="game-btn rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-black text-white hover:bg-emerald-500"
+        >
+          🏡 Thăm Hàng Xóm
+        </button>
+      }
     >
       <div className="grid grid-cols-1 gap-3.5 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3">
         {WORLD_LIST.map((w) => {
