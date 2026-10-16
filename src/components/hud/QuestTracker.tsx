@@ -23,6 +23,8 @@ export function QuestTracker() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
+  const open = useGameStore((s) => s.questTrackerOpen);
+  const toggleQuestTracker = useGameStore((s) => s.toggleQuestTracker);
   // Phones: the list stops short of the thumbstick and scrolls; its foot fades while there is more below
   const listRef = useRef<HTMLElement>(null);
   const [moreBelow, setMoreBelow] = useState(false);
@@ -41,6 +43,8 @@ export function QuestTracker() {
       list.removeEventListener('scroll', check);
     };
   }, [currentWorld]);
+
+  const readyCount = quests.filter(isClaimable).length;
 
   // Rewards waiting first, then the current story quest, then today's dailies
   const mainQuest = activeMainQuest(quests);
@@ -61,25 +65,43 @@ export function QuestTracker() {
       style={{ top: 'calc(var(--hud-top, 80px) + 4px)' }}
     >
       {/* Mini quest tracker */}
-      <div className="glass-panel pointer-events-auto rounded-2xl p-3 text-white">
+      <div className={`glass-panel pointer-events-auto rounded-2xl text-white ${open ? 'p-3' : 'px-3 py-2'}`}>
         <div
-          className={`mb-2 flex items-center justify-between border-b border-white/15 pb-1.5 ${
-            currentWorld !== 'farm' ? 'max-md:mb-0 max-md:border-b-0 max-md:pb-0' : ''
-          }`}
+          className={`flex items-center justify-between gap-2 ${open ? 'mb-2 border-b border-white/15 pb-1.5' : ''}`}
         >
-          <span className="flex items-center gap-1.5 text-xs font-black text-amber-300">
-            <i className="fa-solid fa-list-check" /> Nhiệm Vụ Đang Làm
-          </span>
           <button
-            onClick={() => setActiveModal('quests')}
-            className="text-[11px] font-bold text-sky-300 hover:underline"
+            onClick={toggleQuestTracker}
+            aria-expanded={open}
+            className="flex items-center gap-1.5 text-xs font-black text-amber-300"
           >
-            Tất cả ➔
+            <i className="fa-solid fa-list-check" /> Nhiệm Vụ Đang Làm
+            {/* Folded away, rewards waiting still show */}
+            {!open && readyCount > 0 && (
+              <span className="animate-bounce rounded-full bg-emerald-500 px-1.5 text-[10px] font-black text-slate-950">
+                🎁 {readyCount}
+              </span>
+            )}
           </button>
+          <span className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveModal('quests')}
+              className="text-[11px] font-bold text-sky-300 hover:underline"
+            >
+              Tất cả ➔
+            </button>
+            <button
+              onClick={toggleQuestTracker}
+              aria-expanded={open}
+              aria-label={open ? 'Thu gọn nhiệm vụ' : 'Mở nhiệm vụ'}
+              title={open ? 'Thu gọn' : 'Mở ra'}
+              className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/10 text-[11px] text-slate-200 hover:bg-white/20"
+            >
+              <i className={`fa-solid ${open ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
+            </button>
+          </span>
         </div>
 
-        {/* Out in the zones, phones keep the room for the zone's own panel */}
-        <div className={`space-y-2 text-xs ${currentWorld !== 'farm' ? 'max-md:hidden' : ''}`}>
+        <div className={`space-y-2 text-xs ${open ? '' : 'hidden'}`}>
           {shownQuests.length === 0 ? (
             <div className="font-bold text-emerald-300">
               🎉 Bạn đã hoàn thành xuất sắc mọi nhiệm vụ!

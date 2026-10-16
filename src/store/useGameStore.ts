@@ -197,6 +197,8 @@ interface GameState extends SaveData {
   // Device settings, from 0 (silent) to 1
   musicVolume: number;
   sfxVolume: number;
+  // The quest tracker shows its quests, or just its title (a device setting)
+  questTrackerOpen: boolean;
   // The HUD hides and the camera roams freely for screenshots (not saved)
   photoMode: boolean;
 
@@ -268,6 +270,7 @@ interface GameState extends SaveData {
   toggleGlbModels: () => void;
   setMusicVolume: (volume: number) => void;
   setSfxVolume: (volume: number) => void;
+  toggleQuestTracker: () => void;
   togglePhotoMode: () => void;
   showToast: (
     msg: string,
@@ -513,6 +516,7 @@ export const useGameStore = create<GameState>()(
         useGlbModels: false,
         musicVolume: 0.5,
         sfxVolume: 0.8,
+        questTrackerOpen: true,
         photoMode: false,
 
         timePhaseIndex: 0,
@@ -654,6 +658,8 @@ export const useGameStore = create<GameState>()(
 
         setMusicVolume: (volume) => set({ musicVolume: clampVolume(volume) }),
         setSfxVolume: (volume) => set({ sfxVolume: clampVolume(volume) }),
+
+        toggleQuestTracker: () => set((s) => ({ questTrackerOpen: !s.questTrackerOpen })),
 
         togglePhotoMode: () =>
           set((s) => {
@@ -2689,6 +2695,7 @@ export const useGameStore = create<GameState>()(
         useGlbModels: state.useGlbModels,
         musicVolume: state.musicVolume,
         sfxVolume: state.sfxVolume,
+        questTrackerOpen: state.questTrackerOpen,
         cloudLink: state.cloudLink,
         cloudDirty: state.cloudDirty,
       }),
