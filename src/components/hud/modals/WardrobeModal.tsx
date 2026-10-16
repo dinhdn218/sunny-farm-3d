@@ -14,13 +14,22 @@ import { BuildShop } from './BuildShop';
 // The try-on preview is its own WebGL canvas, browser only
 const ItemPreview = dynamic(() => import('../ItemPreview'), { ssr: false });
 
-// Same four tabs as the HTML version; wings/back items and pets share the accessories tab
-const TABS: { id: string; label: string; categories: CosmeticCategory[] }[] = [
-  { id: 'hats', label: '🎩 Mũ & Nón', categories: ['hat'] },
-  { id: 'outfits', label: '👕 Trang Phục', categories: ['outfit'] },
-  { id: 'accessories', label: '👼 Cánh & Thú Cưng', categories: ['wing', 'pet'] },
-  { id: 'farmDecor', label: '🏡 Trang Trí Nông Trại', categories: ['decor'] },
+// Same four tabs as the HTML version; wings/back items and pets share the accessories tab.
+// `short` names them in the phone's 2×2 grid beside the preview.
+const TABS: { id: string; icon: string; label: string; short: string; categories: CosmeticCategory[] }[] = [
+  { id: 'hats', icon: '🎩', label: 'Mũ & Nón', short: 'Mũ & Nón', categories: ['hat'] },
+  { id: 'outfits', icon: '👕', label: 'Trang Phục', short: 'Trang Phục', categories: ['outfit'] },
+  { id: 'accessories', icon: '👼', label: 'Cánh & Thú Cưng', short: 'Phụ Kiện', categories: ['wing', 'pet'] },
+  { id: 'farmDecor', icon: '🏡', label: 'Trang Trí Nông Trại', short: 'Trang Trí', categories: ['decor'] },
 ];
+
+// Phones: the preview beside the tabs, the list below. From md: the preview in a column of its own.
+const LAYOUT = [
+  'grid min-h-0 flex-1 gap-3',
+  "grid-cols-[7rem_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] [grid-template-areas:'preview_tabs'_'list_list']",
+  'sm:grid-cols-[9rem_minmax(0,1fr)]',
+  "md:grid-cols-[14rem_minmax(0,1fr)] md:gap-4 md:[grid-template-areas:'preview_tabs'_'preview_list']",
+].join(' ');
 
 function priceLabel(item: CosmeticItem) {
   if (item.festival) {
@@ -67,6 +76,7 @@ export function WardrobeModal() {
       ? { ...cosmetics, [previewItem.category]: previewItem.id }
       : cosmetics;
   const previewName = previewItem ?? (isDecorTab ? items[0] : undefined);
+  const caption = previewName ? `👀 Xem thử: ${previewName.icon} ${previewName.name}` : '🧍 Trang phục đang mặc';
 
   return (
     <ModalShell
@@ -85,23 +95,19 @@ export function WardrobeModal() {
         </>
       }
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-4 md:flex-row">
-        <div className="flex shrink-0 flex-col gap-2 md:w-56">
-          <div className="h-44 overflow-hidden rounded-2xl border-2 border-amber-700/40 bg-gradient-to-b from-sky-200 to-amber-100 md:h-72">
+      <div className={LAYOUT}>
+        <div className="flex flex-col gap-2 [grid-area:preview]">
+          <div className="h-28 overflow-hidden rounded-2xl border-2 border-amber-700/40 bg-gradient-to-b from-sky-200 to-amber-100 sm:h-36 md:h-72">
             <ItemPreview cosmetics={previewCosmetics} decorId={previewDecor} />
           </div>
-          <div className="text-center text-xs font-black text-amber-900">
-            {previewName
-              ? `👀 Xem thử: ${previewName.icon} ${previewName.name}`
-              : '🧍 Trang phục đang mặc'}
-          </div>
+          <div className="hidden text-center text-xs font-black text-amber-900 md:block">{caption}</div>
           <div className="hidden text-center text-[11px] font-bold text-amber-700 md:block">
             Rê chuột lên món đồ để mặc thử trước khi mua
           </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-4 flex flex-wrap gap-2">
+        <div className="flex flex-col gap-2 [grid-area:tabs]">
+          <div className="grid grid-cols-2 gap-1.5 md:flex md:flex-wrap md:gap-2">
             {TABS.map((t) => (
               <button
                 key={t.id}
@@ -109,14 +115,20 @@ export function WardrobeModal() {
                   setTabId(t.id);
                   setPreviewId(null);
                 }}
-                className={`game-btn rounded-xl px-3.5 py-1.5 text-xs font-black sm:text-sm ${
+                className={`game-btn whitespace-nowrap rounded-xl px-2 py-1.5 text-xs font-black md:px-3.5 md:text-sm ${
                   tabId === t.id ? 'bg-amber-700 text-white' : 'bg-amber-200 text-amber-900'
                 }`}
               >
-                {t.label}
+                {t.icon} <span className="md:hidden">{t.short}</span>
+                <span className="hidden md:inline">{t.label}</span>
               </button>
             ))}
           </div>
+          {/* On a phone the caption goes under the tabs, beside the preview */}
+          <div className="text-[11px] font-black leading-snug text-amber-900 md:hidden">{caption}</div>
+        </div>
+
+        <div className="flex min-h-0 flex-col [grid-area:list]">
 
           {isDecorTab && currentWorld !== 'farm' && (
             <div className="mb-3 rounded-xl border-2 border-amber-600/40 bg-amber-100 px-3 py-2 text-xs font-bold text-amber-900">
@@ -139,7 +151,7 @@ export function WardrobeModal() {
                   key={item.id}
                   onMouseEnter={() => setPreviewId(item.id)}
                   onClick={() => setPreviewId(item.id)}
-                  className={`flex flex-col justify-between gap-2 rounded-2xl border-2 p-3.5 ${
+                  className={`flex flex-col justify-between gap-2 rounded-2xl border-2 p-3 sm:p-3.5 ${
                     equipped
                       ? 'border-emerald-600 bg-yellow-100 shadow-md'
                       : previewId === item.id
