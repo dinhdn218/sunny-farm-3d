@@ -1,5 +1,6 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { placeableInfo } from '@/lib/farmLayout';
 import { TOOL_NAMES, nextSeedTool, waterCapacity } from '@/lib/tools';
@@ -34,7 +35,8 @@ function describeSlot(slot: HotbarSlot, tiers: { hoe: number; water: number }, s
     return {
       icon: crop.icon,
       name: `Hạt ${crop.name}`,
-      desc: `Gieo lên đất đã cuốc • ${crop.description} • Phím 4 đổi loại hạt`,
+      desc: `Gieo lên đất đã cuốc • ${crop.description}`,
+      keys: 'Phím 4 đổi loại hạt',
     };
   }
   if (slot.id === 'hoe' && tiers.hoe > 0) {
@@ -53,6 +55,24 @@ function describeSlot(slot: HotbarSlot, tiers: { hoe: number; water: number }, s
   }
   return { icon: slot.icon, name: slot.name, desc: slot.desc };
 }
+
+// Keyboard hints, which only make sense from sm up (phones have none of these keys)
+const KeyHint = ({ children }: { children: ReactNode }) => <span className="hidden sm:inline"> • {children}</span>;
+
+// The banner over the hotbar: a pill on one line where there is room, a card whose text wraps on phones,
+// with its buttons kept whole beside it
+function Caption({ tone, children, actions }: { tone: string; children: ReactNode; actions?: ReactNode }) {
+  return (
+    <div
+      className={`pointer-events-auto mb-1.5 flex max-w-full items-center gap-2 rounded-2xl border-2 px-3 py-1.5 text-xs font-extrabold shadow-lg sm:rounded-full sm:px-3.5 sm:py-1 ${tone}`}
+    >
+      <span className="min-w-0">{children}</span>
+      {actions && <span className="flex shrink-0 gap-1.5">{actions}</span>}
+    </div>
+  );
+}
+
+const CAPTION_BUTTON = 'whitespace-nowrap rounded-lg px-2 py-0.5 text-xs font-black text-white';
 
 // Farm-only hotbar with the active-tool banner above it, as in the HTML version
 export function Hotbar() {
@@ -94,33 +114,32 @@ export function Hotbar() {
   return (
     <footer className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2">
       {placingSprinkler ? (
-        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-sky-300/80 bg-sky-950/90 px-3.5 py-1 text-xs font-extrabold text-sky-100 shadow-lg">
-          <span>💦 Đang đặt Bình Phun: click một ô ruộng trống • Esc hủy</span>
-          <button
-            onClick={cancelPlacingSprinkler}
-            className="rounded-lg bg-rose-500 px-2 py-0.5 text-xs font-black text-white hover:bg-rose-400"
-          >
-            ✕ Hủy
-          </button>
-        </div>
+        <Caption
+          tone="border-sky-300/80 bg-sky-950/90 text-sky-100"
+          actions={
+            <button onClick={cancelPlacingSprinkler} className={`${CAPTION_BUTTON} bg-rose-500 hover:bg-rose-400`}>
+              ✕ Hủy
+            </button>
+          }
+        >
+          💦 Đang đặt Bình Phun: chọn một ô ruộng trống<KeyHint>Esc hủy</KeyHint>
+        </Caption>
       ) : placingItem ? (
-        <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-lime-300/80 bg-emerald-950/90 px-3.5 py-1 text-xs font-extrabold text-lime-100 shadow-lg">
-          <span>
-            🏗️ Đang đặt {placingItem.icon} {placingItem.name}: Click chuột để đặt • R xoay • Esc hủy
-          </span>
-          <button
-            onClick={rotatePlacingDecor}
-            className="rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
-          >
-            ↻ Xoay
-          </button>
-          <button
-            onClick={cancelPlacingDecor}
-            className="rounded-lg bg-rose-500 px-2 py-0.5 text-xs font-black text-white hover:bg-rose-400"
-          >
-            ✕ Hủy
-          </button>
-        </div>
+        <Caption
+          tone="border-lime-300/80 bg-emerald-950/90 text-lime-100"
+          actions={
+            <>
+              <button onClick={rotatePlacingDecor} className={`${CAPTION_BUTTON} bg-sky-500 hover:bg-sky-400`}>
+                ↻ Xoay
+              </button>
+              <button onClick={cancelPlacingDecor} className={`${CAPTION_BUTTON} bg-rose-500 hover:bg-rose-400`}>
+                ✕ Hủy
+              </button>
+            </>
+          }
+        >
+          🏗️ Đang đặt {placingItem.icon} {placingItem.name}: chọn chỗ để đặt<KeyHint>R xoay • Esc hủy</KeyHint>
+        </Caption>
       ) : (
         <>
           {/* Every crop's seeds while the seed slot is in hand */}
@@ -147,23 +166,23 @@ export function Hotbar() {
               })}
             </div>
           )}
-          <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-amber-300/80 bg-amber-950/90 px-3.5 py-1 text-xs font-extrabold text-amber-50 shadow-lg">
-            <span>
-              {active.icon} {active.name}: {active.desc}
-            </span>
-            {active.id === 'water' && (
-              <button
-                onClick={fetchWater}
-                className="ml-1 rounded-lg bg-sky-500 px-2 py-0.5 text-xs font-black text-white hover:bg-sky-400"
-              >
-                💧 Ra Giếng Múc Nước
-              </button>
-            )}
-          </div>
+          <Caption
+            tone="border-amber-300/80 bg-amber-950/90 text-amber-50"
+            actions={
+              active.id === 'water' && (
+                <button onClick={fetchWater} className={`${CAPTION_BUTTON} bg-sky-500 hover:bg-sky-400`}>
+                  💧 Ra Giếng<span className="hidden sm:inline"> Múc Nước</span>
+                </button>
+              )
+            }
+          >
+            {active.icon} {active.name}: {active.desc}
+            {'keys' in active && active.keys && <KeyHint>{active.keys}</KeyHint>}
+          </Caption>
         </>
       )}
 
-      <div className="bar-panel pointer-events-auto flex max-w-full items-center gap-1.5 overflow-x-auto rounded-3xl p-2 sm:gap-2">
+      <div className="bar-panel pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-3xl p-1.5 sm:gap-2 sm:p-2">
         {SLOTS.map((slot) => {
           const count = countFor(slot);
           const look = describeSlot(slot, toolTiers, seedCrop);
@@ -172,7 +191,7 @@ export function Hotbar() {
               key={slot.id}
               onClick={() => pick(slot)}
               title={`${look.name} (phím ${slot.key})`}
-              className={`hotbar-slot relative flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl ${
+              className={`hotbar-slot relative flex h-11 w-[42px] shrink-0 flex-col items-center justify-center rounded-2xl sm:h-12 sm:w-12 ${
                 isActive(slot) ? 'active' : ''
               }`}
             >
