@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
+import { PHONE_CHAT_BUTTON_BOTTOM, PHONE_CONTROLS_BOTTOM } from './hudStyles';
 
 const EMOTES = [
   { emote: '👋', label: 'Chào', text: 'Chào mọi người nha!', color: 'bg-slate-800/90 hover:bg-slate-700' },
@@ -18,8 +19,9 @@ export function ChatBox() {
   const triggerEmote = useGameStore((s) => s.triggerEmote);
   const [text, setText] = useState('');
   const [minimized, setMinimized] = useState(false);
-  // Phones start with just a chat button so the zone's panels and the D-pad stay clear
-  const [tucked, setTucked] = useState(() => typeof window !== 'undefined' && window.innerWidth < 640);
+  // Phones start with just a chat button over the action button; opened, the chat is a sheet across the
+  // screen above the hotbar, over the thumbstick until it is closed again
+  const [tucked, setTucked] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
   const messagesRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,20 +38,24 @@ export function ChatBox() {
 
   if (tucked) {
     return (
-      <aside className="pointer-events-auto fixed bottom-24 right-3 z-20">
+      <aside className={`pointer-events-auto fixed right-5 z-20 md:bottom-24 md:right-3 ${PHONE_CHAT_BUTTON_BOTTOM}`}>
         <button
           onClick={() => setTucked(false)}
-          className="glass-panel game-btn rounded-2xl px-3 py-2 text-xs font-black text-emerald-300"
+          aria-label="Mở khung chat"
+          className="glass-panel game-btn flex h-12 w-12 items-center justify-center rounded-full text-base text-emerald-300 md:h-auto md:w-auto md:gap-1 md:rounded-2xl md:px-3 md:py-2 md:text-xs md:font-black"
         >
-          <i className="fa-solid fa-comments" /> Chat
+          <i className="fa-solid fa-comments" />
+          <span className="hidden md:inline">Chat</span>
         </button>
       </aside>
     );
   }
 
   return (
-    <aside className="pointer-events-auto fixed bottom-24 right-3 z-20 flex w-72 flex-col gap-1.5 sm:w-80">
-      <div className="flex items-center justify-end gap-1">
+    <aside
+      className={`pointer-events-auto fixed inset-x-2 z-30 flex flex-col gap-1.5 md:inset-x-auto md:bottom-24 md:right-3 md:z-20 md:w-80 ${PHONE_CONTROLS_BOTTOM}`}
+    >
+      <div className="flex items-center justify-center gap-1 md:justify-end">
         {EMOTES.map((e) => (
           <button
             key={e.label}
@@ -76,7 +82,7 @@ export function ChatBox() {
             <button
               onClick={() => setTucked(true)}
               aria-label="Ẩn khung chat"
-              className="text-xs font-black text-slate-300 hover:text-white sm:hidden"
+              className="text-xs font-black text-slate-300 hover:text-white md:hidden"
             >
               ✕
             </button>

@@ -10,7 +10,8 @@ export const camControl = {
   camera: null as THREE.Camera | null,
 };
 
-// Mobile D-pad direction, read by the player every frame
+// The phone thumbstick: each axis -1…1 (screen up is -z), its length how fast to walk; read by the player
+// every frame
 export const touchMove = { x: 0, z: 0 };
 
 const projected = new THREE.Vector3();

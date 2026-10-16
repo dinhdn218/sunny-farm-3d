@@ -165,9 +165,11 @@ export function Player() {
         store.cancelWalk();
         goal = null;
       }
+      // Keys walk at full speed; the thumbstick walks slower the less it is pushed
       const len = Math.hypot(moveX, moveZ);
-      moveX /= len;
-      moveZ /= len;
+      const throttle = Math.min(1, len);
+      moveX = (moveX / len) * throttle;
+      moveZ = (moveZ / len) * throttle;
 
       // Movement is relative to the orbit camera's heading
       const sinT = Math.sin(camControl.theta);

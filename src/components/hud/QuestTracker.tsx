@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { QuestCategory } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
@@ -22,6 +23,24 @@ export function QuestTracker() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
+  // Phones: the list stops short of the thumbstick and scrolls; its foot fades while there is more below
+  const listRef = useRef<HTMLElement>(null);
+  const [moreBelow, setMoreBelow] = useState(false);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const check = () => setMoreBelow(list.scrollTop + list.clientHeight < list.scrollHeight - 4);
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(list);
+    Array.from(list.children).forEach((child) => observer.observe(child));
+    list.addEventListener('scroll', check, { passive: true });
+    return () => {
+      observer.disconnect();
+      list.removeEventListener('scroll', check);
+    };
+  }, [currentWorld]);
 
   // Rewards waiting first, then the current story quest, then today's dailies
   const mainQuest = activeMainQuest(quests);
@@ -35,12 +54,19 @@ export function QuestTracker() {
 
   return (
     <aside
-      className="pointer-events-none fixed left-3 z-20 flex max-w-[260px] flex-col gap-2"
+      ref={listRef}
+      className={`pointer-events-none fixed left-3 z-20 flex max-h-[calc(100dvh-var(--hud-top,80px)-324px)] max-w-[260px] flex-col gap-2 overflow-y-auto max-md:pointer-events-auto md:max-h-none md:overflow-visible ${
+        moreBelow ? 'max-md:[mask-image:linear-gradient(to_bottom,#000_calc(100%-36px),transparent)]' : ''
+      }`}
       style={{ top: 'calc(var(--hud-top, 80px) + 4px)' }}
     >
       {/* Mini quest tracker */}
       <div className="glass-panel pointer-events-auto rounded-2xl p-3 text-white">
-        <div className="mb-2 flex items-center justify-between border-b border-white/15 pb-1.5">
+        <div
+          className={`mb-2 flex items-center justify-between border-b border-white/15 pb-1.5 ${
+            currentWorld !== 'farm' ? 'max-md:mb-0 max-md:border-b-0 max-md:pb-0' : ''
+          }`}
+        >
           <span className="flex items-center gap-1.5 text-xs font-black text-amber-300">
             <i className="fa-solid fa-list-check" /> Nhiệm Vụ Đang Làm
           </span>
@@ -52,7 +78,8 @@ export function QuestTracker() {
           </button>
         </div>
 
-        <div className="space-y-2 text-xs">
+        {/* Out in the zones, phones keep the room for the zone's own panel */}
+        <div className={`space-y-2 text-xs ${currentWorld !== 'farm' ? 'max-md:hidden' : ''}`}>
           {shownQuests.length === 0 ? (
             <div className="font-bold text-emerald-300">
               🎉 Bạn đã hoàn thành xuất sắc mọi nhiệm vụ!
@@ -62,7 +89,7 @@ export function QuestTracker() {
               const ready = isClaimable(q);
               const pct = Math.min(100, (q.progress / q.target) * 100);
               return (
-                // Phones show only the first quest, keeping the zone panel clear of the D-pad
+                // Phones show only the first quest, keeping the zone panel clear of the thumbstick
                 <div
                   key={q.id}
                   className={`rounded-xl border border-white/10 bg-slate-800/80 p-2 ${i > 0 ? 'hidden sm:block' : ''}`}

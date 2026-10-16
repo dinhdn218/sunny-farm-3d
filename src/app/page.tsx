@@ -12,7 +12,7 @@ import { QuestTracker } from '@/components/hud/QuestTracker';
 import { ChatBox } from '@/components/hud/ChatBox';
 import { Hotbar } from '@/components/hud/Hotbar';
 import { BuildBar } from '@/components/hud/BuildBar';
-import { MobileDpad } from '@/components/hud/MobileDpad';
+import { MobileControls } from '@/components/hud/MobileControls';
 import { Tooltip } from '@/components/hud/Tooltip';
 import { FloatingLabels } from '@/components/hud/FloatingLabels';
 import { WorldMapModal } from '@/components/hud/modals/WorldMapModal';
@@ -98,7 +98,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       <TopBar />
       <QuestTracker />
       <ChatBox />
-      <MobileDpad />
+      <MobileControls />
       {building ? <BuildBar /> : <Hotbar />}
       <FishingOverlay />
       <BugCatchOverlay />
