@@ -1,11 +1,12 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { placeableInfo } from '@/lib/farmLayout';
 import { TOOL_NAMES, nextSeedTool, waterCapacity } from '@/lib/tools';
 import { CROPS, CROP_LIST } from '@/config/crops';
 import { CropId, ToolId } from '@/types/game';
+import { useBottomInset } from './useBottomInset';
 
 interface HotbarSlot {
   // 'seeds' is the one slot for every crop's seeds (lib/tools)
@@ -91,6 +92,9 @@ export function Hotbar() {
   const placingSprinkler = useGameStore((s) => s.placingSprinkler);
   const cancelPlacingSprinkler = useGameStore((s) => s.cancelPlacingSprinkler);
   const toolTiers = useGameStore((s) => s.toolTiers);
+  // The phone's controls sit just above the bar, however tall its caption and seed picker make it
+  const footerRef = useRef<HTMLElement>(null);
+  useBottomInset(footerRef, currentWorld === 'farm');
 
   if (currentWorld !== 'farm') return null;
 
@@ -112,7 +116,10 @@ export function Hotbar() {
     setActiveTool(slot.id === 'seeds' ? nextSeedTool(activeTool, lastSeedCrop) : slot.id);
 
   return (
-    <footer className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2">
+    <footer
+      ref={footerRef}
+      className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2"
+    >
       {placingSprinkler ? (
         <Caption
           tone="border-sky-300/80 bg-sky-950/90 text-sky-100"

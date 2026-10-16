@@ -3,7 +3,7 @@
 import { PointerEvent, useEffect, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { touchMove } from '@/lib/controls';
-import { PHONE_ACTION_BOTTOM, PHONE_CONTROLS_BOTTOM } from './hudStyles';
+import { PHONE_ACTION_BOTTOM, PHONE_CONTROLS_BOTTOM, PHONE_CONTROLS_GLIDE } from './hudStyles';
 
 // How far the knob travels from the centre (px), and how far it has to go before the farmer sets off
 const TRAVEL = 36;
@@ -19,9 +19,12 @@ function stop(knob: HTMLDivElement | null) {
 }
 
 // Phones (hidden from md up): a thumbstick on the left, dragged to walk (the further out, the faster) and let
-// go to stop, and on the right the action button, which works whatever is in front of the farmer
+// go to stop, and on the right the action button, which works whatever is in front of the farmer. Both sit
+// just above the bar at the bottom (--hud-bottom), and step aside while fishing or netting a bug, when the
+// farmer stands still and the minigame's card takes the bottom of the screen.
 export function MobileControls() {
   const interactFront = useGameStore((s) => s.interactFront);
+  const busy = useGameStore((s) => !!s.fishing || !!s.bugCatch);
   const knobRef = useRef<HTMLDivElement>(null);
   // The finger on the stick, so a second one can tap the action button meanwhile
   const finger = useRef<number | null>(null);
@@ -54,6 +57,15 @@ export function MobileControls() {
     stop(knobRef.current);
   };
 
+  // Let go of the stick if a minigame starts mid-drag: the controls go away, and the finger with them
+  useEffect(() => {
+    if (!busy) return;
+    finger.current = null;
+    stop(knobRef.current);
+  }, [busy]);
+
+  if (busy) return null;
+
   return (
     <>
       <div
@@ -68,7 +80,7 @@ export function MobileControls() {
         onPointerUp={release}
         onPointerCancel={release}
         onLostPointerCapture={release}
-        className={`pointer-events-auto fixed left-4 z-20 flex h-28 w-28 touch-none select-none items-center justify-center rounded-full border-4 border-amber-200/80 bg-amber-950/35 shadow-lg md:hidden ${PHONE_CONTROLS_BOTTOM}`}
+        className={`pointer-events-auto fixed left-4 z-20 flex h-28 w-28 touch-none select-none items-center justify-center rounded-full border-4 border-amber-200/80 bg-amber-950/35 shadow-lg md:hidden ${PHONE_CONTROLS_BOTTOM} ${PHONE_CONTROLS_GLIDE}`}
       >
         {/* Marks for the four ways round the ring */}
         <span aria-hidden className="absolute top-1 text-[10px] text-amber-100/80">▲</span>
@@ -80,14 +92,17 @@ export function MobileControls() {
           className="h-12 w-12 rounded-full border-4 border-white bg-gradient-to-b from-amber-300 to-amber-500 shadow-[0_4px_0_#92400e]"
         />
       </div>
-      <button
-        onClick={interactFront}
-        aria-label="Làm việc với thứ ở trước mặt"
-        className={`game-btn pointer-events-auto fixed right-4 z-20 flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full border-4 border-white bg-emerald-600 text-white md:hidden ${PHONE_ACTION_BOTTOM}`}
-      >
-        <i className="fa-solid fa-hand text-lg leading-none" />
-        <span className="text-[10px] font-black leading-none">LÀM</span>
-      </button>
+      {/* The glide goes on a wrapper, leaving the button its own press animation */}
+      <div className={`pointer-events-auto fixed right-4 z-20 md:hidden ${PHONE_ACTION_BOTTOM} ${PHONE_CONTROLS_GLIDE}`}>
+        <button
+          onClick={interactFront}
+          aria-label="Làm việc với thứ ở trước mặt"
+          className="game-btn flex h-16 w-16 flex-col items-center justify-center gap-0.5 rounded-full border-4 border-white bg-emerald-600 text-white"
+        >
+          <i className="fa-solid fa-hand text-lg leading-none" />
+          <span className="text-[10px] font-black leading-none">LÀM</span>
+        </button>
+      </div>
     </>
   );
 }

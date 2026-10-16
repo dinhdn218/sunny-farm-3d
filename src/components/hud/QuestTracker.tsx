@@ -59,7 +59,7 @@ export function QuestTracker() {
   return (
     <aside
       ref={listRef}
-      className={`pointer-events-none fixed left-3 z-20 flex max-h-[calc(100dvh-var(--hud-top,80px)-324px)] max-w-[260px] flex-col gap-2 overflow-y-auto max-md:pointer-events-auto md:max-h-none md:overflow-visible ${
+      className={`pointer-events-none fixed left-3 z-20 flex max-h-[calc(100dvh-var(--hud-top,80px)-var(--hud-bottom,0px)-140px)] max-w-[260px] flex-col gap-2 overflow-y-auto max-md:pointer-events-auto md:max-h-none md:overflow-visible ${
         moreBelow ? 'max-md:[mask-image:linear-gradient(to_bottom,#000_calc(100%-36px),transparent)]' : ''
       }`}
       style={{ top: 'calc(var(--hud-top, 80px) + 4px)' }}

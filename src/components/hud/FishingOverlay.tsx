@@ -10,11 +10,15 @@ import { reelBuffScale } from '@/lib/food';
 import { reelZoneScale } from '@/lib/pets';
 import { TIME_PHASES } from '@/config/time';
 import { CatchId, FishingSession } from '@/types/game';
+import { useBottomInset } from './useBottomInset';
 
-// Card at the bottom of the screen for the fishing and bug-catching games
+// Card at the bottom of the screen for the fishing and bug-catching games; while it is up, the phone's
+// chat button keeps above it (--hud-bottom: the minigames are played away from the farm and its hotbar)
 export function Panel({ children, onPointerDown }: { children: ReactNode; onPointerDown?: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useBottomInset(ref);
   return (
-    <div className="pointer-events-none fixed bottom-6 left-0 right-0 z-30 flex justify-center px-3">
+    <div ref={ref} className="pointer-events-none fixed bottom-6 left-0 right-0 z-30 flex justify-center px-3">
       <div
         onPointerDown={onPointerDown}
         className="glass-panel pointer-events-auto w-full max-w-md rounded-2xl p-4 text-center text-white"

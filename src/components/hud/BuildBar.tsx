@@ -1,7 +1,9 @@
 'use client';
 
+import { useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { BUILD_PIECES, BUILD_PIECE_LIST } from '@/config/build';
+import { useBottomInset } from './useBottomInset';
 
 const BUY_COUNT = 5;
 
@@ -14,12 +16,17 @@ export function BuildBar() {
   const rotateBuildPiece = useGameStore((s) => s.rotateBuildPiece);
   const stopBuilding = useGameStore((s) => s.stopBuilding);
   const buyBuildPieces = useGameStore((s) => s.buyBuildPieces);
+  const footerRef = useRef<HTMLElement>(null);
+  useBottomInset(footerRef, !!mode);
 
   if (!mode) return null;
   const selected = mode.kind === 'erase' ? null : BUILD_PIECES[mode.kind];
 
   return (
-    <footer className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2">
+    <footer
+      ref={footerRef}
+      className="pointer-events-none fixed bottom-2.5 left-0 right-0 z-20 flex flex-col items-center px-2"
+    >
       <div className="pointer-events-auto mb-1.5 flex flex-wrap items-center justify-center gap-2 rounded-full border-2 border-lime-300/80 bg-emerald-950/90 px-3.5 py-1 text-xs font-extrabold text-lime-100 shadow-lg">
         <span>
           {selected

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
-import { PHONE_CHAT_BUTTON_BOTTOM, PHONE_CONTROLS_BOTTOM } from './hudStyles';
+import { PHONE_CHAT_BUTTON_BOTTOM, PHONE_CONTROLS_BOTTOM, PHONE_CONTROLS_GLIDE } from './hudStyles';
 
 const EMOTES = [
   { emote: '👋', label: 'Chào', text: 'Chào mọi người nha!', color: 'bg-slate-800/90 hover:bg-slate-700' },
@@ -38,7 +38,9 @@ export function ChatBox() {
 
   if (tucked) {
     return (
-      <aside className={`pointer-events-auto fixed right-5 z-20 md:bottom-24 md:right-3 ${PHONE_CHAT_BUTTON_BOTTOM}`}>
+      <aside
+        className={`pointer-events-auto fixed right-5 z-20 md:bottom-24 md:right-3 ${PHONE_CHAT_BUTTON_BOTTOM} ${PHONE_CONTROLS_GLIDE}`}
+      >
         <button
           onClick={() => setTucked(false)}
           aria-label="Mở khung chat"
