@@ -28,7 +28,7 @@ function ZoneButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`game-btn mb-1.5 w-full rounded-xl py-1.5 text-xs font-black text-white disabled:bg-slate-500 ${color}`}
+      className={`game-btn mb-1.5 w-full rounded-xl py-1.5 text-xs font-black text-white disabled:bg-slate-500 max-sm:mb-1 max-sm:py-1 max-sm:text-[11px] ${color}`}
     >
       {children}
     </button>
@@ -53,6 +53,8 @@ export function ZonePanel() {
   const tables = useCasinoStore((s) => s.tables);
   const festival = activeFestival(localDateKey(new Date()));
   const world = WORLDS[currentWorld];
+  const open = useGameStore((s) => s.zonePanelOpen);
+  const toggleZonePanel = useGameStore((s) => s.toggleZonePanel);
 
   const go = (spot: ZoneSpot, act: () => void) => walkTo({ ...spot, act });
   const snackLabel = (snack: (typeof SNACKS)[keyof typeof SNACKS]) =>
@@ -69,115 +71,127 @@ export function ZonePanel() {
   );
 
   return (
-    <div className="glass-panel pointer-events-auto rounded-2xl p-3 text-white">
-      <div className="mb-1.5 text-xs font-black text-amber-300">
-        {world.icon} {world.name}
-      </div>
-
-      {currentWorld === 'park' && (
-        <>
-          {fishButton('Hồ Sen')}
-          <ZoneButton
-            onClick={() => go(ZONE_SPOTS.parkIceCream, () => eat(SNACKS.iceCream.label, SNACKS.iceCream.energy))}
-            color="bg-pink-500 hover:bg-pink-400"
-          >
-            {snackLabel(SNACKS.iceCream)}
-          </ZoneButton>
-          {journalButton}
-          {festival && (
-            <ZoneButton onClick={() => setActiveModal('festivalShop')} color={festival.ui.button}>
-              {festival.shop.icon} {festival.shop.name}
-            </ZoneButton>
-          )}
-          <p className="mt-1 text-[10px] font-bold leading-snug text-lime-200">
-            🦋 Côn trùng bay quanh công viên, đổi theo giờ và mùa: click vào để bắt bằng vợt
-          </p>
-        </>
-      )}
-
-      {currentWorld === 'beach' && (
-        <>
-          {fishButton('Cầu Cảng')}
-          <ZoneButton
-            onClick={() => go(ZONE_SPOTS.beachCoconut, () => eat(SNACKS.coconut.label, SNACKS.coconut.energy))}
-            color="bg-lime-600 hover:bg-lime-500"
-          >
-            {snackLabel(SNACKS.coconut)}
-          </ZoneButton>
-          <div className="mb-1.5 rounded-xl bg-white/10 px-2 py-1 text-[11px] font-bold text-amber-100">
-            🐚 Đồ nhặt trên cát hôm nay: còn {findsLeft}/{BEACH_FINDS_PER_DAY} • tìm chỗ lấp lánh!
-          </div>
-          {journalButton}
-        </>
-      )}
-
-      {currentWorld === 'mall' && (
-        <>
-          <ZoneButton onClick={() => go(ZONE_SPOTS.mallMarket, () => setActiveModal('market'))} color="bg-rose-500 hover:bg-rose-400">
-            🧺 Chợ Phiên Nông Sản
-          </ZoneButton>
-          <ZoneButton
-            onClick={() => go(ZONE_SPOTS.mallBubbleTea, () => eat(SNACKS.bubbleTea.label, SNACKS.bubbleTea.energy))}
-            color="bg-purple-600 hover:bg-purple-500"
-          >
-            {snackLabel(SNACKS.bubbleTea)}
-          </ZoneButton>
-          <ZoneButton onClick={() => setActiveModal('wardrobe')} color="bg-pink-600 hover:bg-pink-500">
-            👗 Mở Tủ Đồ & Mua Sắm
-          </ZoneButton>
-          <ZoneButton
-            onClick={() => triggerEmote('💃', 'Biểu diễn thời trang trên sàn Runway!')}
-            color="bg-fuchsia-600 hover:bg-fuchsia-500"
-          >
-            ✨ Tạo Dáng Trên Sàn Runway
-          </ZoneButton>
-        </>
-      )}
-
-      {currentWorld === 'cinema' && (
-        <>
-          <ZoneButton onClick={cycleCinemaChannel} color="bg-pink-600 hover:bg-pink-500">
-            📺 Đổi Kênh Phim Đang Chiếu
-          </ZoneButton>
-          <ZoneButton
-            onClick={() => go(ZONE_SPOTS.cinemaPopcorn, () => eat(SNACKS.popcorn.label, SNACKS.popcorn.energy))}
-            color="bg-amber-500 hover:bg-amber-400"
-          >
-            {snackLabel(SNACKS.popcorn)}
-          </ZoneButton>
-          <ZoneButton onClick={() => go(ZONE_SPOTS.cinemaClaw, () => setActiveModal('claw'))} color="bg-fuchsia-600 hover:bg-fuchsia-500">
-            🕹️ Máy Gắp Thú ({CLAW_PRICE}🪙 / lượt)
-          </ZoneButton>
-        </>
-      )}
-
-      {currentWorld === 'casino' && (
-        <>
-          {TABLE_LIST.map((t) => {
-            const state = tables[t.id];
-            return (
-              <ZoneButton key={t.id} onClick={() => goToTable(t.id)} color="bg-emerald-700 hover:bg-emerald-600">
-                🃏 {t.name} • {t.stake}🪙 • {state ? `${humans(state).length}/4 người` : 'Trống'}
-              </ZoneButton>
-            );
-          })}
-          <ZoneButton onClick={() => go(ZONE_SPOTS.casinoWheel, () => setActiveModal('luckyWheel'))} color="bg-pink-600 hover:bg-pink-500">
-            🎡 Vòng Quay May Mắn{wheelReady ? ' • 1 lượt miễn phí!' : ''}
-          </ZoneButton>
-          {festival?.id === 'tet' && (
-            <ZoneButton onClick={() => go(ZONE_SPOTS.casinoBauCua, () => setActiveModal('bauCua'))} color="bg-red-600 hover:bg-red-500">
-              🎲 Bầu Cua Tôm Cá • Tết
-            </ZoneButton>
-          )}
-        </>
-      )}
-
+    <div className={`glass-panel pointer-events-auto rounded-2xl text-white ${open ? 'p-3' : 'px-3 py-2'}`}>
+      {/* Folds away to its title, like the quest tracker (remembered on this device) */}
       <button
-        onClick={() => setActiveModal('map')}
-        className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500"
+        onClick={toggleZonePanel}
+        aria-expanded={open}
+        aria-label={open ? `Thu gọn ${world.name}` : `Mở ${world.name}`}
+        className={`flex w-full items-center justify-between gap-2 text-left text-xs font-black text-amber-300 ${open ? 'mb-1.5' : ''}`}
       >
-        🏡 Về Lại Nông Trại Của Tôi
+        <span className="truncate">
+          {world.icon} {world.name}
+        </span>
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-white/10 text-[11px] text-slate-200">
+          <i className={`fa-solid ${open ? 'fa-chevron-up' : 'fa-chevron-down'}`} />
+        </span>
       </button>
+      <div className={open ? undefined : 'hidden'}>
+        {currentWorld === 'park' && (
+          <>
+            {fishButton('Hồ Sen')}
+            <ZoneButton
+              onClick={() => go(ZONE_SPOTS.parkIceCream, () => eat(SNACKS.iceCream.label, SNACKS.iceCream.energy))}
+              color="bg-pink-500 hover:bg-pink-400"
+            >
+              {snackLabel(SNACKS.iceCream)}
+            </ZoneButton>
+            {journalButton}
+            {festival && (
+              <ZoneButton onClick={() => setActiveModal('festivalShop')} color={festival.ui.button}>
+                {festival.shop.icon} {festival.shop.name}
+              </ZoneButton>
+            )}
+            <p className="mt-1 text-[10px] font-bold leading-snug text-lime-200">
+              🦋 Côn trùng bay quanh công viên, đổi theo giờ và mùa: click vào để bắt bằng vợt
+            </p>
+          </>
+        )}
+
+        {currentWorld === 'beach' && (
+          <>
+            {fishButton('Cầu Cảng')}
+            <ZoneButton
+              onClick={() => go(ZONE_SPOTS.beachCoconut, () => eat(SNACKS.coconut.label, SNACKS.coconut.energy))}
+              color="bg-lime-600 hover:bg-lime-500"
+            >
+              {snackLabel(SNACKS.coconut)}
+            </ZoneButton>
+            <div className="mb-1.5 rounded-xl bg-white/10 px-2 py-1 text-[11px] font-bold text-amber-100">
+              🐚 Đồ nhặt trên cát hôm nay: còn {findsLeft}/{BEACH_FINDS_PER_DAY} • tìm chỗ lấp lánh!
+            </div>
+            {journalButton}
+          </>
+        )}
+
+        {currentWorld === 'mall' && (
+          <>
+            <ZoneButton onClick={() => go(ZONE_SPOTS.mallMarket, () => setActiveModal('market'))} color="bg-rose-500 hover:bg-rose-400">
+              🧺 Chợ Phiên Nông Sản
+            </ZoneButton>
+            <ZoneButton
+              onClick={() => go(ZONE_SPOTS.mallBubbleTea, () => eat(SNACKS.bubbleTea.label, SNACKS.bubbleTea.energy))}
+              color="bg-purple-600 hover:bg-purple-500"
+            >
+              {snackLabel(SNACKS.bubbleTea)}
+            </ZoneButton>
+            <ZoneButton onClick={() => setActiveModal('wardrobe')} color="bg-pink-600 hover:bg-pink-500">
+              👗 Mở Tủ Đồ & Mua Sắm
+            </ZoneButton>
+            <ZoneButton
+              onClick={() => triggerEmote('💃', 'Biểu diễn thời trang trên sàn Runway!')}
+              color="bg-fuchsia-600 hover:bg-fuchsia-500"
+            >
+              ✨ Tạo Dáng Trên Sàn Runway
+            </ZoneButton>
+          </>
+        )}
+
+        {currentWorld === 'cinema' && (
+          <>
+            <ZoneButton onClick={cycleCinemaChannel} color="bg-pink-600 hover:bg-pink-500">
+              📺 Đổi Kênh Phim Đang Chiếu
+            </ZoneButton>
+            <ZoneButton
+              onClick={() => go(ZONE_SPOTS.cinemaPopcorn, () => eat(SNACKS.popcorn.label, SNACKS.popcorn.energy))}
+              color="bg-amber-500 hover:bg-amber-400"
+            >
+              {snackLabel(SNACKS.popcorn)}
+            </ZoneButton>
+            <ZoneButton onClick={() => go(ZONE_SPOTS.cinemaClaw, () => setActiveModal('claw'))} color="bg-fuchsia-600 hover:bg-fuchsia-500">
+              🕹️ Máy Gắp Thú ({CLAW_PRICE}🪙 / lượt)
+            </ZoneButton>
+          </>
+        )}
+
+        {currentWorld === 'casino' && (
+          <>
+            {TABLE_LIST.map((t) => {
+              const state = tables[t.id];
+              return (
+                <ZoneButton key={t.id} onClick={() => goToTable(t.id)} color="bg-emerald-700 hover:bg-emerald-600">
+                  🃏 {t.name} • {t.stake}🪙 • {state ? `${humans(state).length}/4 người` : 'Trống'}
+                </ZoneButton>
+              );
+            })}
+            <ZoneButton onClick={() => go(ZONE_SPOTS.casinoWheel, () => setActiveModal('luckyWheel'))} color="bg-pink-600 hover:bg-pink-500">
+              🎡 Vòng Quay May Mắn{wheelReady ? ' • 1 lượt miễn phí!' : ''}
+            </ZoneButton>
+            {festival?.id === 'tet' && (
+              <ZoneButton onClick={() => go(ZONE_SPOTS.casinoBauCua, () => setActiveModal('bauCua'))} color="bg-red-600 hover:bg-red-500">
+                🎲 Bầu Cua Tôm Cá • Tết
+              </ZoneButton>
+            )}
+          </>
+        )}
+
+        <button
+          onClick={() => setActiveModal('map')}
+          className="game-btn w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-black text-white hover:bg-emerald-500 max-sm:py-1 max-sm:text-[11px]"
+        >
+          🏡 Về Lại Nông Trại Của Tôi
+        </button>
+      </div>
     </div>
   );
 }

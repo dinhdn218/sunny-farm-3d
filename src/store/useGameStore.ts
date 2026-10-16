@@ -197,8 +197,9 @@ interface GameState extends SaveData {
   // Device settings, from 0 (silent) to 1
   musicVolume: number;
   sfxVolume: number;
-  // The quest tracker shows its quests, or just its title (a device setting)
+  // The quest tracker and the zone panel show their contents, or just their titles (device settings)
   questTrackerOpen: boolean;
+  zonePanelOpen: boolean;
   // The HUD hides and the camera roams freely for screenshots (not saved)
   photoMode: boolean;
 
@@ -271,6 +272,7 @@ interface GameState extends SaveData {
   setMusicVolume: (volume: number) => void;
   setSfxVolume: (volume: number) => void;
   toggleQuestTracker: () => void;
+  toggleZonePanel: () => void;
   togglePhotoMode: () => void;
   showToast: (
     msg: string,
@@ -517,6 +519,7 @@ export const useGameStore = create<GameState>()(
         musicVolume: 0.5,
         sfxVolume: 0.8,
         questTrackerOpen: true,
+        zonePanelOpen: true,
         photoMode: false,
 
         timePhaseIndex: 0,
@@ -660,6 +663,7 @@ export const useGameStore = create<GameState>()(
         setSfxVolume: (volume) => set({ sfxVolume: clampVolume(volume) }),
 
         toggleQuestTracker: () => set((s) => ({ questTrackerOpen: !s.questTrackerOpen })),
+        toggleZonePanel: () => set((s) => ({ zonePanelOpen: !s.zonePanelOpen })),
 
         togglePhotoMode: () =>
           set((s) => {
@@ -2696,6 +2700,7 @@ export const useGameStore = create<GameState>()(
         musicVolume: state.musicVolume,
         sfxVolume: state.sfxVolume,
         questTrackerOpen: state.questTrackerOpen,
+        zonePanelOpen: state.zonePanelOpen,
         cloudLink: state.cloudLink,
         cloudDirty: state.cloudDirty,
       }),
