@@ -2,7 +2,7 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { useCasinoStore } from '@/store/useCasinoStore';
@@ -18,6 +18,7 @@ import { BAU_CUA_FACES } from '@/config/baucua';
 import { PlayerCosmetics } from '@/types/game';
 import { AvatarMesh } from '../models/AvatarMesh';
 import { PlayerTag } from '../PlayerTag';
+import { ANIMATED, StaticMerge } from '../StaticMerge';
 
 
 const SLOT_ROWS: { x: number; rotY: number }[] = [
@@ -137,11 +138,11 @@ function SlotMachine({ seed }: { seed: number }) {
         <boxGeometry args={[1.0, 1.8, 0.8]} />
         <meshLambertMaterial color="#4c1d95" />
       </mesh>
-      <mesh position={[0, 1.15, 0.41]}>
+      <mesh position={[0, 1.15, 0.41]} userData={ANIMATED}>
         <planeGeometry args={[0.72, 0.5]} />
         <meshBasicMaterial ref={screenRef} />
       </mesh>
-      <mesh position={[0, 1.9, 0]}>
+      <mesh position={[0, 1.9, 0]} userData={ANIMATED}>
         <boxGeometry args={[1.0, 0.18, 0.8]} />
         <meshBasicMaterial ref={lampRef} />
       </mesh>
@@ -223,7 +224,7 @@ function LuckyWheelBooth() {
           <meshLambertMaterial color="#ca8a04" />
         </mesh>
       ))}
-      <mesh ref={wheelRef} position={[0, 2.8, 0.2]}>
+      <mesh ref={wheelRef} position={[0, 2.8, 0.2]} userData={ANIMATED}>
         <circleGeometry args={[2.0, 48]} />
         <meshBasicMaterial map={texture} />
       </mesh>
@@ -358,7 +359,7 @@ function BauCuaTable() {
         <cylinderGeometry args={[0.34, 0.3, 0.04, 20]} />
         <meshLambertMaterial color="#f8fafc" />
       </mesh>
-      <group ref={bowlRef} position={[0.85, 0.47, -0.15]}>
+      <group ref={bowlRef} position={[0.85, 0.47, -0.15]} userData={ANIMATED}>
         <mesh castShadow>
           <sphereGeometry args={[0.27, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
           <meshLambertMaterial color="#e0f2fe" side={THREE.DoubleSide} />
@@ -399,8 +400,9 @@ export function CasinoWorld() {
   // Bầu Cua comes out for Tết
   const tet = activeFestival(localDateKey(new Date()))?.id === 'tet';
 
+  // The hall's props are merged into a few draw calls (see StaticMerge)
   return (
-    <group>
+    <StaticMerge>
       {/* Polished hall floor with a gold rim */}
       <mesh receiveShadow position={[0, 0.03, -3]}>
         <cylinderGeometry args={[13.5, 13.5, 0.06, 48]} />
@@ -509,7 +511,7 @@ export function CasinoWorld() {
           ))}
         </group>
       ))}
-    </group>
+    </StaticMerge>
   );
 }
 

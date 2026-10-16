@@ -1,7 +1,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { PersistStorage, createJSONStorage, persist } from 'zustand/middleware';
 import {
   AnimalSpecies,
   BauCuaBets,
@@ -420,6 +420,23 @@ const WEEKLY_COUNTERS: Partial<Record<QuestType, 'gold' | 'fish' | 'orders'>> = 
 
 // Festivals run by the device's calendar date
 const runningFestival = () => activeFestival(localDateKey(new Date()));
+
+// The device save (localStorage), written only when something in it changed. Hover tooltips, other players' positions
+// and the like update the store many times a second, and serialising the whole farm for each of them stalled frames.
+function deviceSaveStorage<S>(): PersistStorage<S> | undefined {
+  const storage = createJSONStorage<S>(() => localStorage);
+  if (!storage) return undefined;
+  let written: Record<string, unknown> | null = null;
+  return {
+    ...storage,
+    setItem: (name, value) => {
+      const state = value.state as Record<string, unknown>;
+      if (written && Object.keys(state).every((key) => state[key] === written?.[key])) return;
+      written = state;
+      return storage.setItem(name, value);
+    },
+  };
+}
 
 export const useGameStore = create<GameState>()(
   persist(
@@ -2693,6 +2710,7 @@ export const useGameStore = create<GameState>()(
     {
       name: 'sunny-farm-3d-v3',
       version: SAVE_VERSION,
+      storage: deviceSaveStorage(),
       partialize: (state) => ({
         ...pickSaveData(state),
         playerId: state.playerId,

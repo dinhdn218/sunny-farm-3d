@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { FarmAnimal } from '@/types/game';
 import { ANIMALS } from '@/config/animals';
@@ -10,6 +10,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { REACH } from '@/lib/walk';
 import { SafeGLTFModel } from './GLTFModel';
+import { StaticMerge } from '../StaticMerge';
 
 export function AnimalMesh({
   animal,
@@ -65,8 +66,9 @@ export function AnimalMesh({
     );
   });
 
+  // The blocky body is merged into a couple of draw calls; the whole animal moves as one
   const proceduralAnimal = (
-    <group>
+    <StaticMerge>
       {animal.species === 'chicken' && (
         <group position={[0, 0.22, 0]}>
           <mesh castShadow>
@@ -213,7 +215,7 @@ export function AnimalMesh({
           </mesh>
         </group>
       )}
-    </group>
+    </StaticMerge>
   );
 
   return (

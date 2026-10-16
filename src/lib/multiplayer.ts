@@ -13,6 +13,8 @@ export function useMultiplayerSync() {
     if (typeof window === 'undefined') return;
 
     const livePeers: Record<string, RemotePlayer> = {};
+    // The store hears about peers only when one moved, spoke, arrived or left
+    let peersChanged = false;
     let lastChatSent = '';
 
     const sbChannel =
@@ -32,6 +34,7 @@ export function useMultiplayerSync() {
           const myId = useGameStore.getState().playerId;
           if (!payload || payload.uid === myId) return;
           livePeers[payload.uid] = { ...payload, updatedAt: Date.now() };
+          peersChanged = true;
         })
         .on('broadcast', { event: 'chat_msg' }, ({ payload }) => {
           if (payload) {
@@ -56,6 +59,7 @@ export function useMultiplayerSync() {
 
         if (data.type === 'PLAYER_STATE') {
           livePeers[data.uid] = { ...data.payload, updatedAt: Date.now() };
+          peersChanged = true;
         } else if (data.type === 'CHAT_MSG') {
           useGameStore.getState().addChatMessage(data.payload as ChatMessage);
         }
@@ -122,10 +126,14 @@ export function useMultiplayerSync() {
       Object.keys(livePeers).forEach((uid) => {
         if (now - livePeers[uid].updatedAt > 8000) {
           delete livePeers[uid];
+          peersChanged = true;
         }
       });
 
-      state.setRemotePlayers({ ...livePeers });
+      if (peersChanged) {
+        peersChanged = false;
+        state.setRemotePlayers({ ...livePeers });
+      }
     }, 200);
 
     return () => {

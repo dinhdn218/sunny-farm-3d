@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { nunito } from '@/lib/fonts';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
 import { CLAW_PRICE } from '@/config/claw';
+import { ANIMATED, StaticMerge } from '../StaticMerge';
 
 const FIREWORK_COLORS = ['#f43f5e', '#facc15', '#38bdf8', '#a855f7', '#4ade80'];
 
@@ -114,7 +115,7 @@ function ClawMachine({ z }: { z: number }) {
           <meshLambertMaterial color={color} />
         </mesh>
       ))}
-      <group ref={clawRef} position={[0, 2.0, 0]}>
+      <group ref={clawRef} position={[0, 2.0, 0]} userData={ANIMATED}>
         <mesh>
           <cylinderGeometry args={[0.02, 0.02, 0.5, 4]} />
           <meshLambertMaterial color="#94a3b8" />
@@ -178,8 +179,9 @@ export function CinemaWorld() {
     snackFree ? 'Phần đầu tiên hôm nay miễn phí!' : `${SNACK_PRICE} Vàng một phần`
   );
 
+  // The cinema's props are merged into a few draw calls (see StaticMerge)
   return (
-    <group>
+    <StaticMerge>
       {/* Carpeted auditorium floor */}
       <mesh receiveShadow position={[0, 0.03, -3]}>
         <boxGeometry args={[22, 0.06, 16]} />
@@ -276,6 +278,6 @@ export function CinemaWorld() {
           </Html>
         </group>
       ))}
-    </group>
+    </StaticMerge>
   );
 }

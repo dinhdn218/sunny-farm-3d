@@ -41,13 +41,16 @@ export function BaseIsland() {
     store.walkTo({ x, z, reach: 0.15, act: () => {} });
   };
 
+  // The ground and cliff are drawn after everything else that is solid (renderOrder 1): whatever stands on them
+  // is then already in the depth buffer, and the GPU skips shading the ground hidden under it. Same picture, but the
+  // biggest surface on screen, lit and shadowed, no longer gets shaded twice under the field, the paths and the props.
   return (
     <group onClick={walkHere}>
-      <mesh receiveShadow position={[shape.cx, -1.2, shape.cz]} scale={scale}>
+      <mesh receiveShadow position={[shape.cx, -1.2, shape.cz]} scale={scale} renderOrder={1}>
         <cylinderGeometry args={[BASE_ISLAND_RADIUS, 16.0, 2.4, 40]} />
         <meshLambertMaterial color={ground} />
       </mesh>
-      <mesh position={[shape.cx, -3.9, shape.cz]} scale={scale}>
+      <mesh position={[shape.cx, -3.9, shape.cz]} scale={scale} renderOrder={1}>
         <cylinderGeometry args={[15.8, 11.5, 3.4, 32]} />
         <meshLambertMaterial color="#78716c" />
       </mesh>

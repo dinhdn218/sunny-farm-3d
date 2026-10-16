@@ -10,6 +10,7 @@ import { interactable } from '@/lib/interact';
 import { daysUntilGrown } from '@/lib/trees';
 import { STAND_GAP } from '@/lib/walk';
 import { BuildPieceModel } from './models/BuildPieceModel';
+import { StaticMerge } from './StaticMerge';
 
 // Clicking a fruit tree (outside build mode) walks over and picks its fruit
 function treeHandlers(piece: BuildPiece) {
@@ -27,7 +28,8 @@ function treeHandlers(piece: BuildPiece) {
   );
 }
 
-// Fences, paths, lamps, flower beds, bushes and fruit trees the player has laid out on the farm
+// Fences, paths, lamps, flower beds, bushes and fruit trees the player has laid out on the farm (merged into a few
+// draw calls: a long fence is hundreds of boxes)
 export function BuildPieces() {
   const pieces = useGameStore((s) => s.buildPieces);
   const day = useGameStore((s) => s.day);
@@ -36,7 +38,7 @@ export function BuildPieces() {
   const night = useGameStore((s) => TIME_PHASES[s.timePhaseIndex].id === 'night');
 
   return (
-    <group>
+    <StaticMerge>
       {pieces.map((p) => {
         const growing = daysUntilGrown(p, day);
         return (
@@ -57,6 +59,6 @@ export function BuildPieces() {
           </group>
         );
       })}
-    </group>
+    </StaticMerge>
   );
 }

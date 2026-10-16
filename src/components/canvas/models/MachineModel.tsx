@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { MachineId, MachineJob } from '@/types/game';
+import { ANIMATED } from '../StaticMerge';
 
 type Vec3 = [number, number, number];
 const ZERO: Vec3 = [0, 0, 0];
@@ -60,7 +61,7 @@ function Smoke({ at, job, color = '#f1f5f9' }: { at: Vec3; job?: MachineJob | nu
   });
 
   return (
-    <group>
+    <group userData={ANIMATED}>
       {[0, 1, 2].map((i) => (
         <mesh
           key={i}
@@ -107,7 +108,7 @@ function Oven({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
           <Mat color="#92400e" ghost={ghost} />
         </mesh>
       ))}
-      <mesh position={[0, 0.48, 0.58]}>
+      <mesh position={[0, 0.48, 0.58]} userData={ANIMATED}>
         <boxGeometry args={[0.46, 0.34, 0.12]} />
         <meshBasicMaterial ref={mouthRef} color="#1c1917" transparent={ghost} opacity={ghost ? 0.55 : 1} />
       </mesh>
@@ -176,7 +177,7 @@ function CheesePress({ ghost, job }: { ghost?: boolean; job?: MachineJob | null 
         <cylinderGeometry args={[0.3, 0.3, 0.3, 16]} />
         <Mat color="#facc15" ghost={ghost} />
       </mesh>
-      <group ref={screwRef}>
+      <group ref={screwRef} userData={ANIMATED}>
         <mesh position={[0, 1.2, 0]}>
           <cylinderGeometry args={[0.05, 0.05, 0.9, 8]} />
           <Mat color="#a8a29e" ghost={ghost} />
@@ -221,7 +222,7 @@ function Loom({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
         <cylinderGeometry args={[0.13, 0.13, 1.25, 10]} />
         <Mat color="#ec4899" ghost={ghost} />
       </mesh>
-      <mesh ref={shuttleRef} position={[0, 0.88, 0.06]}>
+      <mesh ref={shuttleRef} userData={ANIMATED} position={[0, 0.88, 0.06]}>
         <boxGeometry args={[0.26, 0.06, 0.08]} />
         <Mat color="#b45309" ghost={ghost} />
       </mesh>
@@ -282,7 +283,7 @@ function Blender({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
       ))}
 
       {/* The blender: motor base, glass jar with the drink inside, lid */}
-      <group ref={jarRef} position={[-0.25, 0, 0]}>
+      <group ref={jarRef} userData={ANIMATED} position={[-0.25, 0, 0]}>
         <mesh castShadow={!ghost} position={[0, 0.89, 0]}>
           <cylinderGeometry args={[0.17, 0.2, 0.22, 12]} />
           <Mat color="#e11d48" ghost={ghost} />
@@ -381,7 +382,7 @@ function Crock({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
           <torusGeometry args={[0.23, 0.035, 6, 18]} />
           <Mat color="#9a3412" ghost={ghost} />
         </mesh>
-        <group ref={lidRef} position={[0, 1.15, 0]}>
+        <group ref={lidRef} userData={ANIMATED} position={[0, 1.15, 0]}>
           <mesh castShadow={!ghost}>
             <cylinderGeometry args={[0.08, 0.27, 0.12, 14]} />
             <Mat color="#78350f" ghost={ghost} />

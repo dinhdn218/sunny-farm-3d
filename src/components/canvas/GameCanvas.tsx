@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { TIME_PHASES } from '@/config/time';
@@ -88,6 +88,24 @@ function SkyAndLights() {
   );
 }
 
+// Compiled shader programs are kept for the whole visit. three.js deletes a program as soon as no material uses it,
+// so whatever comes and goes (a zone's props, effects, outlines) compiled its shaders again on the way back, and on
+// ANGLE that froze the frame for 50-120 ms. A program is held once more than its materials do, so it is never freed.
+function KeepShaderPrograms() {
+  const gl = useThree((s) => s.gl);
+  const kept = useRef(new WeakSet<object>());
+
+  useFrame(() => {
+    for (const program of gl.info.programs ?? []) {
+      if (kept.current.has(program)) continue;
+      kept.current.add(program);
+      program.usedTimes++;
+    }
+  });
+
+  return null;
+}
+
 // The world stops answering clicks while the camera roams for photos (left-drag orbits)
 // or pieces are being built (left click builds)
 function WorldClicks() {
@@ -115,9 +133,12 @@ export default function GameCanvas() {
         linear
         legacy
         camera={{ fov: 45, near: 0.1, far: 160, position: [4.5, 12, 15.6] }}
-        gl={{ antialias: true, powerPreference: 'high-performance' }}
+        // The sky colour fills every pixel, so the canvas needs no alpha channel: as an opaque layer the browser
+        // composites it without blending it over the page each frame
+        gl={{ antialias: true, powerPreference: 'high-performance', alpha: false }}
       >
         <SkyAndLights />
+        <KeepShaderPrograms />
         <CameraRig />
         <PhotoRig />
         <WorldClicks />

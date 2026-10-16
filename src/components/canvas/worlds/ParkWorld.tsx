@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
@@ -13,6 +13,7 @@ import { localDateKey } from '@/lib/dailyGift';
 import { FISHING_ENERGY, FISHING_SPOTS } from '@/config/fish';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
 import { Fountain, Tree } from '../environment/Props';
+import { ANIMATED, StaticMerge } from '../StaticMerge';
 
 const SAKURA_TREES: [number, number, number][] = [
   [-8, -6, 1.25],
@@ -270,7 +271,7 @@ function Carousel() {
           <meshLambertMaterial color={i % 2 === 0 ? '#ef4444' : '#fef3c7'} />
         </mesh>
       ))}
-      <group ref={spinRef}>
+      <group ref={spinRef} userData={ANIMATED}>
         {Array.from({ length: 6 }, (_, i) => {
           const a = (i / 6) * Math.PI * 2;
           return (
@@ -304,103 +305,106 @@ export function ParkWorld() {
   );
   const festival = activeFestival(localDateKey(new Date()));
 
+  // The park's props are merged into a few draw calls (see StaticMerge); the bugs fly about on their own
   return (
     <group>
-      {/* Paths: north–south from the portal to the gazebo, and the plaza */}
-      <mesh receiveShadow position={[0, 0.03, 4]}>
-        <boxGeometry args={[3.2, 0.06, 34]} />
-        <meshLambertMaterial color="#d6d3d1" />
-      </mesh>
-      <mesh receiveShadow position={[-6.5, 0.03, -3]}>
-        <boxGeometry args={[6, 0.06, 2.2]} />
-        <meshLambertMaterial color="#d6d3d1" />
-      </mesh>
-      <mesh receiveShadow position={[0, 0.04, 0]}>
-        <cylinderGeometry args={[6.5, 6.5, 0.08, 32]} />
-        <meshLambertMaterial color="#d6d3d1" />
-      </mesh>
-
-      <Fountain x={0} z={0} scale={1.45} />
-
-      {SAKURA_TREES.map(([x, z, scale]) => (
-        <Tree key={`${x}_${z}`} x={x} z={z} scale={scale} type="sakura" />
-      ))}
-      {OTHER_TREES.map((t) => (
-        <Tree key={`${t.x}_${t.z}`} x={t.x} z={t.z} scale={t.scale} type={t.type} />
-      ))}
-
-      {BENCHES.map(([x, z, rot]) => (
-        <group key={`${x}_${z}`} position={[x, 0, z]} rotation={[0, rot, 0]}>
-          <mesh position={[0, 0.45, 0]}>
-            <boxGeometry args={[1.8, 0.12, 0.6]} />
-            <meshLambertMaterial color="#92400e" />
-          </mesh>
-          <mesh position={[0, 0.72, -0.25]}>
-            <boxGeometry args={[1.8, 0.5, 0.1]} />
-            <meshLambertMaterial color="#78350f" />
-          </mesh>
-        </group>
-      ))}
-
-      {FLOWER_BEDS.map(([x, z, color]) => (
-        <group key={`${x}_${z}`} position={[x, 0, z]}>
-          <mesh position={[0, 0.12, 0]}>
-            <boxGeometry args={[1.6, 0.24, 3.2]} />
-            <meshLambertMaterial color="#78350f" />
-          </mesh>
-          {[-0.9, 0, 0.9].flatMap((dz) =>
-            [-0.4, 0.4].map((dx) => (
-              <mesh key={`${dx}${dz}`} position={[dx, 0.36, dz]}>
-                <sphereGeometry args={[0.2, 8, 6]} />
-                <meshLambertMaterial color={color} />
-              </mesh>
-            ))
-          )}
-        </group>
-      ))}
-
-      {/* Picnic blanket & basket */}
-      <group position={[-6, 0.05, 11]}>
-        <mesh>
-          <boxGeometry args={[2.6, 0.04, 2.6]} />
-          <meshLambertMaterial color="#f43f5e" />
+      <StaticMerge>
+        {/* Paths: north–south from the portal to the gazebo, and the plaza */}
+        <mesh receiveShadow position={[0, 0.03, 4]}>
+          <boxGeometry args={[3.2, 0.06, 34]} />
+          <meshLambertMaterial color="#d6d3d1" />
         </mesh>
-        <mesh position={[0.4, 0.22, -0.3]}>
-          <boxGeometry args={[0.55, 0.4, 0.4]} />
-          <meshLambertMaterial color="#d97706" />
+        <mesh receiveShadow position={[-6.5, 0.03, -3]}>
+          <boxGeometry args={[6, 0.06, 2.2]} />
+          <meshLambertMaterial color="#d6d3d1" />
         </mesh>
-      </group>
+        <mesh receiveShadow position={[0, 0.04, 0]}>
+          <cylinderGeometry args={[6.5, 6.5, 0.08, 32]} />
+          <meshLambertMaterial color="#d6d3d1" />
+        </mesh>
 
-      {/* Quest gazebo */}
-      <group position={[gx, 0, gz]}>
-        <mesh position={[0, 0.15, 0]} {...gazebo}>
-          <cylinderGeometry args={[2.8, 3.0, 0.3, 8]} />
-          <meshLambertMaterial color="#fef3c7" />
-        </mesh>
-        {Array.from({ length: 6 }, (_, i) => {
-          const a = (i / 6) * Math.PI * 2;
-          return (
-            <mesh key={i} castShadow position={[Math.sin(a) * 2.4, 1.5, Math.cos(a) * 2.4]}>
-              <cylinderGeometry args={[0.12, 0.12, 2.6, 6]} />
-              <meshLambertMaterial color="#fef3c7" />
+        <Fountain x={0} z={0} scale={1.45} />
+
+        {SAKURA_TREES.map(([x, z, scale]) => (
+          <Tree key={`${x}_${z}`} x={x} z={z} scale={scale} type="sakura" />
+        ))}
+        {OTHER_TREES.map((t) => (
+          <Tree key={`${t.x}_${t.z}`} x={t.x} z={t.z} scale={t.scale} type={t.type} />
+        ))}
+
+        {BENCHES.map(([x, z, rot]) => (
+          <group key={`${x}_${z}`} position={[x, 0, z]} rotation={[0, rot, 0]}>
+            <mesh position={[0, 0.45, 0]}>
+              <boxGeometry args={[1.8, 0.12, 0.6]} />
+              <meshLambertMaterial color="#92400e" />
             </mesh>
-          );
-        })}
-        <mesh castShadow position={[0, 3.2, 0]} {...gazebo}>
-          <coneGeometry args={[3.2, 1.6, 8]} />
-          <meshLambertMaterial color="#db2777" />
-        </mesh>
-        <Html position={[0, 4.6, 0]} zIndexRange={[15, 0]}>
-          <div className="player-tag w-max rounded-full border border-white bg-pink-600 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
-            📜 Đài Nhiệm Vụ
-          </div>
-        </Html>
-      </group>
+            <mesh position={[0, 0.72, -0.25]}>
+              <boxGeometry args={[1.8, 0.5, 0.1]} />
+              <meshLambertMaterial color="#78350f" />
+            </mesh>
+          </group>
+        ))}
 
-      <LotusPond />
-      <IceCreamCart />
-      <Carousel />
-      {festival && <FestivalStall festival={festival} onOpen={() => setActiveModal('festivalShop')} />}
+        {FLOWER_BEDS.map(([x, z, color]) => (
+          <group key={`${x}_${z}`} position={[x, 0, z]}>
+            <mesh position={[0, 0.12, 0]}>
+              <boxGeometry args={[1.6, 0.24, 3.2]} />
+              <meshLambertMaterial color="#78350f" />
+            </mesh>
+            {[-0.9, 0, 0.9].flatMap((dz) =>
+              [-0.4, 0.4].map((dx) => (
+                <mesh key={`${dx}${dz}`} position={[dx, 0.36, dz]}>
+                  <sphereGeometry args={[0.2, 8, 6]} />
+                  <meshLambertMaterial color={color} />
+                </mesh>
+              ))
+            )}
+          </group>
+        ))}
+
+        {/* Picnic blanket & basket */}
+        <group position={[-6, 0.05, 11]}>
+          <mesh>
+            <boxGeometry args={[2.6, 0.04, 2.6]} />
+            <meshLambertMaterial color="#f43f5e" />
+          </mesh>
+          <mesh position={[0.4, 0.22, -0.3]}>
+            <boxGeometry args={[0.55, 0.4, 0.4]} />
+            <meshLambertMaterial color="#d97706" />
+          </mesh>
+        </group>
+
+        {/* Quest gazebo */}
+        <group position={[gx, 0, gz]}>
+          <mesh position={[0, 0.15, 0]} {...gazebo}>
+            <cylinderGeometry args={[2.8, 3.0, 0.3, 8]} />
+            <meshLambertMaterial color="#fef3c7" />
+          </mesh>
+          {Array.from({ length: 6 }, (_, i) => {
+            const a = (i / 6) * Math.PI * 2;
+            return (
+              <mesh key={i} castShadow position={[Math.sin(a) * 2.4, 1.5, Math.cos(a) * 2.4]}>
+                <cylinderGeometry args={[0.12, 0.12, 2.6, 6]} />
+                <meshLambertMaterial color="#fef3c7" />
+              </mesh>
+            );
+          })}
+          <mesh castShadow position={[0, 3.2, 0]} {...gazebo}>
+            <coneGeometry args={[3.2, 1.6, 8]} />
+            <meshLambertMaterial color="#db2777" />
+          </mesh>
+          <Html position={[0, 4.6, 0]} zIndexRange={[15, 0]}>
+            <div className="player-tag w-max rounded-full border border-white bg-pink-600 px-2.5 py-0.5 text-[11px] font-black text-white shadow">
+              📜 Đài Nhiệm Vụ
+            </div>
+          </Html>
+        </group>
+
+        <LotusPond />
+        <IceCreamCart />
+        <Carousel />
+        {festival && <FestivalStall festival={festival} onOpen={() => setActiveModal('festivalShop')} />}
+      </StaticMerge>
       <ParkBugs />
     </group>
   );

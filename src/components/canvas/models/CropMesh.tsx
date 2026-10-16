@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CropId } from '@/types/game';
+import { ANIMATED } from '../StaticMerge';
 
 const CARROT_SPOTS: [number, number][] = [
   [-0.25, -0.24],
@@ -212,7 +213,7 @@ export function CropMesh({
         </group>
       )}
 
-      <mesh ref={starRef} position={[0, 1.15, 0]}>
+      <mesh ref={starRef} position={[0, 1.15, 0]} userData={ANIMATED}>
         <octahedronGeometry args={[0.14, 0]} />
         <meshBasicMaterial color="#fef08a" />
       </mesh>

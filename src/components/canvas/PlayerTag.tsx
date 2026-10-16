@@ -1,6 +1,6 @@
 'use client';
 
-import { Html } from '@react-three/drei';
+import { Html } from './Html';
 
 // Overhead name pill + speech bubble, fixed pixel size like the HTML version's DOM tags
 export function PlayerTag({

@@ -8,6 +8,7 @@ import { TreeType } from '@/types/game';
 import { useGameStore } from '@/store/useGameStore';
 import { SEASON_LOOK } from '@/config/seasons';
 import { seasonOf } from '@/lib/seasons';
+import { ANIMATED } from '../StaticMerge';
 
 // Leaves follow the season (palms on the beach stay green)
 export function Tree({
@@ -88,7 +89,7 @@ export function Fountain({ x, z, scale = 1 }: { x: number; z: number; scale?: nu
         <cylinderGeometry args={[0.35, 0.5, 1.6, 12]} />
         <meshLambertMaterial color="#e2e8f0" />
       </mesh>
-      <mesh ref={jetRef} position={[0, 1.9, 0]}>
+      <mesh ref={jetRef} position={[0, 1.9, 0]} userData={ANIMATED}>
         <octahedronGeometry args={[0.35, 0]} />
         <meshBasicMaterial color="#bae6fd" />
       </mesh>

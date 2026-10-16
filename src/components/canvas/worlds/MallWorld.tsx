@@ -1,9 +1,10 @@
 'use client';
 
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
+import { StaticMerge } from '../StaticMerge';
 
 const AWNING_STRIPES = [-1.375, -0.825, -0.275, 0.275, 0.825, 1.375];
 
@@ -149,8 +150,9 @@ export function MallWorld() {
   const boutique = shopAt('Boutique Thời Trang Cao Cấp (Mua Quần Áo)', -9, -9);
   const petShop = shopAt('Cửa Hàng Thú Cưng Shiba & Phụ Kiện', 9, -9);
 
+  // The mall's props are merged into a few draw calls (see StaticMerge)
   return (
-    <group>
+    <StaticMerge>
       {/* Paved plaza with tile lines */}
       <mesh receiveShadow position={[0, 0.03, -1]}>
         <boxGeometry args={[34, 0.06, 30]} />
@@ -270,6 +272,6 @@ export function MallWorld() {
 
       <MarketStall onOpen={() => setActiveModal('market')} />
       <BubbleTeaStand />
-    </group>
+    </StaticMerge>
   );
 }

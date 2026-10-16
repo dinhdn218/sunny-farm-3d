@@ -12,6 +12,7 @@ import { activeFestival } from '@/lib/festivals';
 import { localDateKey } from '@/lib/dailyGift';
 import { camControl } from '@/lib/controls';
 import { DecorModel } from '../models/DecorModel';
+import { StaticMerge } from '../StaticMerge';
 
 const BAT_COUNT = 6;
 
@@ -92,11 +93,13 @@ interface DressingProps {
 function HalloweenDressing({ spots, center, night }: DressingProps) {
   return (
     <group>
-      {spots.map(([x, z]) => (
-        <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={0.42}>
-          <DecorModel id="decor_jack_lantern" />
-        </group>
-      ))}
+      <StaticMerge>
+        {spots.map(([x, z]) => (
+          <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={0.42}>
+            <DecorModel id="decor_jack_lantern" />
+          </group>
+        ))}
+      </StaticMerge>
       {night && <Bats center={center} />}
     </group>
   );
@@ -105,13 +108,13 @@ function HalloweenDressing({ spots, center, night }: DressingProps) {
 // Giáng Sinh: little Christmas trees and snowmen taking turns round the spots (the snow falls in WeatherEffects)
 function ChristmasDressing({ spots }: DressingProps) {
   return (
-    <group>
+    <StaticMerge>
       {spots.map(([x, z], i) => (
         <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={i % 2 === 0 ? 0.42 : 0.5}>
           <DecorModel id={i % 2 === 0 ? 'decor_xmas_tree' : 'decor_snowman'} />
         </group>
       ))}
-    </group>
+    </StaticMerge>
   );
 }
 
@@ -244,11 +247,13 @@ function Fireworks() {
 function TetDressing({ spots, night }: DressingProps) {
   return (
     <group>
-      {spots.map(([x, z], i) => (
-        <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={i % 2 === 0 ? 0.55 : 0.6}>
-          {i % 2 === 0 ? <DecorModel id="decor_mai_tree" /> : <PoleLantern />}
-        </group>
-      ))}
+      <StaticMerge>
+        {spots.map(([x, z], i) => (
+          <group key={`${x}_${z}`} position={[x, 0.06, z]} scale={i % 2 === 0 ? 0.55 : 0.6}>
+            {i % 2 === 0 ? <DecorModel id="decor_mai_tree" /> : <PoleLantern />}
+          </group>
+        ))}
+      </StaticMerge>
       {night && <Fireworks />}
     </group>
   );

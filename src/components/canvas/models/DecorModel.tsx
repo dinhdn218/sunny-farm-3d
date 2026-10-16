@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { isMachineId } from '@/config/machines';
 import { useGameStore } from '@/store/useGameStore';
 import { MachineModel } from './MachineModel';
+import { ANIMATED } from '../StaticMerge';
 
 type Vec3 = [number, number, number];
 const ZERO: Vec3 = [0, 0, 0];
@@ -122,7 +123,7 @@ function Windmill({ ghost }: { ghost?: boolean }) {
         <coneGeometry args={[1.25, 1.3, 8]} />
         <Mat color="#b91c1c" ghost={ghost} />
       </mesh>
-      <group ref={bladesRef} position={[0, 3.7, 1.15]}>
+      <group ref={bladesRef} userData={ANIMATED} position={[0, 3.7, 1.15]}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
           <cylinderGeometry args={[0.18, 0.18, 0.3, 8]} />
           <Mat color="#78350f" ghost={ghost} />
@@ -194,11 +195,11 @@ function Fountain({ ghost }: { ghost?: boolean }) {
         <cylinderGeometry args={[0.42, 0.18, 0.18, 12]} />
         <Mat color="#e2e8f0" ghost={ghost} />
       </mesh>
-      <mesh ref={jetRef} position={[0, 2.55, 0]}>
+      <mesh ref={jetRef} userData={ANIMATED} position={[0, 2.55, 0]}>
         <octahedronGeometry args={[0.2, 0]} />
         <Mat color="#bae6fd" ghost={ghost} glow />
       </mesh>
-      <group ref={topDropsRef}>
+      <group ref={topDropsRef} userData={ANIMATED}>
         {Array.from({ length: 8 }, (_, i) => (
           <mesh key={i}>
             <sphereGeometry args={[0.06, 6, 6]} />
@@ -206,7 +207,7 @@ function Fountain({ ghost }: { ghost?: boolean }) {
           </mesh>
         ))}
       </group>
-      <group ref={lowDropsRef}>
+      <group ref={lowDropsRef} userData={ANIMATED}>
         {Array.from({ length: 12 }, (_, i) => (
           <mesh key={i}>
             <sphereGeometry args={[0.07, 6, 6]} />
@@ -275,7 +276,7 @@ function SakuraGrove({ ghost }: { ghost?: boolean }) {
       {fallen.map((p, i) => (
         <Block key={i} size={[0.14, 0.01, 0.09]} at={[p.x, 0.02, p.z]} rot={[0, p.rot, 0]} color="#f9a8d4" ghost={ghost} />
       ))}
-      <group ref={petalsRef}>
+      <group ref={petalsRef} userData={ANIMATED}>
         {Array.from({ length: 6 }, (_, i) => (
           <mesh key={i}>
             <planeGeometry args={[0.12, 0.08]} />
@@ -327,11 +328,11 @@ function GoldStatue({ ghost }: { ghost?: boolean }) {
           <Mat color="#facc15" ghost={ghost} />
         </mesh>
       ))}
-      <mesh ref={starRef} position={[0, 2.35, 0]}>
+      <mesh ref={starRef} userData={ANIMATED} position={[0, 2.35, 0]}>
         <octahedronGeometry args={[0.35, 0]} />
         <Mat color="#fef08a" ghost={ghost} glow />
       </mesh>
-      <group ref={sparklesRef}>
+      <group ref={sparklesRef} userData={ANIMATED}>
         {[0, 1, 2].map((i) => (
           <mesh key={i}>
             <octahedronGeometry args={[0.07, 0]} />
@@ -427,6 +428,7 @@ function Cauldron({ ghost }: { ghost?: boolean }) {
         [0, 1, 2, 3].map((i) => (
           <mesh
             key={i}
+            userData={ANIMATED}
             ref={(el) => {
               bubbleRefs.current[i] = el;
             }}
@@ -452,7 +454,7 @@ function Mailbox({ ghost }: { ghost?: boolean }) {
         <Mat color="#2563eb" ghost={ghost} />
       </mesh>
       <Block size={[0.18, 0.025, 0.01]} at={[0, 1.18, 0.265]} color="#1e293b" ghost={ghost} />
-      <group position={[0.2, 1.14, 0.08]} rotation={[hasMail ? 0 : Math.PI / 2, 0, 0]}>
+      <group position={[0.2, 1.14, 0.08]} rotation={[hasMail ? 0 : Math.PI / 2, 0, 0]} userData={ANIMATED}>
         <Block size={[0.035, 0.32, 0.03]} at={[0, 0.16, 0]} color="#dc2626" ghost={ghost} />
         <Block size={[0.14, 0.09, 0.02]} at={[0.06, 0.27, 0]} color="#dc2626" ghost={ghost} />
       </group>
@@ -494,7 +496,7 @@ function Beehive({ ghost }: { ghost?: boolean }) {
       </mesh>
       <Block size={[0.16, 0.05, 0.02]} at={[0, 0.4, 0.245]} color="#1c1917" ghost={ghost} />
       {!ghost && (
-        <group ref={beesRef}>
+        <group ref={beesRef} userData={ANIMATED}>
           {Array.from({ length: BEE_COUNT }, (_, i) => (
             <group key={i}>
               <mesh scale={[1.3, 1, 1]}>
@@ -541,7 +543,7 @@ function Swing({ ghost }: { ghost?: boolean }) {
         ))
       )}
       <Block size={[2.1, 0.1, 0.1]} at={[0, 1.86, 0]} color="#78350f" ghost={ghost} shadow />
-      <group ref={seatRef} position={[0, 1.82, 0]}>
+      <group ref={seatRef} userData={ANIMATED} position={[0, 1.82, 0]}>
         {[-0.3, 0.3].map((x) => (
           <mesh key={x} position={[x, -0.62, 0]}>
             <cylinderGeometry args={[0.015, 0.015, 1.24, 4]} />
@@ -576,7 +578,7 @@ function HoiAnLanterns({ ghost }: { ghost?: boolean }) {
         </group>
       ))}
       <Block size={[2.2, 0.05, 0.05]} at={[0, 2.1, 0]} color="#451a03" ghost={ghost} />
-      <group ref={lanternsRef}>
+      <group ref={lanternsRef} userData={ANIMATED}>
         {LANTERN_COLORS.map((color, i) => (
           <group key={color} position={[-0.8 + i * 0.4, 2.07, 0]}>
             <mesh position={[0, -0.11, 0]}>
@@ -695,7 +697,7 @@ function KoiPond({ ghost }: { ghost?: boolean }) {
         </group>
       ))}
       {!ghost && (
-        <group ref={fishRef}>
+        <group ref={fishRef} userData={ANIMATED}>
           {KOI.map((color) => (
             <group key={color}>
               <mesh scale={[1.6, 0.6, 0.75]}>
@@ -728,7 +730,7 @@ function HotAirBalloon({ ghost }: { ghost?: boolean }) {
   return (
     <group>
       <Block size={[0.12, 0.3, 0.12]} at={[0.85, 0.15, 0.85]} color="#78350f" ghost={ghost} />
-      <group ref={floatRef}>
+      <group ref={floatRef} userData={ANIMATED}>
         <Block size={[0.8, 0.55, 0.8]} at={[0, 0.85, 0]} color="#a16207" ghost={ghost} shadow />
         <Block size={[0.86, 0.08, 0.86]} at={[0, 1.13, 0]} color="#78350f" ghost={ghost} />
         {[-1, 1].flatMap((sx) =>
@@ -805,7 +807,7 @@ function XmasTree({ ghost }: { ghost?: boolean }) {
           <Mat color={color} ghost={ghost} glow />
         </mesh>
       ))}
-      <mesh ref={starRef} position={[0, 2.27, 0]}>
+      <mesh ref={starRef} userData={ANIMATED} position={[0, 2.27, 0]}>
         <octahedronGeometry args={[0.17, 0]} />
         <Mat color="#fde047" ghost={ghost} glow />
       </mesh>

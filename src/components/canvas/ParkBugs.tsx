@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from './Html';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { BugId } from '@/types/game';

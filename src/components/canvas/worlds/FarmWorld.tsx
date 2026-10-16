@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
 import { CROPS } from '@/config/crops';
@@ -47,6 +47,7 @@ import { Tree } from '../environment/Props';
 import { DecorPlacer } from '../DecorPlacer';
 import { BuildPieces } from '../BuildPieces';
 import { BuildPlacer } from '../BuildPlacer';
+import { ANIMATED, StaticMerge } from '../StaticMerge';
 
 const SIDE_NAMES: Record<ExpansionSide, string> = {
   west: 'Tây',
@@ -102,7 +103,7 @@ function Sprinkler() {
         <cylinderGeometry args={[0.05, 0.05, 0.4, 8]} />
         <meshLambertMaterial color="#94a3b8" />
       </mesh>
-      <group ref={headRef} position={[0, 0.52, 0]}>
+      <group ref={headRef} position={[0, 0.52, 0]} userData={ANIMATED}>
         <mesh>
           <cylinderGeometry args={[0.12, 0.12, 0.1, 10]} />
           <meshLambertMaterial color="#0ea5e9" />
@@ -454,7 +455,9 @@ function PlacedMachine({
   return (
     <group position={[placement.x, 0, placement.z]}>
       <group rotation={[0, placement.rotY, 0]} {...handlers}>
-        <MachineModel id={id} job={job} />
+        <StaticMerge>
+          <MachineModel id={id} job={job} />
+        </StaticMerge>
       </group>
       <MachineBadge job={job} />
     </group>
@@ -481,17 +484,42 @@ export function FarmWorld() {
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const onHover = useCallback((id: string | null) => setHoveredId(id), []);
-  const hoverBox = useMemo(
-    () => new THREE.BoxGeometry(TILE_SIZE * 0.96, 0.22, TILE_SIZE * 0.96),
-    []
+  // One outline geometry and material for every hovered tile: with their own, each move of the cursor disposed the
+  // material and three.js dropped its shader, only to compile it again (a frozen frame) for the next tile
+  const outline = useMemo(() => {
+    const box = new THREE.BoxGeometry(TILE_SIZE * 0.96, 0.22, TILE_SIZE * 0.96);
+    const edges = new THREE.EdgesGeometry(box);
+    box.dispose();
+    return {
+      edges,
+      work: new THREE.LineBasicMaterial({ color: '#fef08a' }),
+      sprinkler: new THREE.LineBasicMaterial({ color: '#7dd3fc' }),
+    };
+  }, []);
+  useEffect(
+    () => () => {
+      outline.edges.dispose();
+      outline.work.dispose();
+      outline.sprinkler.dispose();
+    },
+    [outline]
   );
 
   const bands = useMemo(() => farmBands(ownedPlots), [ownedPlots]);
   const field = useMemo(() => fieldRect(ownedPlots), [ownedPlots]);
   const signs = useMemo(() => expansionSigns(ownedPlots), [ownedPlots]);
-  const ownedTiles = useMemo(() => {
+  // Owned tiles plot by plot: each plot is merged on its own, so working a tile re-merges just its plot
+  const plotTiles = useMemo(() => {
     const owned = new Set(ownedPlots);
-    return tiles.filter((t) => owned.has(plotOfTile(t.r, t.c)));
+    const byPlot = new Map<string, TileData[]>();
+    for (const tile of tiles) {
+      const plot = plotOfTile(tile.r, tile.c);
+      if (!owned.has(plot)) continue;
+      const list = byPlot.get(plot);
+      if (list) list.push(tile);
+      else byPlot.set(plot, [tile]);
+    }
+    return Array.from(byPlot);
   }, [tiles, ownedPlots]);
   const lockedPlots = useMemo(() => {
     const list: { px: number; pz: number; purchasable: boolean }[] = [];
@@ -566,128 +594,140 @@ export function FarmWorld() {
     openExpand(candidates.find((k) => isPlotPurchasable(k, ownedPlots)) ?? null);
   };
 
+  // Everything that stands still is merged into a few draw calls (see StaticMerge): the field and its plots, the
+  // buildings and trees, the decorations
   return (
     <group>
-      <mesh
-        receiveShadow
-        position={[(field.minX + field.maxX) / 2, 0.01, (field.minZ + field.maxZ) / 2]}
-      >
-        <boxGeometry args={[field.maxX - field.minX, 0.12, field.maxZ - field.minZ]} />
-        <meshLambertMaterial color="#78350f" />
-      </mesh>
-
-      {ownedTiles.map((tile) => (
-        <FarmTile key={tile.id} tile={tile} grass={look.grass} onHover={onHover} />
-      ))}
-      {lockedPlots.map((p) => (
-        <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} grass={look.wildGrass} />
+      {plotTiles.map(([plot, plotList]) => (
+        <StaticMerge key={plot}>
+          {plotList.map((tile) => (
+            <FarmTile key={tile.id} tile={tile} grass={look.grass} onHover={onHover} />
+          ))}
+        </StaticMerge>
       ))}
 
       {hoverArea.map((p) => (
-        <lineSegments key={`${p.x}_${p.z}`} position={[p.x, 0.14, p.z]}>
-          <edgesGeometry args={[hoverBox]} />
-          <lineBasicMaterial color={placingSprinkler ? '#7dd3fc' : '#fef08a'} />
-        </lineSegments>
+        <lineSegments
+          key={`${p.x}_${p.z}`}
+          position={[p.x, 0.14, p.z]}
+          geometry={outline.edges}
+          material={placingSprinkler ? outline.sprinkler : outline.work}
+        />
       ))}
 
-      {signs.map((s) => (
-        <ExpansionSign key={s.side} {...s} onOpen={() => openFromSign(s.side)} />
-      ))}
-
-      {/* Farmhouse (click: sleep to the next day) */}
-      <group position={[houseX, 0, houseZ]}>
-        <mesh castShadow position={[0, 1.2, 0]} {...house}>
-          <boxGeometry args={[3.6, 2.4, 3.0]} />
-          <meshLambertMaterial color="#fef3c7" />
-        </mesh>
-        <mesh position={[0, 3.25, 0]} rotation={[0, Math.PI / 4, 0]} {...house}>
-          <coneGeometry args={[3.1, 1.8, 4]} />
-          <meshLambertMaterial color="#b91c1c" />
-        </mesh>
-        <mesh position={[0, 0.75, 1.52]}>
-          <boxGeometry args={[0.85, 1.5, 0.12]} />
+      <StaticMerge>
+        <mesh
+          receiveShadow
+          position={[(field.minX + field.maxX) / 2, 0.01, (field.minZ + field.maxZ) / 2]}
+        >
+          <boxGeometry args={[field.maxX - field.minX, 0.12, field.maxZ - field.minZ]} />
           <meshLambertMaterial color="#78350f" />
         </mesh>
-      </group>
-
-      <mesh position={[binX, 0.5, binZ]} {...shippingBin}>
-        <boxGeometry args={[1.35, 1.0, 0.95]} />
-        <meshLambertMaterial color="#dc2626" />
-      </mesh>
-
-      {/* Seed stall */}
-      <group position={[shopX, 0, shopZ]}>
-        <mesh position={[0, 0.52, 0]} {...seedShop}>
-          <boxGeometry args={[2.6, 1.05, 1.4]} />
-          <meshLambertMaterial color="#92400e" />
-        </mesh>
-        <mesh position={[0, 2.35, 0]} rotation={[0, Math.PI / 4, 0]} {...seedShop}>
-          <coneGeometry args={[2.1, 0.95, 4]} />
-          <meshLambertMaterial color="#10b981" />
-        </mesh>
-      </group>
-
-      {/* Water well */}
-      <group position={[wellX, 0, wellZ]}>
-        <mesh position={[0, 0.475, 0]} {...well}>
-          <cylinderGeometry args={[1.1, 1.2, 0.95, 12]} />
-          <meshLambertMaterial color="#64748b" />
-        </mesh>
-        <mesh position={[0, 0.52, 0]} {...well}>
-          <cylinderGeometry args={[0.92, 0.92, 0.82, 12]} />
-          <meshLambertMaterial color="#0ea5e9" />
-        </mesh>
-      </group>
-
-      {FARM_TREES.map((t) => {
-        const [x, z] = at([t.x, t.z]);
-        return <Tree key={`${t.x}_${t.z}`} x={x} z={z} scale={t.scale} type={t.type} />;
-      })}
-
-      {/* Livestock pasture & barn (moves as one piece) */}
-      <group position={[FARM_SITES.ranch[0] + ranchDx, 0, FARM_SITES.ranch[1] + ranchDz]}>
-        <mesh receiveShadow position={[0, 0.03, 0]}>
-          <boxGeometry args={[6.2, 0.06, 5.4]} />
-          <meshLambertMaterial color={look.pasture} />
-        </mesh>
-        {[
-          [0, 2.7, 6.2, 0.12],
-          [0, -2.7, 6.2, 0.12],
-          [3.1, 0, 0.12, 5.4],
-          [-3.1, 0, 0.12, 5.4],
-        ].map(([x, z, w, d]) => (
-          <mesh key={`${x}_${z}`} castShadow position={[x, 0.35, z]}>
-            <boxGeometry args={[w, 0.45, d]} />
-            <meshLambertMaterial color="#92400e" />
-          </mesh>
+        {lockedPlots.map((p) => (
+          <LockedPlot key={`${p.px}-${p.pz}`} {...p} price={price} grass={look.wildGrass} />
         ))}
-        <group position={[BARN_OFFSET[0], 0, BARN_OFFSET[1]]}>
-          <mesh castShadow receiveShadow position={[0, 1.35, 0]} {...barn}>
-            <boxGeometry args={[3.4, 2.7, 2.6]} />
-            <meshLambertMaterial color="#dc2626" />
+
+        {signs.map((s) => (
+          <ExpansionSign key={s.side} {...s} onOpen={() => openFromSign(s.side)} />
+        ))}
+
+        {/* Farmhouse (click: sleep to the next day) */}
+        <group position={[houseX, 0, houseZ]}>
+          <mesh castShadow position={[0, 1.2, 0]} {...house}>
+            <boxGeometry args={[3.6, 2.4, 3.0]} />
+            <meshLambertMaterial color="#fef3c7" />
           </mesh>
-          <mesh
-            castShadow
-            position={[0, 3.2, 0]}
-            rotation={[0, Math.PI / 4, 0]}
-            {...barn}
-          >
-            <coneGeometry args={[2.9, 1.5, 4]} />
-            <meshLambertMaterial color="#7f1d1d" />
+          <mesh position={[0, 3.25, 0]} rotation={[0, Math.PI / 4, 0]} {...house}>
+            <coneGeometry args={[3.1, 1.8, 4]} />
+            <meshLambertMaterial color="#b91c1c" />
+          </mesh>
+          <mesh position={[0, 0.75, 1.52]}>
+            <boxGeometry args={[0.85, 1.5, 0.12]} />
+            <meshLambertMaterial color="#78350f" />
           </mesh>
         </group>
-      </group>
+
+        <mesh position={[binX, 0.5, binZ]} {...shippingBin}>
+          <boxGeometry args={[1.35, 1.0, 0.95]} />
+          <meshLambertMaterial color="#dc2626" />
+        </mesh>
+
+        {/* Seed stall */}
+        <group position={[shopX, 0, shopZ]}>
+          <mesh position={[0, 0.52, 0]} {...seedShop}>
+            <boxGeometry args={[2.6, 1.05, 1.4]} />
+            <meshLambertMaterial color="#92400e" />
+          </mesh>
+          <mesh position={[0, 2.35, 0]} rotation={[0, Math.PI / 4, 0]} {...seedShop}>
+            <coneGeometry args={[2.1, 0.95, 4]} />
+            <meshLambertMaterial color="#10b981" />
+          </mesh>
+        </group>
+
+        {/* Water well */}
+        <group position={[wellX, 0, wellZ]}>
+          <mesh position={[0, 0.475, 0]} {...well}>
+            <cylinderGeometry args={[1.1, 1.2, 0.95, 12]} />
+            <meshLambertMaterial color="#64748b" />
+          </mesh>
+          <mesh position={[0, 0.52, 0]} {...well}>
+            <cylinderGeometry args={[0.92, 0.92, 0.82, 12]} />
+            <meshLambertMaterial color="#0ea5e9" />
+          </mesh>
+        </group>
+
+        {FARM_TREES.map((t) => {
+          const [x, z] = at([t.x, t.z]);
+          return <Tree key={`${t.x}_${t.z}`} x={x} z={z} scale={t.scale} type={t.type} />;
+        })}
+
+        {/* Livestock pasture & barn (moves as one piece) */}
+        <group position={[FARM_SITES.ranch[0] + ranchDx, 0, FARM_SITES.ranch[1] + ranchDz]}>
+          <mesh receiveShadow position={[0, 0.03, 0]}>
+            <boxGeometry args={[6.2, 0.06, 5.4]} />
+            <meshLambertMaterial color={look.pasture} />
+          </mesh>
+          {[
+            [0, 2.7, 6.2, 0.12],
+            [0, -2.7, 6.2, 0.12],
+            [3.1, 0, 0.12, 5.4],
+            [-3.1, 0, 0.12, 5.4],
+          ].map(([x, z, w, d]) => (
+            <mesh key={`${x}_${z}`} castShadow position={[x, 0.35, z]}>
+              <boxGeometry args={[w, 0.45, d]} />
+              <meshLambertMaterial color="#92400e" />
+            </mesh>
+          ))}
+          <group position={[BARN_OFFSET[0], 0, BARN_OFFSET[1]]}>
+            <mesh castShadow receiveShadow position={[0, 1.35, 0]} {...barn}>
+              <boxGeometry args={[3.4, 2.7, 2.6]} />
+              <meshLambertMaterial color="#dc2626" />
+            </mesh>
+            <mesh
+              castShadow
+              position={[0, 3.2, 0]}
+              rotation={[0, Math.PI / 4, 0]}
+              {...barn}
+            >
+              <coneGeometry args={[2.9, 1.5, 4]} />
+              <meshLambertMaterial color="#7f1d1d" />
+            </mesh>
+          </group>
+        </group>
+      </StaticMerge>
 
       {animals.map((animal) => (
         <AnimalMesh key={animal.id} animal={animal} offset={[ranchDx, ranchDz]} />
       ))}
 
       {/* Player-placed decorations (hidden while being moved: the ghost shows instead) */}
-      {Object.entries(decorPlacements)
-        .filter(([id]) => ownedCosmetics.includes(id) && placingDecor?.id !== id)
-        .map(([id, placement]) => (
-          <PlacedDecor key={id} id={id} placement={placement} />
-        ))}
+      <StaticMerge>
+        {Object.entries(decorPlacements)
+          .filter(([id]) => ownedCosmetics.includes(id) && placingDecor?.id !== id)
+          .map(([id, placement]) => (
+            <PlacedDecor key={id} id={id} placement={placement} />
+          ))}
+      </StaticMerge>
 
       {(Object.keys(machines) as MachineId[])
         .filter((id) => decorPlacements[id] && placingDecor?.id !== id)

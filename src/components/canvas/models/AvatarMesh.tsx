@@ -7,6 +7,7 @@ import { CropId, PlayerCosmetics, ToolId } from "@/types/game";
 import { CROPS } from "@/config/crops";
 import { useGameStore } from "@/store/useGameStore";
 import { SafeGLTFModel } from "./GLTFModel";
+import { ANIMATED, StaticMerge } from "../StaticMerge";
 
 // Per-frame animation input, mutated by whoever drives the avatar (player, resident or remote peer)
 export interface AvatarMotion {
@@ -1050,6 +1051,7 @@ function Hat({ id }: { id: string }) {
           ref={haloRef}
           position={[0, 0.28, 0]}
           rotation={[Math.PI / 2, 0, 0]}
+          userData={ANIMATED}
         >
           <torusGeometry args={[0.26, 0.045, 8, 24]} />
           <meshBasicMaterial color="#fef08a" />
@@ -1549,6 +1551,7 @@ function Jetpack() {
               flameRefs.current[i] = el;
             }}
             position={[0, -0.3, 0]}
+            userData={ANIMATED}
           >
             <mesh position={[0, -0.1, 0]} rotation={[Math.PI, 0, 0]}>
               <coneGeometry args={[0.065, 0.22, 8]} />
@@ -1617,7 +1620,7 @@ function Balloons() {
 
   return (
     <group>
-      <group ref={groupRef}>
+      <group ref={groupRef} userData={ANIMATED}>
         {BALLOONS.map(({ at, color }) => (
           <group key={color} position={at}>
             <mesh scale={[1, 1.15, 1]}>
@@ -1748,6 +1751,7 @@ function SeaTurtle() {
             flipperRefs.current[i] = el;
           }}
           position={[side * 0.2, 0.13, 0.14]}
+          userData={ANIMATED}
         >
           <Part size={[0.2, 0.03, 0.09]} at={[side * 0.1, 0, 0]} color="#86efac" />
         </group>
@@ -1900,7 +1904,7 @@ function LuckyCat() {
       {/* Left paw holding a gold coin, right paw beckoning */}
       <Part size={[0.08, 0.14, 0.1]} at={[-0.12, 0.19, 0.14]} color="#f8fafc" />
       <Part size={[0.16, 0.1, 0.02]} at={[-0.05, 0.19, 0.2]} color="#facc15" />
-      <group ref={pawRef} position={[0.14, 0.32, 0.08]}>
+      <group ref={pawRef} position={[0.14, 0.32, 0.08]} userData={ANIMATED}>
         <Part size={[0.08, 0.2, 0.08]} at={[0, 0.1, 0]} color="#f8fafc" />
         <Part size={[0.06, 0.04, 0.02]} at={[0, 0.17, 0.04]} color="#fda4af" />
       </group>
@@ -2018,6 +2022,7 @@ function BatPet() {
           key={side}
           ref={side === 1 ? wingRRef : wingLRef}
           position={[side * 0.15, 0.02, 0]}
+          userData={ANIMATED}
         >
           <mesh
             geometry={wing}
@@ -2176,8 +2181,8 @@ export function AvatarMesh({
   toolTier,
   castShadow = true,
 }: AvatarMeshProps) {
-  const leftLegRef = useRef<THREE.Mesh>(null);
-  const rightLegRef = useRef<THREE.Mesh>(null);
+  const leftLegRef = useRef<THREE.Group>(null);
+  const rightLegRef = useRef<THREE.Group>(null);
   const rightArmRef = useRef<THREE.Group>(null);
   const wingLRef = useRef<THREE.Group>(null);
   const wingRRef = useRef<THREE.Group>(null);
@@ -2220,6 +2225,8 @@ export function AvatarMesh({
     }
   });
 
+  // Body, head, hat and back item are merged into a few draw calls (see StaticMerge); what swings (the legs, the tool
+  // arm, wings and pet) is merged on its own, inside the group that moves it
   return (
     <group>
       {useGlbModels && (
@@ -2231,71 +2238,87 @@ export function AvatarMesh({
         />
       )}
 
-      <mesh ref={leftLegRef} castShadow={castShadow} position={[-0.15, 0.225, 0]}>
-        <boxGeometry args={[0.22, 0.45, 0.22]} />
-        <meshLambertMaterial color={base.legs} />
-        <OutfitLeg id={outfitId} />
-      </mesh>
-      <mesh ref={rightLegRef} castShadow={castShadow} position={[0.15, 0.225, 0]}>
-        <boxGeometry args={[0.22, 0.45, 0.22]} />
-        <meshLambertMaterial color={base.legs} />
-        <OutfitLeg id={outfitId} />
-      </mesh>
+      <StaticMerge>
+        {[leftLegRef, rightLegRef].map((legRef, i) => (
+          <group
+            key={i}
+            ref={legRef}
+            position={[i === 0 ? -0.15 : 0.15, 0.225, 0]}
+            userData={ANIMATED}
+          >
+            <StaticMerge>
+              <mesh castShadow={castShadow}>
+                <boxGeometry args={[0.22, 0.45, 0.22]} />
+                <meshLambertMaterial color={base.legs} />
+              </mesh>
+              <OutfitLeg id={outfitId} />
+            </StaticMerge>
+          </group>
+        ))}
 
-      <mesh castShadow={castShadow} position={[0, 0.74, 0]}>
-        <boxGeometry args={[0.58, 0.62, 0.36]} />
-        <meshLambertMaterial color={base.torso} />
-      </mesh>
-      <OutfitBody id={outfitId} />
-
-      <mesh castShadow={castShadow} position={[0, 1.32, 0]}>
-        <boxGeometry args={[0.46, 0.46, 0.46]} />
-        <meshLambertMaterial color={SKIN} />
-      </mesh>
-      {[-0.11, 0.11].map((x) => (
-        <mesh key={x} position={[x, 1.34, 0.23]}>
-          <boxGeometry args={[0.06, 0.08, 0.04]} />
-          <meshBasicMaterial color="#1e293b" />
+        <mesh castShadow={castShadow} position={[0, 0.74, 0]}>
+          <boxGeometry args={[0.58, 0.62, 0.36]} />
+          <meshLambertMaterial color={base.torso} />
         </mesh>
-      ))}
+        <OutfitBody id={outfitId} />
 
-      <mesh position={[-0.39, 0.76, 0]}>
-        <boxGeometry args={[0.18, 0.48, 0.18]} />
-        <meshLambertMaterial color={base.arms} />
-        <OutfitArm id={outfitId} />
-      </mesh>
-      <group ref={rightArmRef} position={[0.39, 0.98, 0]}>
-        <mesh position={[0, -0.22, 0]}>
+        <mesh castShadow={castShadow} position={[0, 1.32, 0]}>
+          <boxGeometry args={[0.46, 0.46, 0.46]} />
+          <meshLambertMaterial color={SKIN} />
+        </mesh>
+        {[-0.11, 0.11].map((x) => (
+          <mesh key={x} position={[x, 1.34, 0.23]}>
+            <boxGeometry args={[0.06, 0.08, 0.04]} />
+            <meshBasicMaterial color="#1e293b" />
+          </mesh>
+        ))}
+
+        <mesh position={[-0.39, 0.76, 0]}>
           <boxGeometry args={[0.18, 0.48, 0.18]} />
           <meshLambertMaterial color={base.arms} />
           <OutfitArm id={outfitId} />
         </mesh>
-        <group position={[0, -0.4, 0.25]}>
-          {tool && <HeldTool tool={tool} tier={toolTier} />}
+        <group ref={rightArmRef} position={[0.39, 0.98, 0]} userData={ANIMATED}>
+          <StaticMerge>
+            <mesh position={[0, -0.22, 0]}>
+              <boxGeometry args={[0.18, 0.48, 0.18]} />
+              <meshLambertMaterial color={base.arms} />
+              <OutfitArm id={outfitId} />
+            </mesh>
+            <group position={[0, -0.4, 0.25]}>
+              {tool && <HeldTool tool={tool} tier={toolTier} />}
+            </group>
+          </StaticMerge>
         </group>
-      </group>
 
-      <group position={[0, 1.55, 0]}>
-        <Hat id={cosmetics.hat} />
-      </group>
-
-      <BackItem id={cosmetics.wing} />
-      {hasWings && (
-        <>
-          <group ref={wingLRef} position={[-0.14, 0.9, -0.2]}>
-            <Wing id={cosmetics.wing} side={-1} />
-          </group>
-          <group ref={wingRRef} position={[0.14, 0.9, -0.2]}>
-            <Wing id={cosmetics.wing} side={1} />
-          </group>
-        </>
-      )}
-
-      {hasPet && (
-        <group ref={petRef} position={[-0.85, 0, -0.75]}>
-          <Pet id={cosmetics.pet} />
+        <group position={[0, 1.55, 0]}>
+          <Hat id={cosmetics.hat} />
         </group>
-      )}
+
+        <BackItem id={cosmetics.wing} />
+        {hasWings && (
+          <>
+            <group ref={wingLRef} position={[-0.14, 0.9, -0.2]} userData={ANIMATED}>
+              <StaticMerge>
+                <Wing id={cosmetics.wing} side={-1} />
+              </StaticMerge>
+            </group>
+            <group ref={wingRRef} position={[0.14, 0.9, -0.2]} userData={ANIMATED}>
+              <StaticMerge>
+                <Wing id={cosmetics.wing} side={1} />
+              </StaticMerge>
+            </group>
+          </>
+        )}
+
+        {hasPet && (
+          <group ref={petRef} position={[-0.85, 0, -0.75]} userData={ANIMATED}>
+            <StaticMerge>
+              <Pet id={cosmetics.pet} />
+            </StaticMerge>
+          </group>
+        )}
+      </StaticMerge>
     </group>
   );
 }

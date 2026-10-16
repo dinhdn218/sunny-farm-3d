@@ -2,7 +2,7 @@
 
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html } from '@react-three/drei';
+import { Html } from '../Html';
 import * as THREE from 'three';
 import { SNACK_PRICE, useGameStore } from '@/store/useGameStore';
 import { interactable } from '@/lib/interact';
@@ -12,6 +12,7 @@ import { SNACKS, ZONE_SPOTS } from '@/config/zones';
 import { beachFinds } from '@/lib/forage';
 import { ForageId } from '@/types/game';
 import { Tree } from '../environment/Props';
+import { ANIMATED, StaticMerge } from '../StaticMerge';
 
 const SPOT = FISHING_SPOTS.beach;
 
@@ -187,7 +188,7 @@ function BeachFind({ spot, item }: { spot: number; item: ForageId }) {
           </mesh>
         </group>
       )}
-      <mesh ref={sparkleRef} position={[0, 0.55, 0]} rotation={[0, 0, Math.PI / 4]}>
+      <mesh ref={sparkleRef} position={[0, 0.55, 0]} rotation={[0, 0, Math.PI / 4]} userData={ANIMATED}>
         <octahedronGeometry args={[0.09, 0]} />
         <meshBasicMaterial color="#fef08a" />
       </mesh>
@@ -290,8 +291,9 @@ export function BeachWorld() {
     }
   });
 
+  // The beach's props are merged into a few draw calls (see StaticMerge)
   return (
-    <group>
+    <StaticMerge>
       {/* Wet sand along the waterline */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
         <ringGeometry args={[24.8, 27.9, 64]} />
@@ -309,7 +311,7 @@ export function BeachWorld() {
           <meshLambertMaterial color="#78350f" />
         </mesh>
       ))}
-      <group ref={yachtRef} position={[29.5, -0.8, 13]}>
+      <group ref={yachtRef} position={[29.5, -0.8, 13]} userData={ANIMATED}>
         <mesh position={[0, 0.6, 0]}>
           <boxGeometry args={[2.6, 1.2, 5.8]} />
           <meshLambertMaterial color="#ffffff" />
@@ -366,6 +368,6 @@ export function BeachWorld() {
       <CoconutStand />
       <BeachFinds />
       <FishingJetty />
-    </group>
+    </StaticMerge>
   );
 }
