@@ -125,7 +125,7 @@ export function Hotbar() {
         <>
           {/* Every crop's seeds while the seed slot is in hand */}
           {holdingSeeds && (
-            <div className="pointer-events-auto mb-1.5 flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-teal-950/85 p-1 shadow-lg">
+            <div className="pointer-events-auto mb-1.5 flex max-w-full gap-1 overflow-x-auto rounded-2xl bg-amber-950/85 p-1 shadow-lg">
               {CROP_LIST.map((crop) => {
                 const count = seeds[crop.id] || 0;
                 return (
@@ -135,7 +135,7 @@ export function Hotbar() {
                     title={`Hạt ${crop.name}: còn ${count}`}
                     aria-label={`Hạt ${crop.name}, còn ${count}`}
                     className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg ${
-                      crop.id === seedCrop ? 'bg-yellow-300 ring-2 ring-white' : 'bg-teal-800/80 hover:bg-teal-700'
+                      crop.id === seedCrop ? 'bg-yellow-300 ring-2 ring-white' : 'bg-amber-800/80 hover:bg-amber-700'
                     } ${count > 0 ? '' : 'opacity-50'}`}
                   >
                     {crop.icon}
@@ -147,7 +147,7 @@ export function Hotbar() {
               })}
             </div>
           )}
-          <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-teal-300/80 bg-teal-950/90 px-3.5 py-1 text-xs font-extrabold text-teal-50 shadow-lg">
+          <div className="pointer-events-auto mb-1.5 flex items-center gap-2 rounded-full border-2 border-amber-300/80 bg-amber-950/90 px-3.5 py-1 text-xs font-extrabold text-amber-50 shadow-lg">
             <span>
               {active.icon} {active.name}: {active.desc}
             </span>

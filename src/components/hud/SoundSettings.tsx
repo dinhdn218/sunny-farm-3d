@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
+import { SYSTEM_BUTTON } from './hudStyles';
 
 function VolumeSlider({
   label,
@@ -69,7 +70,7 @@ export function SoundSettings() {
       <button
         onClick={() => setOpen(!open)}
         title="Âm thanh & nhạc nền"
-        className="game-btn flex h-8 w-8 items-center justify-center rounded-xl border-2 border-teal-900 bg-teal-600 text-sm text-white hover:bg-teal-500 md:h-9 md:w-9"
+        className={`${SYSTEM_BUTTON} w-8`}
       >
         <i className={`fa-solid ${silent ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
       </button>

@@ -17,12 +17,14 @@ import { BUFFS } from '@/config/food';
 import { ITEMS } from '@/config/items';
 import { activeBuff, maxEnergyFor } from '@/lib/food';
 import { SoundSettings } from './SoundSettings';
+import { SYSTEM_BUTTON } from './hudStyles';
 
-// The small buttons at the far end, in the bars' turquoise (players, photos, sound: see SoundSettings)
-const SYSTEM_BUTTON =
-  'game-btn relative flex h-8 items-center justify-center rounded-xl border-2 border-teal-900 bg-teal-600 text-sm text-white hover:bg-teal-500 md:h-9';
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-yellow-400';
 
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-yellow-300';
+// Groove between the groups on a bar
+function Groove({ className = '' }: { className?: string }) {
+  return <span aria-hidden className={`w-0.5 shrink-0 self-stretch rounded-full bg-amber-900/20 ${className}`} />;
+}
 
 function Meter({ label, value, max, fill }: { label: string; value: number; max: number; fill: string }) {
   return (
@@ -33,7 +35,7 @@ function Meter({ label, value, max, fill }: { label: string; value: number; max:
           {value}/{max}
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-teal-950/40 p-0.5">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-amber-900/15 p-0.5">
         <div
           className={`h-full rounded-full bg-gradient-to-r ${fill} transition-all duration-300`}
           style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
@@ -43,8 +45,8 @@ function Meter({ label, value, max, fill }: { label: string; value: number; max:
   );
 }
 
-// Where and when: the zone (opens the map), day, season and weather, next to the buttons that change the time
-function TimeCard() {
+// Where and when: the zone (opens the map), day, season and weather, next to the buttons that move time on
+function WhereWhen() {
   const day = useGameStore((s) => s.day);
   const timePhaseIndex = useGameStore((s) => s.timePhaseIndex);
   const currentWorld = useGameStore((s) => s.currentWorld);
@@ -56,34 +58,32 @@ function TimeCard() {
   const weather = WEATHERS[weatherOf(day)];
 
   return (
-    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-1.5 py-1.5 sm:gap-2.5 sm:px-2">
+    <div className="flex min-w-0 items-center gap-1.5">
       <button
         onClick={() => setActiveModal('map')}
-        title="Bản Đồ Thế Giới (phím M)"
-        className={`flex items-center gap-2 rounded-xl text-left transition hover:brightness-105 active:scale-95 sm:gap-2.5 ${FOCUS_RING}`}
+        title={`Bản Đồ Thế Giới (phím M) • ${season.name} • ${weather.name}`}
+        className={`flex min-w-0 items-center gap-2 rounded-xl text-left transition hover:brightness-105 active:scale-95 ${FOCUS_RING}`}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-sky-700 text-lg text-white shadow-inner">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-sky-600 text-base text-white shadow-inner">
           {worldCfg.icon}
         </span>
-        <span className="block">
-          <span className="block text-sm font-black leading-none sm:text-base">
-            {worldCfg.name}
-          </span>
-          <span className="mt-1 block text-[11px] font-bold leading-tight text-teal-50">
+        <span className="block min-w-0">
+          <span className="block truncate text-[13px] font-black leading-tight">{worldCfg.name}</span>
+          <span className="block truncate text-[10px] font-bold leading-tight text-amber-800">
             Ngày {day} • {TIME_PHASES[timePhaseIndex].label}
           </span>
-          <span className="block text-[10px] font-bold leading-tight text-teal-50">
-            {season.icon} {season.name} {dayInSeason(day)}/{SEASON_DAYS} • {weather.icon} {weather.name}
+          <span className="block truncate text-[10px] font-bold leading-tight text-amber-800">
+            {season.icon} {season.name} {dayInSeason(day)}/{SEASON_DAYS} • {weather.icon}
+            <span className="hidden sm:inline"> {weather.name}</span>
           </span>
         </span>
       </button>
-      <span aria-hidden className="w-0.5 self-stretch rounded-full bg-black/30" />
-      <div className="flex gap-1 md:flex-col">
+      <div className="flex shrink-0 flex-col gap-1">
         <button
           onClick={cycleTimeOfDay}
           title="Đổi giờ: Sáng → Trưa → Hoàng Hôn → Đêm"
           aria-label="Đổi giờ trong ngày"
-          className="game-btn flex h-8 w-8 items-center justify-center rounded-lg border-2 border-indigo-950 bg-indigo-600 text-sm hover:bg-indigo-500 md:h-[22px] md:text-xs"
+          className="game-btn flex h-[22px] w-8 items-center justify-center rounded-lg border-2 border-indigo-900 bg-indigo-500 text-[11px] hover:bg-indigo-400"
         >
           🌤️
         </button>
@@ -91,7 +91,7 @@ function TimeCard() {
           onClick={nextDay}
           title="Ngủ qua ngày mới"
           aria-label="Ngủ qua ngày mới"
-          className="game-btn flex h-8 w-8 items-center justify-center rounded-lg border-2 border-purple-950 bg-purple-700 text-sm hover:bg-purple-600 md:h-[22px] md:text-xs"
+          className="game-btn flex h-[22px] w-8 items-center justify-center rounded-lg border-2 border-purple-900 bg-purple-600 text-[11px] hover:bg-purple-500"
         >
           🛌
         </button>
@@ -100,7 +100,7 @@ function TimeCard() {
   );
 }
 
-// The dish eaten today, in the corner of the farmer's card: a tap opens the bag, which says what it does
+// The dish eaten today, in the corner of the farmer's meters: a tap opens the bag, which says what it does
 function BuffBadge() {
   const buff = useGameStore((s) => (activeBuff(s.buff, s.day) ? s.buff : null));
   const setActiveModal = useGameStore((s) => s.setActiveModal);
@@ -120,7 +120,7 @@ function BuffBadge() {
 }
 
 // The farmer: level and XP (opens the daily gift), stamina and the water left in the can
-function FarmerCard() {
+function Farmer() {
   const xp = useGameStore((s) => s.xp);
   const energy = useGameStore((s) => s.energy);
   const maxEnergy = useGameStore((s) => maxEnergyFor(s.buff, s.day));
@@ -134,30 +134,30 @@ function FarmerCard() {
   const title = levelTitle(level);
 
   return (
-    <div className="bar-panel bar-ink pointer-events-auto relative flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-2.5 sm:px-2.5">
+    <div className="relative flex shrink-0 items-center gap-2">
       <button
         onClick={() => setActiveModal('dailyGift')}
         title={`${title} • ${need ? `${into}/${need} XP` : 'Cấp tối đa'} • Quà hằng ngày`}
         aria-label={`Cấp ${level}, ${title}: cấp độ và quà hằng ngày`}
-        className={`relative flex shrink-0 flex-col items-center gap-1 rounded-xl transition hover:brightness-105 active:scale-95 ${FOCUS_RING}`}
+        className={`relative flex shrink-0 flex-col items-center gap-0.5 rounded-xl transition hover:brightness-105 active:scale-95 ${FOCUS_RING}`}
       >
-        <span className="flex h-9 w-9 flex-col items-center justify-center rounded-xl bg-orange-500 text-white shadow-inner">
-          <span className="text-[8px] font-black leading-none">CẤP</span>
+        <span className="flex h-8 w-8 flex-col items-center justify-center rounded-xl bg-orange-500 text-white shadow-inner">
+          <span className="text-[7px] font-black leading-none">CẤP</span>
           <span className="text-sm font-black leading-none">{level}</span>
         </span>
-        <span className="block h-1.5 w-9 overflow-hidden rounded-full bg-teal-950/40">
+        <span className="block h-1.5 w-8 overflow-hidden rounded-full bg-amber-900/15">
           <span
             className="block h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-500"
             style={{ width: need ? `${(into / need) * 100}%` : '100%' }}
           />
         </span>
         {giftReady && (
-          <span className="absolute -right-2.5 -top-2.5 animate-bounce text-base" title="Có quà hôm nay!">
+          <span className="absolute -right-2 -top-2.5 animate-bounce text-sm" title="Có quà hôm nay!">
             🎁
           </span>
         )}
       </button>
-      <div className="flex w-24 flex-col gap-1 sm:w-32">
+      <div className="flex w-24 flex-col gap-0.5 sm:w-28">
         <Meter label="⚡ Thể lực" value={energy} max={maxEnergy} fill="from-lime-500 to-emerald-500" />
         <Meter label="💧 Bình tưới" value={water} max={maxWater} fill="from-sky-400 to-blue-600" />
       </div>
@@ -169,8 +169,8 @@ function FarmerCard() {
 function Coin({ icon, label, value, valueClass }: { icon: string; label: string; value: number; valueClass: string }) {
   return (
     <div className="flex items-center gap-1.5" title={label} aria-label={`${label}: ${value}`}>
-      <span className="text-sm leading-none sm:text-base">{icon}</span>
-      <span className={`text-sm font-black leading-tight tabular-nums sm:text-base ${valueClass}`}>{value}</span>
+      <span className="text-sm leading-none">{icon}</span>
+      <span className={`text-sm font-black leading-tight tabular-nums ${valueClass}`}>{value}</span>
     </div>
   );
 }
@@ -184,19 +184,19 @@ function Wallet() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
 
   return (
-    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2.5 rounded-2xl px-2.5 py-1.5">
+    <div className="flex items-center gap-2">
       <div className="flex flex-col gap-0.5">
-        <Coin icon="🪙" label="Vàng" value={gold} valueClass="text-yellow-200" />
-        <Coin icon="💎" label="Kim Cương" value={gems} valueClass="text-sky-100" />
+        <Coin icon="🪙" label="Vàng" value={gold} valueClass="text-amber-700" />
+        <Coin icon="💎" label="Kim Cương" value={gems} valueClass="text-sky-700" />
       </div>
       {festival && (
         <button
           onClick={() => setActiveModal('festivalShop')}
           title={`${festival.token.name} ${festival.name}: ${tokens} (mở ${festival.shop.name})`}
           aria-label={`${festival.token.name}: ${tokens}, mở ${festival.shop.name}`}
-          className={`game-btn flex items-center gap-1 self-center rounded-xl border-2 border-black/30 px-2 py-1.5 text-white ${festival.ui.button}`}
+          className={`game-btn flex items-center gap-1 self-center rounded-xl border-2 border-black/30 px-2 py-1 text-white ${festival.ui.button}`}
         >
-          <span className="text-base leading-none">{festival.token.icon}</span>
+          <span className="text-sm leading-none">{festival.token.icon}</span>
           <span className="text-sm font-black leading-none tabular-nums">{tokens}</span>
         </button>
       )}
@@ -216,7 +216,8 @@ function Badge({ children, bounce = false }: { children: ReactNode; bounce?: boo
   );
 }
 
-// A menu tile: icon over a short label (icon only on phones); the full name and shortcut are in the tooltip
+// A menu tile: icon over a short label where the bar has room for it (1024–1279px, and from 1440px), the icon
+// alone elsewhere; the full name and shortcut are in the tooltip
 function MenuButton({
   icon,
   label,
@@ -239,10 +240,10 @@ function MenuButton({
       onClick={onClick}
       title={hotkey ? `${name} (phím ${hotkey})` : name}
       aria-label={name}
-      className={`game-btn relative flex h-10 min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl border-2 sm:h-[50px] sm:min-w-[54px] sm:flex-none sm:px-1 ${color}`}
+      className={`game-btn relative flex h-9 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border-2 sm:h-[42px] sm:min-w-[40px] sm:flex-none sm:px-1 lg:min-w-[50px] xl:min-w-[40px] min-[1440px]:min-w-[50px] ${color}`}
     >
-      <span className="text-lg leading-none">{icon}</span>
-      <span className="hidden whitespace-nowrap text-[10px] font-extrabold leading-none [text-shadow:0_1px_0_rgba(0,0,0,0.2)] sm:block">
+      <span className="text-base leading-none sm:text-lg">{icon}</span>
+      <span className="hidden whitespace-nowrap text-[10px] font-extrabold leading-none [text-shadow:0_1px_0_rgba(0,0,0,0.2)] lg:block xl:hidden min-[1440px]:block">
         {label}
       </span>
       {badge}
@@ -250,13 +251,8 @@ function MenuButton({
   );
 }
 
-// Groove between the groups on the tray
-const TrayDivider = () => (
-  <span aria-hidden className="w-0.5 shrink-0 self-stretch rounded-full bg-black/30 sm:mx-0.5" />
-);
-
-// The game's menus on one tray: getting around, the farm, shopping
-function MenuTray() {
+// The game's menus: getting around, the farm, shopping
+function MenuTiles() {
   const quests = useGameStore((s) => s.quests);
   const storedCount = useGameStore((s) => countItems(s.items) + countItems(s.shippingBin));
   // Orders the bag already holds everything for
@@ -268,10 +264,7 @@ function MenuTray() {
   const hasClaimable = visibleQuests(quests, festival).some((q) => !q.claimed && q.progress >= q.target);
 
   return (
-    <nav
-      aria-label="Menu trò chơi"
-      className="bar-panel pointer-events-auto flex w-full items-stretch gap-1 rounded-2xl p-1 sm:w-auto sm:p-1.5"
-    >
+    <>
       <MenuButton
         icon="🗺️"
         label="Bản Đồ"
@@ -298,7 +291,7 @@ function MenuTray() {
         onClick={() => setActiveModal('orders')}
         badge={deliverable > 0 && <Badge bounce>{deliverable}</Badge>}
       />
-      <TrayDivider />
+      <Groove className="sm:mx-0.5" />
       <MenuButton
         icon="🎒"
         label="Kho"
@@ -330,7 +323,7 @@ function MenuTray() {
         color="border-lime-950 bg-lime-700 text-white hover:bg-lime-600"
         onClick={() => openExpand()}
       />
-      <TrayDivider />
+      <Groove className="sm:mx-0.5" />
       <MenuButton
         icon="🌱"
         label="Hạt Giống"
@@ -347,11 +340,11 @@ function MenuTray() {
         color="border-pink-950 bg-pink-600 text-white hover:bg-pink-500"
         onClick={() => setActiveModal('wardrobe')}
       />
-    </nav>
+    </>
   );
 }
 
-// Quiet utilities: players online & profile, mail, leaderboards, photo mode, sound. A column in the corner on phones.
+// Quiet utilities: players online & profile, mail, leaderboards, photo mode, sound
 function SystemButtons() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
@@ -364,7 +357,7 @@ function SystemButtons() {
   const onlineCount = 1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
 
   return (
-    <div className="pointer-events-auto absolute right-2 top-2 flex flex-col items-end gap-1 sm:right-3 sm:top-3 md:static md:flex-row md:items-center">
+    <>
       <button
         onClick={() => setActiveModal('auth')}
         title={`Hồ sơ & sảnh người chơi: ${onlineCount} người đang online`}
@@ -386,7 +379,7 @@ function SystemButtons() {
         onClick={() => setActiveModal('mail')}
         title="Hộp Thư"
         aria-label={`Hộp thư, ${newMail} thư mới`}
-        className={`${SYSTEM_BUTTON} w-8 md:w-9`}
+        className={`${SYSTEM_BUTTON} w-8`}
       >
         ✉️
         {newMail > 0 && <Badge>{newMail}</Badge>}
@@ -395,7 +388,7 @@ function SystemButtons() {
         onClick={() => setActiveModal('leaderboard')}
         title="Bảng Xếp Hạng"
         aria-label="Bảng xếp hạng"
-        className={`${SYSTEM_BUTTON} w-8 md:w-9`}
+        className={`${SYSTEM_BUTTON} w-8`}
       >
         🏆
       </button>
@@ -403,19 +396,33 @@ function SystemButtons() {
         onClick={togglePhotoMode}
         title="Chế độ chụp ảnh (phím P)"
         aria-label="Chế độ chụp ảnh"
-        className={`${SYSTEM_BUTTON} w-8 md:w-9`}
+        className={`${SYSTEM_BUTTON} w-8`}
       >
         📷
       </button>
       <SoundSettings />
-    </div>
+    </>
   );
 }
+
+// The bars in the game's parchment. Phones: status, then purse and utilities, then the menus, a row each.
+// From sm two bars of one width, one over the other: status and purse, then menus and utilities.
+// From xl the two bars sit side by side on one row.
+const HEADER = [
+  'pointer-events-none fixed inset-x-0 top-0 z-20 grid gap-x-2 gap-y-1.5 p-2',
+  "grid-cols-[minmax(0,1fr)_auto] [grid-template-areas:'status_status'_'wallet_system'_'menu_menu']",
+  "sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:gap-x-0 sm:p-3 sm:[grid-template-areas:'status_wallet_.'_'menu_system_.']",
+  "xl:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] xl:[grid-template-areas:'status_wallet_._menu_system']",
+].join(' ');
+
+// The right half of a joined bar: no left edge, and none of the soft shadow, which would darken the seam
+const JOINED_RIGHT =
+  'sm:rounded-l-none sm:border-l-0 sm:pl-0 sm:shadow-[0_6px_0_var(--bar-drop),inset_0_2px_0_rgba(255,255,255,0.4)]';
 
 export function TopBar() {
   const headerRef = useRef<HTMLElement>(null);
 
-  // The quest tracker sits just below the bar, however many rows it wraps into
+  // The quest tracker sits just below the bar, however many rows it takes
   useEffect(() => {
     const header = headerRef.current;
     if (!header) return;
@@ -427,20 +434,24 @@ export function TopBar() {
   }, []);
 
   return (
-    <header
-      ref={headerRef}
-      className="pointer-events-none fixed left-0 right-0 top-0 z-20 flex flex-wrap items-start gap-2 p-2 sm:p-3 md:gap-3"
-    >
-      {/* Status on the left; on phones it leaves room for the system buttons in the corner */}
-      <div className="flex flex-wrap items-stretch gap-2 pr-12 md:pr-0">
-        <TimeCard />
-        <FarmerCard />
+    <header ref={headerRef} className={HEADER}>
+      <div className="bar-panel bar-ink pointer-events-auto flex min-w-0 items-center gap-2 rounded-2xl px-2 py-1 [grid-area:status] sm:rounded-r-none sm:border-r-0">
+        <WhereWhen />
+        <Groove />
+        <Farmer />
+      </div>
+      <div className={`bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1 [grid-area:wallet] ${JOINED_RIGHT}`}>
+        <Groove className="hidden sm:block" />
         <Wallet />
       </div>
-
-      {/* Menus and utilities on the right; on phones the menus take a row of their own */}
-      <div className="flex w-full items-center justify-center gap-3 md:ml-auto md:w-auto">
-        <MenuTray />
+      <nav
+        aria-label="Menu trò chơi"
+        className="bar-panel pointer-events-auto flex items-stretch gap-1 rounded-2xl p-1 [grid-area:menu] sm:rounded-r-none sm:border-r-0"
+      >
+        <MenuTiles />
+      </nav>
+      <div className={`bar-panel pointer-events-auto flex items-center gap-1 rounded-2xl p-1 [grid-area:system] ${JOINED_RIGHT}`}>
+        <Groove className="mr-0.5 hidden sm:block" />
         <SystemButtons />
       </div>
     </header>

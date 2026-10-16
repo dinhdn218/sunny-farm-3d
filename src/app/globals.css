@@ -28,13 +28,13 @@ canvas {
   box-shadow: 0 6px 0 #422006, 0 10px 20px rgba(0, 0, 0, 0.45),
     inset 0 2px 0 rgba(255, 255, 255, 0.25);
 }
-/* Menu tray, hotbar and build bar: the game's turquoise sky colour, a little deeper so the bar
-   reads as a solid object over the sky and the grass. Change these four to recolour every bar. */
+/* Top bar, hotbar and build bar: the parchment of the dialogs (see .parchment-panel), so the bars and
+   the windows they open read as one set. Change these four to recolour every bar. */
 :root {
-  --bar-top: #2dd4bf;
-  --bar-bottom: #0d9488;
-  --bar-edge: #115e59;
-  --bar-drop: #134e4a;
+  --bar-top: #fef9c3;
+  --bar-bottom: #fef08a;
+  --bar-edge: #a16207;
+  --bar-drop: #713f12;
 }
 .bar-panel {
   background: linear-gradient(180deg, var(--bar-top) 0%, var(--bar-bottom) 100%);
@@ -42,10 +42,10 @@ canvas {
   box-shadow: 0 6px 0 var(--bar-drop), 0 10px 20px rgba(0, 0, 0, 0.3),
     inset 0 2px 0 rgba(255, 255, 255, 0.4);
 }
-/* Writing straight on a bar: white with a dark rim so it stays legible on the light top of the gradient */
+/* Writing straight on a bar: the dark brown of the dialogs' text */
 .bar-ink {
-  color: #fff;
-  text-shadow: 0 1px 0 var(--bar-drop), 0 0 2px var(--bar-edge);
+  color: #422006;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 .parchment-panel {
   background: linear-gradient(180deg, #fef9c3 0%, #fef08a 100%);
@@ -77,7 +77,7 @@ canvas {
 }
 .hotbar-slot {
   transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
-  background: rgba(254, 249, 195, 0.94);
+  background: #fffdf5;
   border: 3px solid var(--bar-edge);
   box-shadow: 0 4px 0 var(--bar-drop);
 }
