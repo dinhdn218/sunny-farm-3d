@@ -5,6 +5,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { WORLDS } from '@/config/worlds';
 import { TIME_PHASES } from '@/config/time';
 import { npcPresetsFor } from '@/config/npcs';
+import { VISITORS_PER_WORLD } from '@/config/visitors';
 import { countItems, hasItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
@@ -354,7 +355,9 @@ function SystemButtons() {
   const togglePhotoMode = useGameStore((s) => s.togglePhotoMode);
   // Letters still unread, or with a gift not yet claimed
   const newMail = useGameStore((s) => s.mail.filter((l) => !l.read || (l.gift && !l.claimed)).length);
-  const onlineCount = 1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length;
+  // Everyone about in this zone: you, other players, the residents and the visitors strolling round
+  const onlineCount =
+    1 + Object.keys(remotePlayers).length + npcPresetsFor(currentWorld).length + VISITORS_PER_WORLD;
 
   return (
     <>

@@ -2164,6 +2164,8 @@ interface AvatarMeshProps {
   tool?: HeldItem | null;
   // Upgrade tier of the held hoe or watering can
   toolTier?: number;
+  // Off for the crowd of visitors, who stand on a cheap blob of shade instead
+  castShadow?: boolean;
 }
 
 // Blocky character rig from the HTML version; every outfit, hat, back item and pet has its own model
@@ -2172,6 +2174,7 @@ export function AvatarMesh({
   motion,
   tool,
   toolTier,
+  castShadow = true,
 }: AvatarMeshProps) {
   const leftLegRef = useRef<THREE.Mesh>(null);
   const rightLegRef = useRef<THREE.Mesh>(null);
@@ -2228,24 +2231,24 @@ export function AvatarMesh({
         />
       )}
 
-      <mesh ref={leftLegRef} castShadow position={[-0.15, 0.225, 0]}>
+      <mesh ref={leftLegRef} castShadow={castShadow} position={[-0.15, 0.225, 0]}>
         <boxGeometry args={[0.22, 0.45, 0.22]} />
         <meshLambertMaterial color={base.legs} />
         <OutfitLeg id={outfitId} />
       </mesh>
-      <mesh ref={rightLegRef} castShadow position={[0.15, 0.225, 0]}>
+      <mesh ref={rightLegRef} castShadow={castShadow} position={[0.15, 0.225, 0]}>
         <boxGeometry args={[0.22, 0.45, 0.22]} />
         <meshLambertMaterial color={base.legs} />
         <OutfitLeg id={outfitId} />
       </mesh>
 
-      <mesh castShadow position={[0, 0.74, 0]}>
+      <mesh castShadow={castShadow} position={[0, 0.74, 0]}>
         <boxGeometry args={[0.58, 0.62, 0.36]} />
         <meshLambertMaterial color={base.torso} />
       </mesh>
       <OutfitBody id={outfitId} />
 
-      <mesh castShadow position={[0, 1.32, 0]}>
+      <mesh castShadow={castShadow} position={[0, 1.32, 0]}>
         <boxGeometry args={[0.46, 0.46, 0.46]} />
         <meshLambertMaterial color={SKIN} />
       </mesh>
