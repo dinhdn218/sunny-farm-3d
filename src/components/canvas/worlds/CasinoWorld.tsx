@@ -13,6 +13,8 @@ import { NPC_PRESETS } from '@/config/npcs';
 import { WHEEL_COLORS, WHEEL_PRIZES } from '@/config/luckyWheel';
 import { ZONE_SPOTS } from '@/config/zones';
 import { localDateKey } from '@/lib/dailyGift';
+import { activeFestival } from '@/lib/festivals';
+import { BAU_CUA_FACES } from '@/config/baucua';
 import { PlayerCosmetics } from '@/types/game';
 import { AvatarMesh } from '../models/AvatarMesh';
 import { PlayerTag } from '../PlayerTag';
@@ -246,7 +248,157 @@ function LuckyWheelBooth() {
   );
 }
 
+// The Bầu Cua mat: six squares in two rows; the gourd is drawn, there being no emoji for it
+function useBauCuaMatTexture() {
+  return useMemo(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#991b1b';
+      ctx.fillRect(0, 0, 600, 400);
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 14;
+      ctx.strokeRect(7, 7, 586, 386);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      BAU_CUA_FACES.forEach((face, i) => {
+        const x = 30 + (i % 3) * 185;
+        const y = 30 + Math.floor(i / 3) * 175;
+        const cx = x + 85;
+        const cy = y + 68;
+        ctx.fillStyle = face.color;
+        ctx.fillRect(x, y, 170, 160);
+        ctx.strokeStyle = '#fde68a';
+        ctx.lineWidth = 5;
+        ctx.strokeRect(x, y, 170, 160);
+        if (face.icon) {
+          ctx.font = '84px serif';
+          ctx.fillText(face.icon, cx, cy);
+        } else {
+          ctx.strokeStyle = '#78350f';
+          ctx.lineWidth = 6;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - 40);
+          ctx.lineTo(cx, cy - 56);
+          ctx.stroke();
+          [
+            { y: cy - 20, r: 20, color: '#84cc16' },
+            { y: cy + 16, r: 32, color: '#a3e635' },
+          ].forEach((bulb) => {
+            ctx.beginPath();
+            ctx.arc(cx, bulb.y, bulb.r, 0, Math.PI * 2);
+            ctx.fillStyle = bulb.color;
+            ctx.fill();
+          });
+        }
+        ctx.font = 'bold 30px sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(face.name.toUpperCase(), cx, y + 140);
+      });
+    }
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }, []);
+}
+
+// Stools on the near side of the Bầu Cua table
+const BAU_CUA_STOOLS = [-0.9, 0, 0.9];
+// Dice resting by the plate
+const BAU_CUA_DICE: [number, number, number][] = [
+  [0.85, 0.5, 0.55],
+  [1.1, 0.5, 0.62],
+  [0.98, 0.5, 0.36],
+];
+
+// A low red table set out by the entrance while Tết runs: the mat, the plate and the bowl for the dice
+function BauCuaTable() {
+  const texture = useBauCuaMatTexture();
+  const bowlRef = useRef<THREE.Group>(null);
+  const walkTo = useGameStore((s) => s.walkTo);
+  const setActiveModal = useGameStore((s) => s.setActiveModal);
+  const spot = ZONE_SPOTS.casinoBauCua;
+  const handlers = interactable(
+    '🎲 Bầu Cua Tôm Cá',
+    () => walkTo({ ...spot, act: () => setActiveModal('bauCua') }),
+    'Trò chơi ngày Tết • Cược tối đa 500🪙 một ván'
+  );
+
+  // Every few seconds the bowl gets a rattle, as if a round were being played
+  useFrame(() => {
+    if (!bowlRef.current) return;
+    const t = performance.now() / 1000;
+    const rattling = t % 5 < 0.8;
+    bowlRef.current.rotation.z = rattling ? Math.sin(t * 40) * 0.12 : 0;
+    bowlRef.current.position.x = 0.85 + (rattling ? Math.sin(t * 33) * 0.03 : 0);
+  });
+
+  return (
+    <group position={[spot.x, 0, spot.z]} {...handlers}>
+      <mesh castShadow receiveShadow position={[0, 0.38, 0]}>
+        <boxGeometry args={[2.8, 0.1, 1.6]} />
+        <meshLambertMaterial color="#7f1d1d" />
+      </mesh>
+      {[-1.25, 1.25].flatMap((x) =>
+        [-0.65, 0.65].map((z) => (
+          <mesh key={`${x}${z}`} castShadow position={[x, 0.17, z]}>
+            <boxGeometry args={[0.14, 0.34, 0.14]} />
+            <meshLambertMaterial color="#450a0a" />
+          </mesh>
+        ))
+      )}
+      <mesh position={[-0.4, 0.44, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[1.8, 1.2]} />
+        <meshBasicMaterial map={texture} />
+      </mesh>
+      {/* Plate with the bowl turned over it */}
+      <mesh position={[0.85, 0.45, -0.15]}>
+        <cylinderGeometry args={[0.34, 0.3, 0.04, 20]} />
+        <meshLambertMaterial color="#f8fafc" />
+      </mesh>
+      <group ref={bowlRef} position={[0.85, 0.47, -0.15]}>
+        <mesh castShadow>
+          <sphereGeometry args={[0.27, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshLambertMaterial color="#e0f2fe" side={THREE.DoubleSide} />
+        </mesh>
+        <mesh position={[0, 0.12, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.24, 0.02, 6, 20]} />
+          <meshLambertMaterial color="#38bdf8" />
+        </mesh>
+      </group>
+      {BAU_CUA_DICE.map((at, i) => (
+        <mesh key={i} castShadow position={at} rotation={[0, i * 0.7, 0]}>
+          <boxGeometry args={[0.1, 0.1, 0.1]} />
+          <meshLambertMaterial color="#ffffff" />
+        </mesh>
+      ))}
+      {BAU_CUA_STOOLS.map((x) => (
+        <group key={x} position={[x, 0, 1.25]}>
+          <mesh castShadow position={[0, 0.22, 0]}>
+            <cylinderGeometry args={[0.22, 0.22, 0.06, 12]} />
+            <meshLambertMaterial color="#dc2626" />
+          </mesh>
+          <mesh position={[0, 0.1, 0]}>
+            <cylinderGeometry args={[0.16, 0.2, 0.2, 10]} />
+            <meshLambertMaterial color="#b91c1c" />
+          </mesh>
+        </group>
+      ))}
+      <Html position={[0, 2.0, 0]} zIndexRange={[15, 0]}>
+        <div className="player-tag w-max rounded-full border border-white bg-red-600 px-2.5 py-0.5 text-[11px] font-black text-amber-100 shadow">
+          🎲 Bầu Cua Tôm Cá • Tết
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 export function CasinoWorld() {
+  // Bầu Cua comes out for Tết
+  const tet = activeFestival(localDateKey(new Date()))?.id === 'tet';
+
   return (
     <group>
       {/* Polished hall floor with a gold rim */}
@@ -340,6 +492,7 @@ export function CasinoWorld() {
       </group>
 
       <LuckyWheelBooth />
+      {tet && <BauCuaTable />}
 
       {/* Potted palms by the entrance */}
       {[-5, 5].map((x) => (

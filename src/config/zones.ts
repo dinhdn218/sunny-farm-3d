@@ -15,6 +15,8 @@ export const ZONE_SPOTS = {
   cinemaPopcorn: { x: -10, z: 1.5, reach: 2.2 },
   cinemaClaw: { x: 10.5, z: 2.5, reach: 1.9 },
   casinoWheel: { x: 0, z: -14.5, reach: 2.6 },
+  // Set out by the entrance while Tết runs
+  casinoBauCua: { x: -4.5, z: 6.5, reach: 2.0 },
 } satisfies Record<string, ZoneSpot>;
 
 // Snacks sold around town: each restores stamina (the first snack of the day is free)

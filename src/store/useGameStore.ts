@@ -4,6 +4,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
   AnimalSpecies,
+  BauCuaBets,
+  BauCuaFace,
   BugCatch,
   BuildPiece,
   BuildPieceId,
@@ -129,6 +131,7 @@ import { formatCountdown } from '@/lib/format';
 import { beachFinds } from '@/lib/forage';
 import { BEACH_SPOTS } from '@/config/forage';
 import { WHEEL_PRIZES, rollWheel } from '@/config/luckyWheel';
+import { bauCuaPayout, betProblem, rollBauCua, totalBet } from '@/lib/baucua';
 import { CLAW_PRICE, CLAW_PRIZES } from '@/config/claw';
 import { createNewGameSave } from '@/lib/newGame';
 import {
@@ -229,6 +232,7 @@ interface GameState extends SaveData {
     | 'resident'
     | 'leaderboard'
     | 'visit'
+    | 'bauCua'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -366,6 +370,9 @@ interface GameState extends SaveData {
   collectBeachFind: (spot: number) => void;
   // The casino's free daily spin: the slice it lands on (prizes paid at once), or null if already spun today
   spinLuckyWheel: () => number | null;
+  // A round of Bầu Cua at the casino while Tết runs: the bets go in, three dice are rolled and what they win
+  // is paid at once. Returns the dice, or null if the round can't be played.
+  playBauCua: (bets: BauCuaBets) => BauCuaFace[] | null;
   // A coin in the cinema's claw machine; false if short of gold
   payClaw: () => boolean;
   winClawPrize: (prize: number) => void;
@@ -2478,6 +2485,22 @@ export const useGameStore = create<GameState>()(
             seeds: nextSeeds,
           });
           return index;
+        },
+
+        // Not counted as gold earned (leaderboards, quests): it is luck, not farming
+        playBauCua: (bets) => {
+          const { gold } = get();
+          if (runningFestival()?.id !== 'tet') return null;
+          const problem = betProblem(bets, gold);
+          if (problem) {
+            soundFX.error();
+            get().showToast(`🎲 ${problem}!`, 'text-red-400');
+            return null;
+          }
+          const dice = rollBauCua();
+          set({ gold: gold - totalBet(bets) + bauCuaPayout(bets, dice) });
+          get().incrementQuest('bau_cua', 1);
+          return dice;
         },
 
         payClaw: () => {

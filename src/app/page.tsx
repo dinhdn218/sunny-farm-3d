@@ -41,6 +41,7 @@ import { CollectionModal } from '@/components/hud/modals/CollectionModal';
 import { ResidentModal } from '@/components/hud/modals/ResidentModal';
 import { LeaderboardModal } from '@/components/hud/modals/LeaderboardModal';
 import { VisitModal } from '@/components/hud/modals/VisitModal';
+import { BauCuaModal } from '@/components/hud/modals/BauCuaModal';
 import { TienLenTable } from '@/components/hud/casino/TienLenTable';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 
@@ -125,6 +126,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       {activeModal === 'resident' && <ResidentModal />}
       {activeModal === 'leaderboard' && <LeaderboardModal />}
       {activeModal === 'visit' && <VisitModal />}
+      {activeModal === 'bauCua' && <BauCuaModal />}
       <TienLenTable />
     </>
   );

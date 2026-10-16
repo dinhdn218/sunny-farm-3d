@@ -92,6 +92,7 @@ export const EVENT_QUESTS: QuestDef[] = [
   { id: 't_fish', festival: 'tet', title: 'Cá Chép Đầu Xuân', desc: 'Câu được 5 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎏', type: 'fish', target: 5, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 't_orders', festival: 'tet', title: 'Biếu Quà Tết', desc: 'Giao 3 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 3, rewardGold: 0, rewardGems: 5, rewardTokens: 20 },
   { id: 't_visit', festival: 'tet', title: 'Du Xuân', desc: 'Dịch chuyển đến 4 khu vực công cộng.', icon: '🌸', type: 'visit_world', target: 4, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
+  { id: 't_baucua', festival: 'tet', title: 'Xuân Vui Bầu Cua', desc: 'Chơi 5 ván Bầu Cua Tôm Cá ở Sảnh Casino.', icon: '🎲', type: 'bau_cua', target: 5, rewardGold: 0, rewardGems: 5, rewardTokens: 15 },
   { id: 't_shop', festival: 'tet', title: 'Sắm Tết', desc: 'Đổi 1 món ở Chợ Hoa Ngày Tết (Công Viên).', icon: '🌼', type: 'event_shop', target: 1, rewardGold: 100, rewardGems: 10, rewardTokens: 0 },
 ];
 

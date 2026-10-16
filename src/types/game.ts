@@ -89,6 +89,11 @@ export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach' 
 // Calendar festivals (config/festivals)
 export type FestivalId = 'halloween' | 'christmas' | 'tet';
 
+// The six faces of the Bầu Cua dice and squares of its mat (config/baucua)
+export type BauCuaFace = 'nai' | 'bau' | 'ga' | 'ca' | 'cua' | 'tom';
+// Gold staked on each square of the mat
+export type BauCuaBets = Partial<Record<BauCuaFace, number>>;
+
 // What a dish from the workshop does for the rest of the day once eaten (config/food, lib/food)
 export type BuffId = 'stamina' | 'swift' | 'angler' | 'netter';
 
@@ -315,7 +320,8 @@ export type QuestType =
   | 'forage'
   | 'deliver_order'
   | 'catch_bug'
-  | 'give_gift';
+  | 'give_gift'
+  | 'bau_cua';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 

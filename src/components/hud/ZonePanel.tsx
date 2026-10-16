@@ -164,6 +164,11 @@ export function ZonePanel() {
           <ZoneButton onClick={() => go(ZONE_SPOTS.casinoWheel, () => setActiveModal('luckyWheel'))} color="bg-pink-600 hover:bg-pink-500">
             🎡 Vòng Quay May Mắn{wheelReady ? ' • 1 lượt miễn phí!' : ''}
           </ZoneButton>
+          {festival?.id === 'tet' && (
+            <ZoneButton onClick={() => go(ZONE_SPOTS.casinoBauCua, () => setActiveModal('bauCua'))} color="bg-red-600 hover:bg-red-500">
+              🎲 Bầu Cua Tôm Cá • Tết
+            </ZoneButton>
+          )}
         </>
       )}
 

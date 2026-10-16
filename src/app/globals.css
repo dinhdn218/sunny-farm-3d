@@ -169,3 +169,23 @@ canvas {
 .card-in {
   animation: card-in 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+/* The Bầu Cua bowl rattling on its plate */
+@keyframes bowl-shake {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+  25% {
+    transform: translateX(-7px) rotate(-6deg);
+  }
+  50% {
+    transform: translateX(6px) rotate(5deg);
+  }
+  75% {
+    transform: translateX(-4px) rotate(-3deg);
+  }
+}
+.bowl-shake {
+  animation: bowl-shake 0.22s ease-in-out infinite;
+}
