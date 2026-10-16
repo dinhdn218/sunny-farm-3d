@@ -4,6 +4,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SaveData, UserProfile } from '@/types/game';
 import { SAVE_VERSION } from '@/lib/saveData';
 import { CloudSave, parseCloudRow } from '@/lib/cloudSave';
+import { BoardCategory, BoardEntry, boardFromRows } from '@/lib/leaderboard';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -88,4 +89,20 @@ export async function uploadCloudSave(profile: UserProfile, save: SaveData, save
       { onConflict: 'id' }
     );
   if (error) throw error;
+}
+
+// The top 20 for a leaderboard, read from everyone's public profile row (weekly boards: this week only)
+export async function fetchLeaderboard(category: BoardCategory, week: string): Promise<BoardEntry[]> {
+  const rows = requireClient()
+    .from('profiles')
+    .select('id, full_name, weekly:game_state->weekly, xp:game_state->xp');
+  const query =
+    category === 'level'
+      ? rows.order('game_state->xp', { ascending: false, nullsFirst: false })
+      : rows
+          .eq('game_state->weekly->>week', week)
+          .order(`game_state->weekly->${category}`, { ascending: false, nullsFirst: false });
+  const { data, error } = await query.limit(20);
+  if (error) throw error;
+  return boardFromRows(data ?? [], category, week);
 }

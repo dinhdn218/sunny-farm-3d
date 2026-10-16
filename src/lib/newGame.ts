@@ -134,6 +134,7 @@ export function createNewGameSave(): SaveData {
     talkedTo: [],
     giftedTo: [],
     giftLog: {},
+    weekly: { week: '', gold: 0, fish: 0, orders: 0 },
   };
   return { ...save, orders: refillOrders(save), collected: discoveriesFrom(save) };
 }

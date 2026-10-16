@@ -63,6 +63,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   talkedTo: true,
   giftedTo: true,
   giftLog: true,
+  weekly: true,
 };
 
 export const SAVE_KEYS = Object.keys(SAVE_FIELDS) as (keyof SaveData)[];

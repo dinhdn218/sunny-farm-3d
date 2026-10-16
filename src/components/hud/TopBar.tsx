@@ -328,7 +328,7 @@ function MenuTray() {
   );
 }
 
-// Quiet utilities: players online & profile, mail, photo mode, sound. A column in the corner on phones.
+// Quiet utilities: players online & profile, mail, leaderboards, photo mode, sound. A column in the corner on phones.
 function SystemButtons() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const remotePlayers = useGameStore((s) => s.remotePlayers);
@@ -367,6 +367,14 @@ function SystemButtons() {
       >
         ✉️
         {newMail > 0 && <Badge>{newMail}</Badge>}
+      </button>
+      <button
+        onClick={() => setActiveModal('leaderboard')}
+        title="Bảng Xếp Hạng"
+        aria-label="Bảng xếp hạng"
+        className={`${SYSTEM_BUTTON} w-8 md:w-9`}
+      >
+        🏆
       </button>
       <button
         onClick={togglePhotoMode}

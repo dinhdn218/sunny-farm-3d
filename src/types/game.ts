@@ -345,6 +345,14 @@ export interface Letter {
   claimed?: boolean;
 }
 
+// A week's counters for the leaderboards; `week` is its ISO key, e.g. 2026-W42
+export interface WeeklyStats {
+  week: string;
+  gold: number;
+  fish: number;
+  orders: number;
+}
+
 // A swing of the net at a bug in the Park (not saved)
 export interface BugCatch {
   spot: number;
@@ -452,6 +460,8 @@ export interface SaveData {
   talkedTo: ResidentId[];
   giftedTo: ResidentId[];
   giftLog: Partial<Record<ResidentId, ItemId[]>>;
+  // This week's gold earned, fish caught and orders delivered, for the leaderboards (lib/leaderboard)
+  weekly: WeeklyStats;
 }
 
 export interface RemotePlayer {

@@ -90,6 +90,7 @@ import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
 import { bugsInPark, netCaught, netZoneWidth } from '@/lib/bugs';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { RESIDENTS } from '@/config/npcs';
+import { addWeekly, weekKey } from '@/lib/leaderboard';
 import {
   ORDER_POINTS,
   REACTION_POINTS,
@@ -225,6 +226,7 @@ interface GameState extends SaveData {
     | 'mail'
     | 'collection'
     | 'resident'
+    | 'leaderboard'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -382,6 +384,13 @@ const publicZonesVisited = (visited: WorldId[]) =>
   visited.filter((w) => w !== 'farm').length;
 
 const clampVolume = (volume: number) => Math.min(1, Math.max(0, volume));
+
+// Gameplay events the leaderboards count over the week
+const WEEKLY_COUNTERS: Partial<Record<QuestType, 'gold' | 'fish' | 'orders'>> = {
+  earn_gold: 'gold',
+  fish: 'fish',
+  deliver_order: 'orders',
+};
 
 // Festivals run by the device's calendar date
 const runningFestival = () => activeFestival(localDateKey(new Date()));
@@ -2320,6 +2329,9 @@ export const useGameStore = create<GameState>()(
           }));
           announceCompleted(completed);
           gainXp(xpFor(type, amount));
+          // This week's counters for the leaderboards
+          const counter = WEEKLY_COUNTERS[type];
+          if (counter) set((s) => ({ weekly: addWeekly(s.weekly, weekKey(new Date()), { [counter]: amount }) }));
           const tokens = festival ? festivalTokensFor(festival, type, amount, crop) : 0;
           if (festival && tokens > 0) {
             const { playerPos } = get();
