@@ -1,10 +1,39 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { MouseEvent, PointerEvent, ReactNode, useRef } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 
-// Parchment modal frame shared by every dialog (icon + title header, red close button). On phones the frame
-// hugs the screen and the header is tighter: the close button sits in the corner instead of taking a row.
+// Props for a dimmed backdrop that closes its window when tapped or clicked. Only a press that starts and ends
+// on the backdrop itself counts, so dragging out of the window (selecting text, scrolling a list) never closes it.
+export function useBackdropDismiss(onDismiss: () => void) {
+  const pressed = useRef(false);
+  return {
+    onPointerDown: (e: PointerEvent<HTMLElement>) => {
+      pressed.current = e.target === e.currentTarget;
+    },
+    onClick: (e: MouseEvent<HTMLElement>) => {
+      if (pressed.current && e.target === e.currentTarget) onDismiss();
+      pressed.current = false;
+    },
+  };
+}
+
+// The red ✕ in a window's top-right corner (its frame must be `relative`)
+export function CloseButton({ onClick, label = 'Đóng' }: { onClick: () => void; label?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl bg-red-600 text-base font-black text-white shadow hover:bg-red-500 sm:right-5 sm:top-5 sm:h-9 sm:w-9 sm:text-lg"
+    >
+      ✕
+    </button>
+  );
+}
+
+// Parchment modal frame shared by every dialog (icon + title header). The close button always sits in the top-right
+// corner, and a tap or click on the dimmed backdrop closes the window too. On phones the frame hugs the screen.
 export function ModalShell({
   icon,
   title,
@@ -21,13 +50,19 @@ export function ModalShell({
   children: ReactNode;
 }) {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
+  const close = () => setActiveModal(null);
+  const backdrop = useBackdropDismiss(close);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 backdrop-blur-sm sm:p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 backdrop-blur-sm sm:p-4"
+      {...backdrop}
+    >
       <div
         className={`parchment-panel relative flex max-h-[90vh] w-full flex-col rounded-3xl p-3.5 max-sm:max-h-[94dvh] sm:p-6 ${maxWidth}`}
       >
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b-2 border-amber-700/30 pb-2.5 max-sm:pr-10 sm:mb-4 sm:pb-3">
+        <CloseButton onClick={close} />
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b-2 border-amber-700/30 pb-2.5 pr-10 sm:mb-4 sm:pb-3 sm:pr-11">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <span className="text-2xl sm:text-3xl">{icon}</span>
             <div>
@@ -35,16 +70,7 @@ export function ModalShell({
               <p className="text-[11px] font-bold leading-snug text-amber-800 sm:text-xs">{subtitle}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {headerRight}
-            <button
-              onClick={() => setActiveModal(null)}
-              aria-label="Đóng"
-              className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-600 text-lg font-black text-white shadow hover:bg-red-500 max-sm:absolute max-sm:right-3 max-sm:top-3 max-sm:h-8 max-sm:w-8 max-sm:text-base"
-            >
-              ✕
-            </button>
-          </div>
+          {headerRight && <div className="flex items-center gap-2">{headerRight}</div>}
         </div>
         {children}
       </div>

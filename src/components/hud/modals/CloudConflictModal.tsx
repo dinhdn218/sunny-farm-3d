@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { saveFromCloud } from '@/lib/saveData';
+import { CloseButton, useBackdropDismiss } from './ModalShell';
 
 function FarmCard({
   icon,
@@ -56,6 +57,7 @@ export function CloudConflictModal() {
   const plots = useGameStore((s) => s.ownedPlots.length);
   const resolveCloudConflict = useGameStore((s) => s.resolveCloudConflict);
   const logoutCloud = useGameStore((s) => s.logoutCloud);
+  const backdrop = useBackdropDismiss(() => void logoutCloud());
 
   const cloudFarm = useMemo(
     () => (conflict ? saveFromCloud(conflict.cloud.data, conflict.cloud.version) : null),
@@ -71,43 +73,47 @@ export function CloudConflictModal() {
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
-      <div className="parchment-panel relative w-full max-w-xl rounded-3xl p-6 text-center">
-        <h2 className="text-xl font-black text-amber-950">☁️ Chọn Nông Trại Để Chơi Tiếp</h2>
-        <p className="mb-4 mt-1 text-xs font-bold text-amber-800">
-          Tài khoản {conflict.profile.email} đã có một nông trại trên Cloud, khác với nông trại trên
-          máy này. Bản không chọn sẽ bị ghi đè và không lấy lại được.
-        </p>
+    // Closing it (✕ or a tap beside it) is "later": sign out and keep both farms as they are, nothing overwritten
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md">
+      <div className="flex min-h-full items-center justify-center p-4" {...backdrop}>
+        <div className="parchment-panel relative w-full max-w-xl rounded-3xl p-6 text-center">
+          <CloseButton onClick={logoutCloud} label="Để sau: đăng xuất, giữ nguyên nông trại trên máy này" />
+          <h2 className="px-8 text-xl font-black text-amber-950">☁️ Chọn Nông Trại Để Chơi Tiếp</h2>
+          <p className="mb-4 mt-1 text-xs font-bold text-amber-800">
+            Tài khoản {conflict.profile.email} đã có một nông trại trên Cloud, khác với nông trại trên
+            máy này. Bản không chọn sẽ bị ghi đè và không lấy lại được.
+          </p>
 
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-          <FarmCard
-            icon="💻"
-            title="Trên máy này"
-            note="Đang chơi trên thiết bị này"
-            day={day}
-            gold={gold}
-            gems={gems}
-            plots={plots}
-            onKeep={() => resolveCloudConflict('local')}
-          />
-          <FarmCard
-            icon="☁️"
-            title="Trên Cloud"
-            note={`Lưu lúc ${savedAt}`}
-            day={cloudFarm.day}
-            gold={cloudFarm.gold}
-            gems={cloudFarm.gems}
-            plots={cloudFarm.ownedPlots.length}
-            onKeep={() => resolveCloudConflict('cloud')}
-          />
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            <FarmCard
+              icon="💻"
+              title="Trên máy này"
+              note="Đang chơi trên thiết bị này"
+              day={day}
+              gold={gold}
+              gems={gems}
+              plots={plots}
+              onKeep={() => resolveCloudConflict('local')}
+            />
+            <FarmCard
+              icon="☁️"
+              title="Trên Cloud"
+              note={`Lưu lúc ${savedAt}`}
+              day={cloudFarm.day}
+              gold={cloudFarm.gold}
+              gems={cloudFarm.gems}
+              plots={cloudFarm.ownedPlots.length}
+              onKeep={() => resolveCloudConflict('cloud')}
+            />
+          </div>
+
+          <button
+            onClick={logoutCloud}
+            className="text-xs font-bold text-amber-800 underline hover:text-amber-950"
+          >
+            Để sau (đăng xuất, giữ nguyên nông trại trên máy này)
+          </button>
         </div>
-
-        <button
-          onClick={logoutCloud}
-          className="text-xs font-bold text-amber-800 underline hover:text-amber-950"
-        >
-          Để sau (đăng xuất, giữ nguyên nông trại trên máy này)
-        </button>
       </div>
     </div>
   );

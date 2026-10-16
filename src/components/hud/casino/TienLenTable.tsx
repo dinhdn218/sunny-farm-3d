@@ -30,6 +30,7 @@ import {
   suitOf,
 } from '@/lib/tienlen';
 import { soundFX } from '@/lib/audio';
+import { useBackdropDismiss } from '../modals/ModalShell';
 
 type CardSize = 'sm' | 'md' | 'lg' | 'hand';
 
@@ -438,6 +439,8 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
     leaveTable(id);
     setOpen(null);
   };
+  // A tap beside the table leaves it too (asking first in the middle of a game, like the button)
+  const backdrop = useBackdropDismiss(close);
 
   // Enter plays the selected cards
   useEffect(() => {
@@ -454,7 +457,7 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
   const felt = config.felt;
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-2 sm:p-4">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-2 sm:p-4" {...backdrop}>
       <div className="wood-panel relative flex h-[min(94vh,780px)] w-full max-w-5xl flex-col rounded-[2rem] p-2 sm:rounded-[2.5rem] sm:p-3">
         <div
           className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.6rem] shadow-[inset_0_0_40px_rgba(0,0,0,0.55)] sm:rounded-[2rem]"
