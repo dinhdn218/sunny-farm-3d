@@ -107,7 +107,8 @@ export default function GameCanvas() {
 
   return (
     // Photo mode hides the name tags and labels floating over the 3D view (see globals.css)
-    <div className="fixed inset-0 z-0" data-photo-mode={photoMode || undefined}>
+    // touch-none: the browser leaves taps and drags on the 3D view to the game (no page zoom or scroll)
+    <div className="fixed inset-0 z-0 touch-none" data-photo-mode={photoMode || undefined}>
       <Canvas
         shadows
         flat

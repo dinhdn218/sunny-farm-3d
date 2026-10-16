@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 
+// How far back the camera pulls in play: where it starts, and where phones keep it (see CameraRig)
+export const CAMERA_FAR = 28;
+
 // Orbit camera state (same numbers as the HTML version), shared by the camera rig,
 // the player's camera-relative movement and floating-label projection
 export const camControl = {
   target: new THREE.Vector3(0, 0, 0),
   theta: 0.35,
   phi: 0.86,
-  radius: 17.5,
+  radius: CAMERA_FAR,
   camera: null as THREE.Camera | null,
 };
 

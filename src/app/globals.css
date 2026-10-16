@@ -16,6 +16,8 @@ html {
   height: 100%;
   overflow: hidden;
   background-color: #0f172a;
+  /* No double-tap zoom on phones (pinching is stopped by the viewport and CameraRig) */
+  touch-action: manipulation;
 }
 canvas {
   display: block;

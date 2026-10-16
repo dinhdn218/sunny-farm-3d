@@ -4,14 +4,16 @@ import { useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useGameStore } from '@/store/useGameStore';
-import { camControl } from '@/lib/controls';
+import { CAMERA_FAR, camControl } from '@/lib/controls';
 import { WALK_MARGIN, islandShape } from '@/lib/farmLayout';
 import { FISHING_SPOTS } from '@/config/fish';
 
-const NORMAL_VIEW = { minRadius: 8.5, maxRadius: 28, minPhi: 0.35, maxPhi: 1.35 };
+const NORMAL_VIEW = { minRadius: 8.5, maxRadius: CAMERA_FAR, minPhi: 0.35, maxPhi: 1.35 };
 // Photo mode lets the camera come closer, pull further back and look from lower and higher
 const PHOTO_VIEW = { minRadius: 4, maxRadius: 45, minPhi: 0.12, maxPhi: 1.5 };
 const viewLimits = () => (useGameStore.getState().photoMode ? PHOTO_VIEW : NORMAL_VIEW);
+// Phones (below md, like the thumbstick) keep the camera all the way back: no zooming in
+const phoneScreen = () => typeof window !== 'undefined' && window.innerWidth < 768;
 
 // Follow-orbit camera from the HTML version: right/middle (or Shift+left) drag to orbit, wheel to zoom.
 // In photo mode a plain left drag orbits too.
@@ -49,6 +51,7 @@ export function CameraRig() {
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (phoneScreen() && !useGameStore.getState().photoMode) return;
       const { minRadius, maxRadius } = viewLimits();
       camControl.radius = THREE.MathUtils.clamp(
         camControl.radius + e.deltaY * 0.012,
@@ -57,8 +60,12 @@ export function CameraRig() {
       );
     };
     const onContextMenu = (e: Event) => e.preventDefault();
+    // iOS Safari ignores user-scalable=no in the viewport: a pinch would still zoom the whole page
+    const onGesture = (e: Event) => e.preventDefault();
 
     dom.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('gesturestart', onGesture);
+    document.addEventListener('gesturechange', onGesture);
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     dom.addEventListener('wheel', onWheel, { passive: false });
@@ -69,16 +76,19 @@ export function CameraRig() {
       window.removeEventListener('pointerup', onPointerUp);
       dom.removeEventListener('wheel', onWheel);
       dom.removeEventListener('contextmenu', onContextMenu);
+      document.removeEventListener('gesturestart', onGesture);
+      document.removeEventListener('gesturechange', onGesture);
       camControl.camera = null;
     };
   }, [camera, gl]);
 
   useFrame(() => {
     const { playerPos, fishing, photoMode, currentWorld, ownedPlots } = useGameStore.getState();
-    // Back from photo mode, the camera eases into its usual range
+    // Back from photo mode, the camera eases into its usual range (on phones, all the way back)
     if (!photoMode) {
       const { minRadius, maxRadius, minPhi, maxPhi } = NORMAL_VIEW;
-      camControl.radius += (THREE.MathUtils.clamp(camControl.radius, minRadius, maxRadius) - camControl.radius) * 0.1;
+      const wanted = phoneScreen() ? CAMERA_FAR : THREE.MathUtils.clamp(camControl.radius, minRadius, maxRadius);
+      camControl.radius += (wanted - camControl.radius) * 0.1;
       camControl.phi += (THREE.MathUtils.clamp(camControl.phi, minPhi, maxPhi) - camControl.phi) * 0.1;
     }
     const { target, radius, phi, theta } = camControl;
