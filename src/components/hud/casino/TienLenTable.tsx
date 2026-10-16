@@ -43,6 +43,10 @@ const CARD_SIZES: Record<CardSize, string> = {
 
 const PLACE_BADGES = ['🥇 Về nhất', '🥈 Về nhì', '🥉 Về ba', '💀 Về bét'];
 
+// Hint, sort and pass under the hand: kept on one line, a little tighter on a phone
+const ACTION_BUTTON =
+  'game-btn whitespace-nowrap rounded-xl border-2 px-2 py-2 text-[11px] font-black text-white disabled:opacity-50 sm:px-2.5 sm:text-xs';
+
 function CardFace({
   card,
   size,
@@ -87,8 +91,21 @@ function CardBack({ size = 'sm' }: { size?: CardSize }) {
 
 const initialOf = (name: string) => name.replace(/^🤖\s*/, '').trim().charAt(0).toUpperCase() || '?';
 
-// An opponent around the table: who they are, how many cards they hold, and how their turn is going
-function SeatPanel({ table, seat, now, mine }: { table: TableState; seat: number; now: number; mine: boolean }) {
+// An opponent around the table: who they are, how many cards they hold, and how their turn is going.
+// `compact`: a third of a phone's width, in the row of opponents above the felt
+function SeatPanel({
+  table,
+  seat,
+  now,
+  mine,
+  compact = false,
+}: {
+  table: TableState;
+  seat: number;
+  now: number;
+  mine: boolean;
+  compact?: boolean;
+}) {
   const info = table.seats[seat];
   const game = table.game;
   const playing = table.phase === 'playing' && !!game;
@@ -118,11 +135,33 @@ function SeatPanel({ table, seat, now, mine }: { table: TableState; seat: number
       ? 'Lượt của bạn'
       : 'Đang đánh…'
     : '';
+  // A third of a phone has room for a sign, not a phrase (the ring already shows whose turn it is)
+  const shortStatus = !info
+    ? 'Trống'
+    : table.phase === 'result' && place >= 0
+    ? PLACE_BADGES[place === SEATS - 1 ? 3 : place].split(' ')[0]
+    : !playing
+    ? info.kind === 'bot'
+      ? '🤖'
+      : '✓'
+    : game.finished.includes(seat)
+    ? `🏁${game.finished.indexOf(seat) + 1}`
+    : game.frozen.includes(seat)
+    ? '🥶'
+    : game.passed[seat]
+    ? 'Bỏ'
+    : isTurn
+    ? '💭'
+    : '';
 
   return (
-    <div className={`flex items-center gap-2 rounded-2xl px-2 py-1.5 ${isTurn ? 'bg-black/35' : 'bg-black/20'} ${info ? '' : 'opacity-60'}`}>
+    <div
+      className={`flex items-center rounded-2xl ${compact ? 'min-w-0 gap-1.5 px-1 py-1' : 'gap-2 px-2 py-1.5'} ${
+        isTurn ? 'bg-black/35' : 'bg-black/20'
+      } ${info ? '' : 'opacity-60'}`}
+    >
       <div
-        className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full p-[3px]"
+        className={`relative flex shrink-0 items-center justify-center rounded-full p-[3px] ${compact ? 'h-8 w-8' : 'h-11 w-11'}`}
         style={{
           background: isTurn
             ? `conic-gradient(#facc15 ${share * 360}deg, rgba(255,255,255,0.15) 0deg)`
@@ -130,7 +169,7 @@ function SeatPanel({ table, seat, now, mine }: { table: TableState; seat: number
         }}
       >
         <span
-          className={`flex h-full w-full items-center justify-center rounded-full text-base font-black ${
+          className={`flex h-full w-full items-center justify-center rounded-full font-black ${compact ? 'text-sm' : 'text-base'} ${
             info?.kind === 'bot' ? 'bg-slate-700 text-white' : 'bg-amber-200 text-amber-950'
           }`}
         >
@@ -138,19 +177,27 @@ function SeatPanel({ table, seat, now, mine }: { table: TableState; seat: number
         </span>
       </div>
       <div className="min-w-0">
-        <div className="max-w-[118px] truncate text-xs font-black text-white sm:max-w-[150px]">
-          {info ? info.name.replace(/^🤖\s*/, '') : '—'}
-          {mine && <span className="ml-1 text-amber-300">(Bạn)</span>}
+        {/* The name gives way, never the "(Bạn)" after it */}
+        <div
+          className={`flex min-w-0 font-black text-white ${compact ? 'max-w-full text-[11px]' : 'max-w-[150px] text-xs sm:max-w-[190px]'}`}
+        >
+          <span className="truncate">{info ? info.name.replace(/^🤖\s*/, '') : '—'}</span>
+          {mine && <span className="ml-1 shrink-0 text-amber-300">(Bạn)</span>}
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-100">
+        {/* Compact: the card count loses its pill, leaving the status room */}
+        <div className={`flex items-center text-[10px] font-extrabold text-emerald-100 ${compact ? 'gap-1' : 'gap-1.5'}`}>
           {playing && !mine && cards > 0 && (
-            <span className="flex items-center gap-1 rounded-full bg-black/30 px-1.5 py-0.5 tabular-nums">
+            <span
+              className={`flex shrink-0 items-center tabular-nums ${compact ? 'gap-0.5' : 'gap-1 rounded-full bg-black/30 px-1.5 py-0.5'}`}
+            >
               <span aria-hidden className="inline-block h-3 w-2 rounded-[2px] bg-red-700 ring-1 ring-amber-100" />
               {cards}
-              {cards <= 2 && <span className="text-amber-300">• Sắp hết!</span>}
+              {cards <= 2 && <span className="text-amber-300">{compact ? '!' : '• Sắp hết!'}</span>}
             </span>
           )}
-          {status && <span className={isTurn ? 'text-amber-300' : ''}>{status}</span>}
+          {(compact ? shortStatus : status) && (
+            <span className={`min-w-0 truncate ${isTurn ? 'text-amber-300' : ''}`}>{compact ? shortStatus : status}</span>
+          )}
         </div>
       </div>
     </div>
@@ -244,7 +291,13 @@ function CenterPile({ table, me, now }: { table: TableState; me: string; now: nu
     <div className="flex flex-col items-center gap-2 text-center">
       {lead ? (
         <>
-          <div key={`${lead.seat}-${lead.combo.top}-${lead.combo.cards.length}`} className="card-in flex flex-wrap justify-center gap-1">
+          {/* A long run overlaps on a phone so it stays on one line */}
+          <div
+            key={`${lead.seat}-${lead.combo.top}-${lead.combo.cards.length}`}
+            className={`card-in flex justify-center ${
+              lead.combo.cards.length > 6 ? 'max-sm:[&>*+*]:-ml-5 sm:flex-wrap sm:gap-1' : 'flex-wrap gap-1'
+            }`}
+          >
             {lead.combo.cards.map((c) => (
               <CardFace key={c} card={c} size="md" />
             ))}
@@ -411,22 +464,26 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
         >
           {/* Header */}
           <div className="flex items-center justify-between gap-2 px-3 pt-2.5 sm:px-4">
-            <div className="rounded-xl bg-black/30 px-3 py-1 text-white">
-              <div className="text-sm font-black leading-tight">🃏 {config.name} • Tiến Lên Miền Nam</div>
-              <div className="text-[10px] font-bold text-emerald-100">
-                Cược {config.stake}🪙 • Bạn có {gold}🪙
+            <div className="min-w-0 rounded-xl bg-black/30 px-3 py-1 text-white">
+              <div className="truncate text-sm font-black leading-tight">
+                🃏 {config.name}
+                <span className="hidden sm:inline"> • Tiến Lên Miền Nam</span>
+              </div>
+              <div className="whitespace-nowrap text-[10px] font-bold text-emerald-100">
+                Cược {config.stake}🪙 • <span className="hidden sm:inline">Bạn có</span>
+                <span className="sm:hidden">Ví</span> {gold}🪙
               </div>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex shrink-0 gap-1.5">
               <button
                 onClick={() => setRules(!rules)}
-                className="game-btn rounded-xl border-2 border-amber-900 bg-amber-500 px-2.5 py-1.5 text-xs font-black text-amber-950 hover:bg-amber-400"
+                className="game-btn whitespace-nowrap rounded-xl border-2 border-amber-900 bg-amber-500 px-2 py-1.5 text-xs font-black text-amber-950 hover:bg-amber-400 sm:px-2.5"
               >
                 📖 Luật
               </button>
               <button
                 onClick={close}
-                className="game-btn rounded-xl border-2 border-red-950 bg-red-600 px-2.5 py-1.5 text-xs font-black text-white hover:bg-red-500"
+                className="game-btn whitespace-nowrap rounded-xl border-2 border-red-950 bg-red-600 px-2 py-1.5 text-xs font-black text-white hover:bg-red-500 sm:px-2.5"
               >
                 {seat >= 0 || waitingNext ? '🚪 Rời bàn' : '✕ Đóng'}
               </button>
@@ -451,18 +508,24 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
             </div>
           ) : (
             <>
-              {/* Opponents: top, then left and right */}
-              <div className="flex justify-center px-3 pt-2">
+              {/* Opponents: on a phone a row of three (left, across, right), leaving the felt's middle for
+                  the cards; from sm up, across the table, then left and right of the middle */}
+              <div className="grid grid-cols-3 gap-1 px-2 pt-2 sm:hidden">
+                {[around[2], around[1], around[0]].map((s) => (
+                  <SeatPanel key={s} table={table} seat={s} now={now} mine={false} compact />
+                ))}
+              </div>
+              <div className="hidden justify-center px-3 pt-2 sm:flex">
                 <SeatPanel table={table} seat={around[1]} now={now} mine={false} />
               </div>
               <div className="flex min-h-0 flex-1 items-center justify-between gap-2 px-2 sm:px-4">
-                <div className="w-[34%] max-w-[200px] sm:w-auto">
+                <div className="hidden max-w-[200px] sm:block">
                   <SeatPanel table={table} seat={around[2]} now={now} mine={false} />
                 </div>
                 <div className="flex min-w-0 flex-1 justify-center">
                   <CenterPile table={table} me={me} now={now} />
                 </div>
-                <div className="flex w-[34%] max-w-[200px] justify-end sm:w-auto">
+                <div className="hidden max-w-[200px] justify-end sm:flex">
                   <SeatPanel table={table} seat={around[0]} now={now} mine={false} />
                 </div>
               </div>
@@ -478,8 +541,8 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
                       </div>
                     </div>
                     {hand.length > 0 && (
-                      <div className="flex justify-center overflow-x-auto pb-1 pt-4">
-                        <div className="flex px-2 [&>*+*]:-ml-5">
+                      <div className="overflow-x-auto pb-1 pt-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        <div className="mx-auto flex w-max [&>*+*]:-ml-[21px] sm:px-2 sm:[&>*+*]:-ml-5">
                           {hand.map((c) => (
                             <CardFace
                               key={c}
@@ -493,34 +556,36 @@ function TableView({ id, table }: { id: TableId; table: TableState | undefined }
                       </div>
                     )}
                     {playing && (
-                      <div className="mt-1.5 flex items-center justify-between gap-2">
-                        <div className="flex gap-1.5">
+                      // One line on a phone (the groups melt into it, PLAY taking what is left), two groups from sm
+                      <div className="mt-1.5 flex items-center gap-1.5 sm:justify-between sm:gap-2">
+                        <div className="contents sm:flex sm:gap-1.5">
                           <button
                             onClick={hint}
                             disabled={!myTurn}
-                            className="game-btn rounded-xl border-2 border-sky-950 bg-sky-700 px-2.5 py-2 text-xs font-black text-white hover:bg-sky-600 disabled:opacity-50"
+                            className={`${ACTION_BUTTON} border-sky-950 bg-sky-700 hover:bg-sky-600`}
                           >
                             💡 Gợi ý
                           </button>
                           <button
                             onClick={() => setBySuit(!bySuit)}
-                            className="game-btn rounded-xl border-2 border-slate-950 bg-slate-700 px-2.5 py-2 text-xs font-black text-white hover:bg-slate-600"
+                            className={`${ACTION_BUTTON} border-slate-950 bg-slate-700 hover:bg-slate-600`}
                           >
-                            ↕ {bySuit ? 'Xếp theo số' : 'Xếp theo chất'}
+                            ↕ <span className="sm:hidden">{bySuit ? 'Theo số' : 'Theo chất'}</span>
+                            <span className="hidden sm:inline">{bySuit ? 'Xếp theo số' : 'Xếp theo chất'}</span>
                           </button>
                         </div>
-                        <div className="flex gap-1.5">
+                        <div className="contents sm:flex sm:gap-1.5">
                           <button
                             onClick={() => send('pass')}
                             disabled={!myTurn || !game?.lead}
-                            className="game-btn rounded-xl border-2 border-stone-950 bg-stone-600 px-3 py-2 text-xs font-black text-white hover:bg-stone-500 disabled:opacity-50"
+                            className={`${ACTION_BUTTON} border-stone-950 bg-stone-600 hover:bg-stone-500 sm:px-3`}
                           >
                             Bỏ lượt
                           </button>
                           <button
                             onClick={() => send('play')}
                             disabled={!legal}
-                            className="game-btn rounded-xl border-2 border-amber-900 bg-amber-400 px-5 py-2 text-sm font-black text-amber-950 hover:bg-amber-300 disabled:opacity-50"
+                            className="game-btn flex-1 whitespace-nowrap rounded-xl border-2 border-amber-900 bg-amber-400 px-3 py-2 text-sm font-black text-amber-950 hover:bg-amber-300 disabled:opacity-50 sm:flex-none sm:px-5"
                           >
                             ĐÁNH
                           </button>
