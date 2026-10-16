@@ -21,6 +21,7 @@ import {
   ItemConfig,
   ItemId,
   MachineId,
+  NeighborVisit,
   QuestItem,
   QuestType,
   RecipeId,
@@ -29,6 +30,7 @@ import {
   TileData,
   ToolId,
   UserProfile,
+  VisitKind,
   WalkGoal,
   Weather,
   WorldId,
@@ -106,6 +108,7 @@ import {
   residentByName,
 } from '@/lib/friendship';
 import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
+import { FARM_LIKE_POINTS, NEIGHBOR_WATER_TILES, visitLetter, waterForNeighbors } from '@/lib/neighbors';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
 import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
@@ -317,6 +320,13 @@ interface GameState extends SaveData {
   openResident: (id: ResidentId) => void;
   talkTo: (id: ResidentId) => void;
   giveGift: (id: ResidentId, item: ItemId) => void;
+  // Like a resident's farm while visiting it: a little friendship, once a day each
+  likeResidentFarm: (id: ResidentId) => void;
+  // Another player's farm was watered or liked from here (the cloud has taken the visit)
+  helpedNeighbor: (kind: VisitKind, name: string) => void;
+  // Visits other players paid this farm, fetched from the cloud: their watering, a letter with gold,
+  // and the likes for the week's board
+  receiveNeighborVisits: (visits: NeighborVisit[]) => void;
 
   openWorkshop: (machine?: MachineId) => void;
   buyMachine: (id: MachineId) => void;
@@ -470,10 +480,10 @@ export const useGameStore = create<GameState>()(
         }
       };
 
-      // Who was talked to and given a gift today: a new day clears both
+      // Who was talked to, given a gift or had their farm liked today: a new day clears them
       const residentsToday = () => {
-        const { residentDay, talkedTo, giftedTo, day } = get();
-        return residentDay === day ? { talkedTo, giftedTo } : { talkedTo: [], giftedTo: [] };
+        const { residentDay, talkedTo, giftedTo, likedFarms, day } = get();
+        return residentDay === day ? { talkedTo, giftedTo, likedFarms } : { talkedTo: [], giftedTo: [], likedFarms: [] };
       };
 
       // "Visit N zones" depends on where you have been, not on a single event
@@ -1416,7 +1426,7 @@ export const useGameStore = create<GameState>()(
         talkTo: (id) => {
           const today = residentsToday();
           if (today.talkedTo.includes(id)) return;
-          set({ residentDay: get().day, talkedTo: [...today.talkedTo, id], giftedTo: today.giftedTo });
+          set({ ...today, residentDay: get().day, talkedTo: [...today.talkedTo, id] });
           befriend(id, TALK_POINTS);
         },
 
@@ -1433,9 +1443,9 @@ export const useGameStore = create<GameState>()(
           if (!rest) return;
           const reaction = giftReaction(resident, item);
           set({
+            ...today,
             items: rest,
             residentDay: get().day,
-            talkedTo: today.talkedTo,
             giftedTo: [...today.giftedTo, id],
             giftLog: { ...giftLog, [id]: Array.from(new Set([...(giftLog[id] ?? []), item])) },
           });
@@ -1476,6 +1486,43 @@ export const useGameStore = create<GameState>()(
             `✉️ ${letterGiftLabel(gift, gift.festival ? FESTIVALS[gift.festival].token.icon : '')}`,
             'text-yellow-300'
           );
+        },
+
+        likeResidentFarm: (id) => {
+          const today = residentsToday();
+          if (today.likedFarms.includes(id)) return;
+          set({ ...today, residentDay: get().day, likedFarms: [...today.likedFarms, id] });
+          soundFX.coin();
+          get().showToast(`❤️ Đã thả tim cho nông trại của ${RESIDENTS[id].name}!`, 'text-pink-300');
+          befriend(id, FARM_LIKE_POINTS);
+          get().incrementQuest('help_neighbor', 1);
+        },
+
+        helpedNeighbor: (kind, name) => {
+          soundFX.coin();
+          get().showToast(
+            kind === 'water' ? `💧 Đã tưới giúp nông trại của ${name}!` : `❤️ Đã thả tim cho nông trại của ${name}!`,
+            kind === 'water' ? 'text-sky-300' : 'text-pink-300'
+          );
+          get().incrementQuest('help_neighbor', 1);
+        },
+
+        // Each visit counts once: the newest one turned into a letter is kept with the farm
+        receiveNeighborVisits: (visits) => {
+          const { neighborVisitsSeen, tiles, mail, day, weekly } = get();
+          const fresh = visits.filter((v) => v.id > neighborVisitsSeen);
+          if (!fresh.length) return;
+          const waterings = fresh.filter((v) => v.kind === 'water').length;
+          const likes = fresh.length - waterings;
+          const watering = waterForNeighbors(tiles, waterings * NEIGHBOR_WATER_TILES);
+          set({
+            tiles: watering.tiles,
+            mail: deliverLetters(mail, [visitLetter(fresh, day, watering.watered)]),
+            neighborVisitsSeen: Math.max(...fresh.map((v) => v.id)),
+            weekly: likes ? addWeekly(weekly, weekKey(new Date()), { likes }) : weekly,
+          });
+          soundFX.questClaim();
+          get().showToast(`🏡 ${fresh.length} lượt hàng xóm ghé thăm! Xem Hộp Thư ✉️`, 'text-pink-300');
         },
 
         openWorkshop: (machine) =>

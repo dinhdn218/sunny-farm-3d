@@ -3,7 +3,7 @@ import { NPC_PRESETS } from '@/config/npcs';
 import { levelInfo } from '@/lib/leveling';
 import { seeded } from '@/lib/random';
 
-export type BoardCategory = 'gold' | 'fish' | 'orders' | 'level';
+export type BoardCategory = 'gold' | 'fish' | 'orders' | 'likes' | 'level';
 
 export interface BoardEntry {
   id: string;
@@ -16,6 +16,7 @@ export const BOARD_CATEGORIES: { id: BoardCategory; label: string; icon: string;
   { id: 'gold', label: 'Vàng kiếm được', icon: '🪙', unit: 'Vàng' },
   { id: 'fish', label: 'Cá câu được', icon: '🎣', unit: 'con' },
   { id: 'orders', label: 'Đơn đã giao', icon: '📦', unit: 'đơn' },
+  { id: 'likes', label: 'Được thả tim', icon: '❤️', unit: 'tim' },
   { id: 'level', label: 'Cấp độ', icon: '⭐', unit: '' },
 ];
 
@@ -32,7 +33,7 @@ export function weekKey(date: Date) {
 // Days of the week still to play, today included
 export const weekDaysLeft = (date: Date) => 7 - ((date.getDay() + 6) % 7);
 
-export const emptyWeek = (week: string): WeeklyStats => ({ week, gold: 0, fish: 0, orders: 0 });
+export const emptyWeek = (week: string): WeeklyStats => ({ week, gold: 0, fish: 0, orders: 0, likes: 0 });
 
 // The week's counters after a gameplay event: a new week starts from nothing
 export function addWeekly(
@@ -46,6 +47,7 @@ export function addWeekly(
     gold: base.gold + (add.gold ?? 0),
     fish: base.fish + (add.fish ?? 0),
     orders: base.orders + (add.orders ?? 0),
+    likes: (base.likes ?? 0) + (add.likes ?? 0),
   };
 }
 
@@ -71,7 +73,7 @@ export function boardFromRows(rows: unknown[], category: BoardCategory, week: st
 
 // Steady levels for the residents; their weekly scores change from week to week
 const RESIDENT_LEVELS = [8, 14, 11, 6, 9];
-const WEEKLY_RANGE: Record<Exclude<BoardCategory, 'level'>, number> = { gold: 2600, fish: 24, orders: 14 };
+const WEEKLY_RANGE: Record<Exclude<BoardCategory, 'level'>, number> = { gold: 2600, fish: 24, orders: 14, likes: 12 };
 
 // Without the cloud: the player against the island's residents
 export function villageBoard(category: BoardCategory, week: string, you: { name: string; score: number }): BoardEntry[] {

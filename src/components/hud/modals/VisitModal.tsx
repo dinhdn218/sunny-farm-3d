@@ -4,9 +4,16 @@ import { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { NPC_PRESETS } from '@/config/npcs';
-import { ResidentId } from '@/types/game';
+import { ResidentId, VisitKind } from '@/types/game';
 import { FarmListing, FarmView, farmSummary, residentFarm } from '@/lib/visit';
-import { fetchFarm, fetchFarmList, isSupabaseConfigured } from '@/lib/supabase';
+import {
+  fetchFarm,
+  fetchFarmList,
+  fetchVisitsToday,
+  isSupabaseConfigured,
+  sendFarmVisit,
+} from '@/lib/supabase';
+import { FARM_LIKE_POINTS, NEIGHBOR_WATER_TILES } from '@/lib/neighbors';
 import { levelInfo } from '@/lib/leveling';
 import { ModalShell } from './ModalShell';
 
@@ -14,6 +21,99 @@ import { ModalShell } from './ModalShell';
 const FarmDiorama = dynamic(() => import('@/components/canvas/FarmDiorama'), { ssr: false });
 
 type Source = 'village' | 'online';
+
+const ACTION_BUTTON = 'game-btn rounded-xl px-3 py-1.5 text-xs font-black text-white disabled:bg-slate-400';
+
+// A like for a resident's farm (a little friendship), or a watering and a like for another player's
+// (they find a letter from you with a small gift); each once a day per farm
+function NeighborActions({ source, farmId, farmName }: { source: Source; farmId: string; farmName: string }) {
+  const userId = useGameStore((s) => s.userProfile?.id ?? null);
+  const playerName = useGameStore((s) => s.playerName);
+  const likedResident = useGameStore(
+    (s) => s.residentDay === s.day && s.likedFarms.includes(farmId as ResidentId)
+  );
+  const likeResidentFarm = useGameStore((s) => s.likeResidentFarm);
+  const helpedNeighbor = useGameStore((s) => s.helpedNeighbor);
+  // What was done on this farm today: unknown until the cloud answers
+  const [done, setDone] = useState<VisitKind[] | null>(null);
+  const [sending, setSending] = useState<VisitKind | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (source !== 'online' || !userId) return;
+    let live = true;
+    fetchVisitsToday(farmId, userId)
+      .then((kinds) => live && setDone(kinds))
+      .catch(() => live && setDone([]));
+    return () => {
+      live = false;
+    };
+  }, [source, farmId, userId]);
+
+  if (source === 'village') {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => likeResidentFarm(farmId as ResidentId)}
+          disabled={likedResident}
+          className={`${ACTION_BUTTON} bg-pink-600 hover:bg-pink-500`}
+        >
+          {likedResident ? '❤️ Đã thả tim hôm nay' : '❤️ Thả Tim'}
+        </button>
+        <span className="text-[11px] font-bold text-amber-800">
+          +{FARM_LIKE_POINTS} tình bạn với {farmName}, mỗi ngày một lần
+        </span>
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return (
+      <p className="text-[11px] font-bold text-amber-800">
+        🔑 Đăng nhập Google (nút 👥 trên cùng) để tưới giúp và thả tim cho nông trại người chơi khác.
+      </p>
+    );
+  }
+
+  const act = async (kind: VisitKind) => {
+    setSending(kind);
+    setFailed(false);
+    try {
+      const result = await sendFarmVisit(farmId, kind, playerName);
+      setDone((kinds) => [...(kinds ?? []), kind]);
+      if (result === 'sent') helpedNeighbor(kind, farmName);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSending(null);
+    }
+  };
+
+  const button = (kind: VisitKind, label: string, doneLabel: string, color: string) => {
+    const isDone = done?.includes(kind);
+    return (
+      <button
+        onClick={() => act(kind)}
+        disabled={!done || isDone || !!sending}
+        className={`${ACTION_BUTTON} ${color}`}
+      >
+        {isDone ? doneLabel : sending === kind ? 'Đang gửi...' : label}
+      </button>
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {button('water', '💧 Tưới Giúp', '💧 Đã tưới hôm nay', 'bg-sky-600 hover:bg-sky-500')}
+      {button('like', '❤️ Thả Tim', '❤️ Đã thả tim hôm nay', 'bg-pink-600 hover:bg-pink-500')}
+      <span className="text-[11px] font-bold text-amber-800">
+        {failed
+          ? '⚠️ Không gửi được, thử lại sau.'
+          : `Tưới giúp ${NEIGHBOR_WATER_TILES} ô đang khô • chủ nhà nhận thư kèm quà • mỗi ngày một lần`}
+      </span>
+    </div>
+  );
+}
 
 // Look round a neighbour's farm: the residents' (always there) or other players' (with the cloud)
 export function VisitModal() {
@@ -23,6 +123,8 @@ export function VisitModal() {
   const [onlineFailed, setOnlineFailed] = useState(false);
   const [selected, setSelected] = useState<string>(NPC_PRESETS[0].id);
   const [farm, setFarm] = useState<FarmView | null>(() => residentFarm(NPC_PRESETS[0].id));
+  // Where the farm on show comes from (the tabs can change while it is still up)
+  const [farmSource, setFarmSource] = useState<Source>('village');
   const [loading, setLoading] = useState(false);
 
   const village = useMemo<FarmListing[]>(
@@ -43,6 +145,7 @@ export function VisitModal() {
 
   const visit = (id: string) => {
     setSelected(id);
+    setFarmSource(source);
     if (source === 'village') {
       setFarm(residentFarm(id as ResidentId));
       return;
@@ -126,6 +229,14 @@ export function VisitModal() {
               </div>
             )}
           </div>
+          {farm && (
+            <NeighborActions
+              key={`${farmSource}:${selected}`}
+              source={farmSource}
+              farmId={selected}
+              farmName={farm.playerName}
+            />
+          )}
           {farm && summary && (
             <div className="flex flex-wrap gap-1.5 text-[11px] font-black text-amber-900">
               <span className="rounded-full bg-amber-200 px-2 py-0.5">👩‍🌾 {farm.playerName}</span>

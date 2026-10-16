@@ -21,12 +21,12 @@ describe("the week's counters", () => {
     store().deliverOrder('o');
     store().sellNow('carrot', 2);
     store().incrementQuest('fish', 1);
-    expect(store().weekly).toEqual({ week: '2026-W50', gold: 60 + 56, fish: 1, orders: 1 });
+    expect(store().weekly).toEqual({ week: '2026-W50', gold: 60 + 56, fish: 1, orders: 1, likes: 0 });
   });
 
   it('start again from nothing in a new week', () => {
     useGameStore.setState({ weekly: { week: '2026-W49', gold: 999, fish: 9, orders: 9 } });
     store().incrementQuest('earn_gold', 10);
-    expect(store().weekly).toEqual({ week: '2026-W50', gold: 10, fish: 0, orders: 0 });
+    expect(store().weekly).toEqual({ week: '2026-W50', gold: 10, fish: 0, orders: 0, likes: 0 });
   });
 });

@@ -30,7 +30,7 @@ export function LeaderboardModal() {
   const week = weekKey(now);
   const cfg = BOARD_CATEGORIES.find((c) => c.id === category) ?? BOARD_CATEGORIES[0];
   const yourScore =
-    category === 'level' ? levelInfo(xp).level : weekly.week === week ? weekly[category] : 0;
+    category === 'level' ? levelInfo(xp).level : weekly.week === week ? weekly[category] ?? 0 : 0;
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;

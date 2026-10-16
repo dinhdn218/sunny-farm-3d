@@ -1,11 +1,12 @@
 'use client';
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { SaveData, UserProfile } from '@/types/game';
+import { NeighborVisit, SaveData, UserProfile, VisitKind } from '@/types/game';
 import { SAVE_VERSION, saveFromCloud } from '@/lib/saveData';
 import { CloudSave, parseCloudRow } from '@/lib/cloudSave';
 import { BoardCategory, BoardEntry, boardFromRows } from '@/lib/leaderboard';
 import { FarmListing, FarmView, farmListFromRows, farmViewOf } from '@/lib/visit';
+import { VISITOR_NAME_MAX, visitsFromRows, vnDateKey } from '@/lib/neighbors';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -129,4 +130,41 @@ export async function fetchFarm(id: string): Promise<FarmView | null> {
   if (error) throw error;
   const cloud = parseCloudRow(data);
   return cloud ? farmViewOf(saveFromCloud(cloud.data, cloud.version)) : null;
+}
+
+// Leaves a watering or a like on another player's farm: 'already' when this player did it there today.
+// The farm_visits table (supabase/schema.sql) signs the visit with the account and stamps today's date.
+export async function sendFarmVisit(hostId: string, kind: VisitKind, visitorName: string): Promise<'sent' | 'already'> {
+  const { error } = await requireClient()
+    .from('farm_visits')
+    .insert({ host_id: hostId, kind, visitor_name: visitorName.slice(0, VISITOR_NAME_MAX) || 'Nông Dân' });
+  if (!error) return 'sent';
+  // One of each per farm a day (unique constraint)
+  if (error.code === '23505') return 'already';
+  throw error;
+}
+
+// What this player has already done on that farm today
+export async function fetchVisitsToday(hostId: string, visitorId: string): Promise<VisitKind[]> {
+  const { data, error } = await requireClient()
+    .from('farm_visits')
+    .select('kind')
+    .eq('host_id', hostId)
+    .eq('visitor_id', visitorId)
+    .eq('visit_date', vnDateKey(new Date()));
+  if (error) throw error;
+  return (data ?? []).map((row) => row.kind).filter((kind): kind is VisitKind => kind === 'like' || kind === 'water');
+}
+
+// Visits paid to this farm since the last one already seen, oldest first
+export async function fetchFarmVisits(hostId: string, afterId: number): Promise<NeighborVisit[]> {
+  const { data, error } = await requireClient()
+    .from('farm_visits')
+    .select('id, visitor_id, visitor_name, kind')
+    .eq('host_id', hostId)
+    .gt('id', afterId)
+    .order('id', { ascending: true })
+    .limit(50);
+  if (error) throw error;
+  return visitsFromRows(data ?? []);
 }

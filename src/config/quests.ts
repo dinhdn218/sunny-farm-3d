@@ -71,6 +71,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
   { id: 'd_bugs', title: 'Săn Côn Trùng', desc: 'Bắt được 2 con côn trùng ở Công Viên.', icon: '🦋', type: 'catch_bug', target: 2, rewardGold: 100, rewardGems: 4 },
   { id: 'd_gift', title: 'Quà Tặng Hàng Xóm', desc: 'Tặng quà cho 1 cư dân (click vào cư dân để mở thẻ).', icon: '🎁', type: 'give_gift', target: 1, rewardGold: 80, rewardGems: 3 },
+  { id: 'd_neighbor', title: 'Hàng Xóm Thân Thiện', desc: 'Thả tim hoặc tưới giúp 2 nông trại khi Thăm Hàng Xóm (Bản Đồ).', icon: '🏡', type: 'help_neighbor', target: 2, rewardGold: 90, rewardGems: 4 },
   { id: 'd_order', title: 'Giao Hàng Tận Nơi', desc: 'Giao 1 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 1, rewardGold: 100, rewardGems: 4 },
 ];
 

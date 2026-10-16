@@ -4,15 +4,31 @@ import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { isFreshSave } from '@/lib/saveData';
 import { CloudSave, decideCloudSync, profileFromUser } from '@/lib/cloudSave';
-import { fetchCloudSave, supabase } from '@/lib/supabase';
+import { fetchCloudSave, fetchFarmVisits, supabase } from '@/lib/supabase';
 
 const AUTOSAVE_MS = 30_000;
+// How often to look for other players' visits to this farm
+const VISITS_MS = 60_000;
 
 // Account whose sign-in has been handled. Supabase repeats SIGNED_IN (e.g. when the tab regains focus).
 let handledUserId: string | null = null;
 
 export function resetCloudSession() {
   handledUserId = null;
+}
+
+// Visits other players paid this farm since it last looked. Quietly tried again later when the cloud can't
+// be reached, or when the farm_visits table hasn't been set up yet (supabase/schema.sql).
+export async function checkNeighborVisits() {
+  const s = useGameStore.getState();
+  // Only once this farm is the account's own (not while the player is choosing between two farms)
+  if (!s.userProfile || s.cloudLink?.userId !== s.userProfile.id) return;
+  try {
+    const visits = await fetchFarmVisits(s.userProfile.id, s.neighborVisitsSeen);
+    if (visits.length) useGameStore.getState().receiveNeighborVisits(visits);
+  } catch {
+    // Next round
+  }
 }
 
 // When an account signs in: upload this farm, load the cloud one, or let the player pick
@@ -52,6 +68,7 @@ export async function handleSignedIn(user: Parameters<typeof profileFromUser>[0]
     store.linkCloudAccount(profile);
     await useGameStore.getState().syncToCloud();
   }
+  void checkNeighborVisits();
 }
 
 // Follows the Supabase session and keeps the signed-in farm uploaded
@@ -79,6 +96,7 @@ export function useCloudSync() {
       }
     };
     const timer = window.setInterval(flush, AUTOSAVE_MS);
+    const visitsTimer = window.setInterval(() => void checkNeighborVisits(), VISITS_MS);
     // Best effort when the tab is hidden or closed
     const onVisibilityChange = () => {
       if (document.visibilityState === 'hidden') flush();
@@ -88,6 +106,7 @@ export function useCloudSync() {
     return () => {
       data.subscription.unsubscribe();
       window.clearInterval(timer);
+      window.clearInterval(visitsTimer);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);

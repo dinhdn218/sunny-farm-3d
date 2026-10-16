@@ -321,7 +321,8 @@ export type QuestType =
   | 'deliver_order'
   | 'catch_bug'
   | 'give_gift'
-  | 'bau_cua';
+  | 'bau_cua'
+  | 'help_neighbor';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
@@ -377,6 +378,19 @@ export interface WeeklyStats {
   gold: number;
   fish: number;
   orders: number;
+  // Likes left on the farm by visiting players (saves from before likes have none)
+  likes?: number;
+}
+
+// What a player visiting someone else's farm can do there, once a day each (lib/neighbors)
+export type VisitKind = 'like' | 'water';
+
+// A visit to this farm, as the cloud's farm_visits table keeps it
+export interface NeighborVisit {
+  id: number;
+  visitorId: string;
+  visitorName: string;
+  kind: VisitKind;
 }
 
 // A swing of the net at a bug in the Park (not saved)
@@ -491,6 +505,10 @@ export interface SaveData {
   weekly: WeeklyStats;
   // The dish eaten today and what it does until bedtime (lib/food)
   buff: ActiveBuff | null;
+  // The newest visit from another player already turned into a letter (lib/neighbors)
+  neighborVisitsSeen: number;
+  // Residents whose farm got a like today (with `residentDay`)
+  likedFarms: ResidentId[];
 }
 
 export interface RemotePlayer {

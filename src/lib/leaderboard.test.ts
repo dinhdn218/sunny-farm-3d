@@ -17,15 +17,18 @@ describe('addWeekly', () => {
       gold: 150,
       fish: 1,
       orders: 0,
+      // A week from before likes starts counting them from nothing
+      likes: 0,
     });
   });
 
   it('starts a new week from nothing', () => {
-    expect(addWeekly({ week: '2026-W41', gold: 900, fish: 5, orders: 3 }, '2026-W42', { fish: 2 })).toEqual({
+    expect(addWeekly({ week: '2026-W41', gold: 900, fish: 5, orders: 3, likes: 4 }, '2026-W42', { fish: 2 })).toEqual({
       week: '2026-W42',
       gold: 0,
       fish: 2,
       orders: 0,
+      likes: 0,
     });
   });
 });
