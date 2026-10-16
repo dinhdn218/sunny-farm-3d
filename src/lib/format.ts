@@ -5,3 +5,11 @@ export function formatCountdown(ms: number) {
   const seconds = total % 60;
   return `${minutes}:${String(seconds).padStart(2, '0')}`;
 }
+
+// A purse amount short enough for the bar: "16325", then "125K" from a hundred thousand and "1,23M" from a
+// million (rounded down, so it never shows more than there is)
+export function formatAmount(n: number) {
+  if (n < 100_000) return String(n);
+  if (n < 1_000_000) return `${Math.floor(n / 1000)}K`;
+  return `${(Math.floor(n / 10_000) / 100).toString().replace('.', ',')}M`;
+}

@@ -70,7 +70,7 @@ export function SoundSettings() {
       <button
         onClick={() => setOpen(!open)}
         title="Âm thanh & nhạc nền"
-        className={`${SYSTEM_BUTTON} w-8`}
+        className={`${SYSTEM_BUTTON} w-7 sm:w-8`}
       >
         <i className={`fa-solid ${silent ? 'fa-volume-xmark' : 'fa-volume-high'}`} />
       </button>

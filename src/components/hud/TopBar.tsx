@@ -17,6 +17,7 @@ import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
 import { BUFFS } from '@/config/food';
 import { ITEMS } from '@/config/items';
 import { activeBuff, maxEnergyFor } from '@/lib/food';
+import { formatAmount } from '@/lib/format';
 import { SoundSettings } from './SoundSettings';
 import { SYSTEM_BUTTON } from './hudStyles';
 
@@ -27,11 +28,27 @@ function Groove({ className = '' }: { className?: string }) {
   return <span aria-hidden className={`w-0.5 shrink-0 self-stretch rounded-full bg-amber-900/20 ${className}`} />;
 }
 
-function Meter({ label, value, max, fill }: { label: string; value: number; max: number; fill: string }) {
+// The name shows beside the icon from sm up; phones keep the icon, to leave the zone's name room
+function Meter({
+  icon,
+  name,
+  value,
+  max,
+  fill,
+}: {
+  icon: string;
+  name: string;
+  value: number;
+  max: number;
+  fill: string;
+}) {
   return (
-    <div>
+    <div title={`${name}: ${value}/${max}`}>
       <div className="flex justify-between gap-1 text-[10px] font-extrabold leading-snug">
-        <span className="whitespace-nowrap">{label}</span>
+        <span className="whitespace-nowrap">
+          {icon}
+          <span className="hidden sm:inline"> {name}</span>
+        </span>
         <span className="tabular-nums">
           {value}/{max}
         </span>
@@ -158,9 +175,9 @@ function Farmer() {
           </span>
         )}
       </button>
-      <div className="flex w-24 flex-col gap-0.5 sm:w-28">
-        <Meter label="⚡ Thể lực" value={energy} max={maxEnergy} fill="from-lime-500 to-emerald-500" />
-        <Meter label="💧 Bình tưới" value={water} max={maxWater} fill="from-sky-400 to-blue-600" />
+      <div className="flex w-[72px] flex-col gap-0.5 sm:w-28">
+        <Meter icon="⚡" name="Thể lực" value={energy} max={maxEnergy} fill="from-lime-500 to-emerald-500" />
+        <Meter icon="💧" name="Bình tưới" value={water} max={maxWater} fill="from-sky-400 to-blue-600" />
       </div>
       <BuffBadge />
     </div>
@@ -169,9 +186,11 @@ function Farmer() {
 
 function Coin({ icon, label, value, valueClass }: { icon: string; label: string; value: number; valueClass: string }) {
   return (
-    <div className="flex items-center gap-1.5" title={label} aria-label={`${label}: ${value}`}>
-      <span className="text-sm leading-none">{icon}</span>
-      <span className={`text-sm font-black leading-tight tabular-nums ${valueClass}`}>{value}</span>
+    <div className="flex items-center gap-1 sm:gap-1.5" title={`${label}: ${value}`} aria-label={`${label}: ${value}`}>
+      <span className="text-xs leading-none sm:text-sm">{icon}</span>
+      <span className={`text-xs font-black leading-tight tabular-nums sm:text-sm ${valueClass}`}>
+        {formatAmount(value)}
+      </span>
     </div>
   );
 }
@@ -185,7 +204,7 @@ function Wallet() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex min-w-0 items-center gap-1.5 sm:gap-2">
       <div className="flex flex-col gap-0.5">
         <Coin icon="🪙" label="Vàng" value={gold} valueClass="text-amber-700" />
         <Coin icon="💎" label="Kim Cương" value={gems} valueClass="text-sky-700" />
@@ -195,10 +214,10 @@ function Wallet() {
           onClick={() => setActiveModal('festivalShop')}
           title={`${festival.token.name} ${festival.name}: ${tokens} (mở ${festival.shop.name})`}
           aria-label={`${festival.token.name}: ${tokens}, mở ${festival.shop.name}`}
-          className={`game-btn flex items-center gap-1 self-center rounded-xl border-2 border-black/30 px-2 py-1 text-white ${festival.ui.button}`}
+          className={`game-btn flex shrink-0 items-center gap-1 self-center rounded-xl border-2 border-black/30 px-1.5 py-0.5 text-white sm:px-2 sm:py-1 ${festival.ui.button}`}
         >
-          <span className="text-sm leading-none">{festival.token.icon}</span>
-          <span className="text-sm font-black leading-none tabular-nums">{tokens}</span>
+          <span className="text-xs leading-none sm:text-sm">{festival.token.icon}</span>
+          <span className="text-xs font-black leading-none tabular-nums sm:text-sm">{formatAmount(tokens)}</span>
         </button>
       )}
     </div>
@@ -365,7 +384,7 @@ function SystemButtons() {
         onClick={() => setActiveModal('auth')}
         title={`Hồ sơ & sảnh người chơi: ${onlineCount} người đang online`}
         aria-label={`Hồ sơ và người chơi, ${onlineCount} người đang online`}
-        className={`${SYSTEM_BUTTON} gap-1 px-2`}
+        className={`${SYSTEM_BUTTON} gap-1 px-1.5 sm:px-2`}
       >
         <i className="fa-solid fa-users text-xs" />
         <span className="text-[11px] font-black tabular-nums">{onlineCount}</span>
@@ -382,7 +401,7 @@ function SystemButtons() {
         onClick={() => setActiveModal('mail')}
         title="Hộp Thư"
         aria-label={`Hộp thư, ${newMail} thư mới`}
-        className={`${SYSTEM_BUTTON} w-8`}
+        className={`${SYSTEM_BUTTON} w-7 sm:w-8`}
       >
         ✉️
         {newMail > 0 && <Badge>{newMail}</Badge>}
@@ -391,7 +410,7 @@ function SystemButtons() {
         onClick={() => setActiveModal('leaderboard')}
         title="Bảng Xếp Hạng"
         aria-label="Bảng xếp hạng"
-        className={`${SYSTEM_BUTTON} w-8`}
+        className={`${SYSTEM_BUTTON} w-7 sm:w-8`}
       >
         🏆
       </button>
@@ -399,7 +418,7 @@ function SystemButtons() {
         onClick={togglePhotoMode}
         title="Chế độ chụp ảnh (phím P)"
         aria-label="Chế độ chụp ảnh"
-        className={`${SYSTEM_BUTTON} w-8`}
+        className={`${SYSTEM_BUTTON} w-7 sm:w-8`}
       >
         📷
       </button>
