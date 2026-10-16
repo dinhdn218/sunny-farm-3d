@@ -129,6 +129,11 @@ export function createNewGameSave(): SaveData {
     pendingThanks: null,
     collected: [],
     collectionClaimed: [],
+    friendship: {},
+    residentDay: 0,
+    talkedTo: [],
+    giftedTo: [],
+    giftLog: {},
   };
   return { ...save, orders: refillOrders(save), collected: discoveriesFrom(save) };
 }

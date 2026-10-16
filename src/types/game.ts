@@ -72,6 +72,9 @@ export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 
 export type SeasonId = 'spring' | 'summer' | 'autumn' | 'winter';
 
+// The island's residents, who can become friends (config/npcs, lib/friendship)
+export type ResidentId = 'linh_chi' | 'minh_quan' | 'bao_ngoc' | 'hoang_nam' | 'thao_vy';
+
 // The collection book's sets (lib/collection)
 export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach' | 'bugs';
 
@@ -291,7 +294,8 @@ export type QuestType =
   | 'card_win'
   | 'forage'
   | 'deliver_order'
-  | 'catch_bug';
+  | 'catch_bug'
+  | 'give_gift';
 
 export type QuestCategory = 'main' | 'daily' | 'achievement' | 'event';
 
@@ -441,6 +445,13 @@ export interface SaveData {
   // The collection book (lib/collection): everything ever found, and the sets already paid for
   collected: ItemId[];
   collectionClaimed: CollectionSetId[];
+  // Friendship with each resident (lib/friendship), who was talked to and given a gift today,
+  // and what each has been given (to remember their tastes)
+  friendship: Partial<Record<ResidentId, number>>;
+  residentDay: number;
+  talkedTo: ResidentId[];
+  giftedTo: ResidentId[];
+  giftLog: Partial<Record<ResidentId, ItemId[]>>;
 }
 
 export interface RemotePlayer {

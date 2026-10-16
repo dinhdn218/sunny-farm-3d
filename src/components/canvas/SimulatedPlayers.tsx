@@ -8,6 +8,8 @@ import { NpcPreset, npcPresetsFor } from '@/config/npcs';
 import { WORLDS } from '@/config/worlds';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
+import { interactable } from '@/lib/interact';
+import { hearts } from '@/lib/friendship';
 
 // Wandering resident with periodic speech bubbles (the HTML version's simulated online players)
 function SimulatedResident({ preset, index, roam }: { preset: NpcPreset; index: number; roam: number }) {
@@ -28,6 +30,20 @@ function SimulatedResident({ preset, index, roam }: { preset: NpcPreset; index: 
     };
   });
   const [chatText, setChatText] = useState('');
+  const heartCount = useGameStore((s) => hearts(s.friendship[preset.id] ?? 0));
+  // A click walks over to them (they may be strolling) and opens their card
+  const handlers = interactable(
+    preset.name,
+    () =>
+      useGameStore.getState().walkTo({
+        x: sim.x,
+        z: sim.z,
+        reach: 1.4,
+        track: () => ({ x: sim.x, z: sim.z }),
+        act: () => useGameStore.getState().openResident(preset.id),
+      }),
+    'Click để trò chuyện và tặng quà'
+  );
 
   useFrame((_, delta) => {
     const group = groupRef.current;
@@ -39,7 +55,12 @@ function SimulatedResident({ preset, index, roam }: { preset: NpcPreset; index: 
     const dz = sim.targetZ - sim.z;
     const dist = Math.hypot(dx, dz);
     let y = 0.08;
-    if (dist > 0.2) {
+    // While their card is open they stand still and face the player
+    const store = useGameStore.getState();
+    if (store.activeModal === 'resident' && store.activeResident === preset.id) {
+      motion.moving = false;
+      sim.rotY = Math.atan2(store.playerPos.x - sim.x, store.playerPos.z - sim.z);
+    } else if (dist > 0.2) {
       sim.x += (dx / dist) * 2.4 * dt;
       sim.z += (dz / dist) * 2.4 * dt;
       sim.rotY = Math.atan2(dx, dz);
@@ -72,9 +93,9 @@ function SimulatedResident({ preset, index, roam }: { preset: NpcPreset; index: 
   });
 
   return (
-    <group ref={groupRef} position={[sim.x, 0.08, sim.z]}>
+    <group ref={groupRef} position={[sim.x, 0.08, sim.z]} {...handlers}>
       <AvatarMesh cosmetics={preset.cosmetics} motion={motion} />
-      <PlayerTag name={preset.name} chatText={chatText} />
+      <PlayerTag name={preset.name} chatText={chatText} hearts={heartCount} />
     </group>
   );
 }

@@ -38,6 +38,7 @@ import { ClawModal } from '@/components/hud/modals/ClawModal';
 import { OrderBoardModal } from '@/components/hud/modals/OrderBoardModal';
 import { MailModal } from '@/components/hud/modals/MailModal';
 import { CollectionModal } from '@/components/hud/modals/CollectionModal';
+import { ResidentModal } from '@/components/hud/modals/ResidentModal';
 import { TienLenTable } from '@/components/hud/casino/TienLenTable';
 import { giftDay, localDateKey } from '@/lib/dailyGift';
 
@@ -119,6 +120,7 @@ function Hud({ activeModal }: { activeModal: ReturnType<typeof useGameStore.getS
       {activeModal === 'orders' && <OrderBoardModal />}
       {activeModal === 'mail' && <MailModal />}
       {activeModal === 'collection' && <CollectionModal />}
+      {activeModal === 'resident' && <ResidentModal />}
       <TienLenTable />
     </>
   );

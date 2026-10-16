@@ -70,6 +70,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
   { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },
   { id: 'd_bugs', title: 'Săn Côn Trùng', desc: 'Bắt được 2 con côn trùng ở Công Viên.', icon: '🦋', type: 'catch_bug', target: 2, rewardGold: 100, rewardGems: 4 },
+  { id: 'd_gift', title: 'Quà Tặng Hàng Xóm', desc: 'Tặng quà cho 1 cư dân (click vào cư dân để mở thẻ).', icon: '🎁', type: 'give_gift', target: 1, rewardGold: 80, rewardGems: 3 },
   { id: 'd_order', title: 'Giao Hàng Tận Nơi', desc: 'Giao 1 đơn hàng ở Bảng Đơn Hàng (phím O).', icon: '📦', type: 'deliver_order', target: 1, rewardGold: 100, rewardGems: 4 },
 ];
 

@@ -58,6 +58,11 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   pendingThanks: true,
   collected: true,
   collectionClaimed: true,
+  friendship: true,
+  residentDay: true,
+  talkedTo: true,
+  giftedTo: true,
+  giftLog: true,
 };
 
 export const SAVE_KEYS = Object.keys(SAVE_FIELDS) as (keyof SaveData)[];

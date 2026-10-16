@@ -8,6 +8,7 @@ import {
   BuildPiece,
   BuildPieceId,
   CollectionSetId,
+  ResidentId,
   ChatMessage,
   CropId,
   FarmAnimal,
@@ -88,6 +89,17 @@ import { daysUntilGrown, ripenTrees } from '@/lib/trees';
 import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
 import { bugsInPark, netCaught, netZoneWidth } from '@/lib/bugs';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
+import { RESIDENTS } from '@/config/npcs';
+import {
+  ORDER_POINTS,
+  REACTION_POINTS,
+  TALK_POINTS,
+  addFriendship,
+  giftReaction,
+  heartLetter,
+  hearts,
+  residentByName,
+} from '@/lib/friendship';
 import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
@@ -212,6 +224,7 @@ interface GameState extends SaveData {
     | 'orders'
     | 'mail'
     | 'collection'
+    | 'resident'
     | null;
   // Machine shown in the workshop window
   workshopMachine: MachineId | null;
@@ -289,6 +302,11 @@ interface GameState extends SaveData {
   claimLetter: (letterId: string) => void;
   // The reward for a complete set in the collection book, paid once
   claimCollection: (setId: CollectionSetId) => void;
+  // The resident whose card is open (not saved), and making friends with them
+  activeResident: ResidentId | null;
+  openResident: (id: ResidentId) => void;
+  talkTo: (id: ResidentId) => void;
+  giveGift: (id: ResidentId, item: ItemId) => void;
 
   openWorkshop: (machine?: MachineId) => void;
   buyMachine: (id: MachineId) => void;
@@ -411,6 +429,33 @@ export const useGameStore = create<GameState>()(
         }
       };
 
+      // Friendship moves by `delta`; every heart it fills brings a letter from them with a gift
+      const befriend = (id: ResidentId, delta: number) => {
+        const { friendship, mail, day, playerPos } = get();
+        const before = friendship[id] ?? 0;
+        const after = addFriendship(before, delta);
+        const resident = RESIDENTS[id];
+        const letters = [];
+        for (let heart = hearts(before) + 1; heart <= hearts(after); heart++) {
+          letters.push(heartLetter(resident, heart, day));
+        }
+        set({ friendship: { ...friendship, [id]: after }, mail: deliverLetters(mail, letters) });
+        if (letters.length) {
+          soundFX.questClaim();
+          get().showToast(`💖 Thân với ${resident.name} ${hearts(after)} tim! Có thư mới ✉️`, 'text-pink-300', [
+            playerPos.x,
+            1.9,
+            playerPos.z,
+          ]);
+        }
+      };
+
+      // Who was talked to and given a gift today: a new day clears both
+      const residentsToday = () => {
+        const { residentDay, talkedTo, giftedTo, day } = get();
+        return residentDay === day ? { talkedTo, giftedTo } : { talkedTo: [], giftedTo: [] };
+      };
+
       // "Visit N zones" depends on where you have been, not on a single event
       const syncVisitQuest = () => {
         const completed: QuestItem[] = [];
@@ -453,6 +498,7 @@ export const useGameStore = create<GameState>()(
         workshopMachine: null,
         fishing: null,
         bugCatch: null,
+        activeResident: null,
         lastDaySummary: null,
         floatingLabels: [],
         tooltip: null,
@@ -1269,6 +1315,8 @@ export const useGameStore = create<GameState>()(
           );
           get().incrementQuest('earn_gold', order.rewardGold);
           get().incrementQuest('deliver_order', 1);
+          const customer = residentByName(order.customer);
+          if (customer) befriend(customer.id, ORDER_POINTS);
         },
 
         // The slot stays empty until the next morning brings a new order
@@ -1317,6 +1365,49 @@ export const useGameStore = create<GameState>()(
             `📖 Hoàn thành bộ ${group.icon} ${group.name}! +${group.reward.gold}🪙 +${group.reward.gems}💎`,
             'text-yellow-300'
           );
+        },
+
+        openResident: (id) => set({ activeResident: id, activeModal: 'resident', tooltip: null }),
+
+        talkTo: (id) => {
+          const today = residentsToday();
+          if (today.talkedTo.includes(id)) return;
+          set({ residentDay: get().day, talkedTo: [...today.talkedTo, id], giftedTo: today.giftedTo });
+          befriend(id, TALK_POINTS);
+        },
+
+        // One gift a day: liked gifts make better friends, hated ones cost friendship
+        giveGift: (id, item) => {
+          const today = residentsToday();
+          const { items, giftLog } = get();
+          const resident = RESIDENTS[id];
+          if (today.giftedTo.includes(id)) {
+            get().showToast(`Hôm nay đã tặng quà cho ${resident.name} rồi!`, 'text-amber-300');
+            return;
+          }
+          const rest = takeItems(items, { [item]: 1 });
+          if (!rest) return;
+          const reaction = giftReaction(resident, item);
+          set({
+            items: rest,
+            residentDay: get().day,
+            talkedTo: today.talkedTo,
+            giftedTo: [...today.giftedTo, id],
+            giftLog: { ...giftLog, [id]: Array.from(new Set([...(giftLog[id] ?? []), item])) },
+          });
+          if (reaction === 'hate') soundFX.error();
+          else soundFX.coin();
+          get().showToast(
+            {
+              love: `😍 ${resident.name} cực kỳ thích ${ITEMS[item].icon}!`,
+              like: `😊 ${resident.name} thích ${ITEMS[item].icon}`,
+              neutral: `🙂 ${resident.name} cảm ơn bạn`,
+              hate: `😣 ${resident.name} không thích ${ITEMS[item].icon}...`,
+            }[reaction],
+            reaction === 'hate' ? 'text-red-300' : 'text-pink-300'
+          );
+          befriend(id, REACTION_POINTS[reaction]);
+          get().incrementQuest('give_gift', 1);
         },
 
         // The gift that came with a letter, handed over once
