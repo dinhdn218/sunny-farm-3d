@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { AnimalSpecies, FarmAnimal, ItemId, Order } from '@/types/game';
+import { AnimalSpecies, BuildPiece, FarmAnimal, ItemId, Order } from '@/types/game';
 import { NPC_PRESETS } from '@/config/npcs';
+import { ITEMS } from '@/config/items';
 import { OrderFarm, orderReward, orderableItems, refillOrders } from '@/lib/orders';
 
 const animal = (species: AnimalSpecies, id: string = species): FarmAnimal => ({
@@ -14,7 +15,16 @@ const animal = (species: AnimalSpecies, id: string = species): FarmAnimal => ({
   z: 0,
 });
 
-// A young farm: one hen, no machines, no fish caught, never been to the beach
+// A fruit tree planted on day 1: mango trees bear from day 7, orange trees from day 6
+const tree = (kind: 'mango_tree' | 'orange_tree', x = 0): BuildPiece => ({ kind, x, z: 8, rotY: 0, planted: 1 });
+
+// A hive on the farm, with no flowerbeds around it
+const hive = {
+  decorPlacements: { decor_beehive: { x: 6, z: 3, rotY: 0 } },
+  ownedCosmetics: ['decor_beehive'],
+};
+
+// A young farm: one hen, no machines, no fish caught, never been to the beach, no trees or hive
 const farm = (over: Partial<OrderFarm> = {}): OrderFarm => ({
   day: 1,
   xp: 0,
@@ -23,6 +33,9 @@ const farm = (over: Partial<OrderFarm> = {}): OrderFarm => ({
   machines: {},
   fishLog: {},
   visitedWorlds: ['farm'],
+  buildPieces: [],
+  decorPlacements: {},
+  ownedCosmetics: [],
   ...over,
 });
 
@@ -58,8 +71,44 @@ describe('orderableItems', () => {
       })
     );
     expect(sorted(pool)).toEqual(
-      sorted([...CROPS, 'carrot_juice', 'cheese', 'egg', 'flan', 'milk', 'pumpkin_pie', 'strawberry_jam', 'tomato_sauce'])
+      sorted([
+        ...CROPS,
+        'carrot_juice',
+        'cheese',
+        'corn_pudding',
+        'egg',
+        'flan',
+        'milk',
+        'pumpkin_pie',
+        'strawberry_jam',
+        'tomato_sauce',
+      ])
     );
+  });
+
+  it('asks for fruit once the trees bear, and for honey from a hive', () => {
+    expect(orderableItems(farm({ day: 6, buildPieces: [tree('mango_tree')] }))).not.toContain('mango');
+    expect(orderableItems(farm({ day: 7, buildPieces: [tree('mango_tree')] }))).toContain('mango');
+    expect(orderableItems(farm({ day: 6, buildPieces: [tree('orange_tree')] }))).toContain('orange');
+    expect(orderableItems(farm())).not.toContain('honey');
+    expect(orderableItems(farm(hive))).toContain('honey');
+  });
+
+  it('blends fruit drinks only from fruit the farm grows', () => {
+    const blender = { machine_blender: { job: null } };
+    const drinks = (over: Partial<OrderFarm>) =>
+      orderableItems(farm({ machines: blender, ...over })).filter((id) => ITEMS[id].kind === 'artisan');
+    // Watermelon is a crop, so its shaved ice can always be made
+    expect(sorted(drinks({}))).toEqual(['watermelon_ice']);
+    expect(sorted(drinks({ day: 7, buildPieces: [tree('mango_tree'), tree('orange_tree', 2)] }))).toEqual(
+      sorted(['mango_smoothie', 'orange_juice', 'watermelon_ice'])
+    );
+  });
+
+  it('bakes honey cake for a farm with a hive', () => {
+    const oven = { machine_oven: { job: null } };
+    expect(orderableItems(farm({ machines: oven }))).not.toContain('honey_cake');
+    expect(orderableItems(farm({ machines: oven, ...hive }))).toContain('honey_cake');
   });
 
   it('asks for fish the farmer has caught, but never rare fish or junk', () => {
@@ -172,6 +221,13 @@ describe('refillOrders', () => {
     expect(Math.max(...eggs(ordersOver(60)))).toBeLessThanOrEqual(2);
     const hens = [animal('chicken', 'c1'), animal('chicken', 'c2'), animal('chicken', 'c3')];
     expect(Math.max(...eggs(ordersOver(60, { animals: hens })))).toBeGreaterThan(2);
+  });
+
+  it('never asks for more fruit than two days of the trees give', () => {
+    const mangoes = (orders: Order[]) => orders.map((o) => o.items.mango ?? 0);
+    expect(Math.max(...mangoes(ordersOver(60, { buildPieces: [tree('mango_tree')] })))).toBe(2);
+    const grove = [tree('mango_tree'), tree('mango_tree', 2), tree('mango_tree', 4)];
+    expect(Math.max(...mangoes(ordersOver(60, { buildPieces: grove })))).toBeGreaterThan(2);
   });
 
   it('pays more than the shipping bin would for the same goods', () => {

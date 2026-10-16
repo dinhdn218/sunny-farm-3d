@@ -20,7 +20,18 @@ export type ArtisanId =
   | 'pumpkin_pie'
   | 'fish_stew'
   | 'honey_cake'
-  | 'strawberry_jam';
+  | 'strawberry_jam'
+  | 'mango_smoothie'
+  | 'orange_juice'
+  | 'watermelon_ice'
+  | 'fish_sauce'
+  | 'salted_egg'
+  | 'pickled_cabbage'
+  | 'truffle_oil'
+  | 'corn_pudding'
+  | 'sour_fish_soup'
+  | 'fish_cake'
+  | 'grilled_squid';
 export type FishId =
   | 'carp'
   | 'tilapia'
@@ -55,18 +66,15 @@ export type FishingSpotId = 'beach' | 'park';
 export type ItemCounts = Partial<Record<ItemId, number>>;
 export type TreeType = 'pine' | 'oak' | 'sakura' | 'palm';
 
-export type MachineId = 'machine_oven' | 'machine_kitchen' | 'machine_cheese' | 'machine_loom';
-export type RecipeId =
-  | 'bread'
-  | 'pumpkin_pie'
-  | 'carrot_juice'
-  | 'tomato_sauce'
-  | 'flan'
-  | 'cheese'
-  | 'wool_scarf'
-  | 'fish_stew'
-  | 'honey_cake'
-  | 'strawberry_jam';
+export type MachineId =
+  | 'machine_oven'
+  | 'machine_kitchen'
+  | 'machine_cheese'
+  | 'machine_loom'
+  | 'machine_blender'
+  | 'machine_crock';
+// Every recipe but bread makes the artisan good of the same name
+export type RecipeId = 'bread' | ArtisanId;
 
 export type TimePhaseId = 'morning' | 'noon' | 'sunset' | 'night';
 

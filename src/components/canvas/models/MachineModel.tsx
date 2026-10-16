@@ -230,6 +230,203 @@ function Loom({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
   );
 }
 
+const STAND_LEGS: [number, number][] = [
+  [-0.56, -0.28],
+  [-0.56, 0.28],
+  [0.56, -0.28],
+  [0.56, 0.28],
+];
+
+// Glasses of the blender's drinks lined up on its stand: colour and spot on the counter
+const STAND_GLASSES: { color: string; at: Vec3 }[] = [
+  { color: '#facc15', at: [0.05, 0.86, 0.18] },
+  { color: '#fb923c', at: [0.25, 0.86, 0.18] },
+  { color: '#f43f5e', at: [0.45, 0.86, 0.18] },
+];
+
+// Mango, orange and watermelon in the fruit bowl
+const STAND_FRUIT: { color: string; at: Vec3; r: number }[] = [
+  { color: '#f59e0b', at: [0.36, 0.92, -0.14], r: 0.07 },
+  { color: '#f97316', at: [0.48, 0.92, -0.12], r: 0.065 },
+  { color: '#16a34a', at: [0.44, 0.94, -0.25], r: 0.08 },
+];
+
+function Blender({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
+  const jarRef = useRef<THREE.Group>(null);
+  const swirlRef = useRef<THREE.Group>(null);
+
+  // The jar shudders and the drink churns while a batch is blending
+  useFrame((_, delta) => {
+    const working = isWorking(job);
+    const now = performance.now();
+    if (jarRef.current) {
+      jarRef.current.position.x = working ? Math.sin(now * 0.09) * 0.01 : 0;
+      jarRef.current.position.z = working ? Math.cos(now * 0.07) * 0.01 : 0;
+    }
+    if (swirlRef.current) {
+      if (working) swirlRef.current.rotation.y += Math.min(delta, 0.1) * 18;
+      swirlRef.current.scale.y = working ? 1 + Math.sin(now * 0.02) * 0.12 : 1;
+    }
+  });
+
+  return (
+    <group>
+      {/* Wooden stand with a striped skirt */}
+      <Block size={[1.3, 0.08, 0.75]} at={[0, 0.74, 0]} color="#d97706" ghost={ghost} />
+      {STAND_LEGS.map(([x, z]) => (
+        <Block key={`${x},${z}`} size={[0.08, 0.7, 0.08]} at={[x, 0.35, z]} color="#92400e" ghost={ghost} />
+      ))}
+      <Block size={[1.26, 0.36, 0.03]} at={[0, 0.52, 0.36]} color="#fef3c7" ghost={ghost} />
+      {[-0.42, 0, 0.42].map((x) => (
+        <Block key={x} size={[0.2, 0.36, 0.035]} at={[x, 0.52, 0.36]} color="#f97316" ghost={ghost} />
+      ))}
+
+      {/* The blender: motor base, glass jar with the drink inside, lid */}
+      <group ref={jarRef} position={[-0.25, 0, 0]}>
+        <mesh castShadow={!ghost} position={[0, 0.89, 0]}>
+          <cylinderGeometry args={[0.17, 0.2, 0.22, 12]} />
+          <Mat color="#e11d48" ghost={ghost} />
+        </mesh>
+        <mesh position={[0, 0.88, 0.19]}>
+          <boxGeometry args={[0.08, 0.05, 0.03]} />
+          <Mat color="#fde047" ghost={ghost} glow />
+        </mesh>
+        <group ref={swirlRef} position={[0, 1.13, 0]}>
+          <mesh>
+            <cylinderGeometry args={[0.135, 0.12, 0.26, 12]} />
+            <Mat color="#fb923c" ghost={ghost} />
+          </mesh>
+          <Block size={[0.27, 0.2, 0.03]} at={[0, 0.02, 0]} color="#fde68a" ghost={ghost} />
+        </group>
+        <mesh position={[0, 1.23, 0]}>
+          <cylinderGeometry args={[0.17, 0.14, 0.46, 12]} />
+          <meshLambertMaterial color="#e0f2fe" transparent opacity={ghost ? 0.3 : 0.45} depthWrite={false} />
+        </mesh>
+        <mesh position={[0, 1.48, 0]}>
+          <cylinderGeometry args={[0.18, 0.18, 0.05, 12]} />
+          <Mat color="#1f2937" ghost={ghost} />
+        </mesh>
+      </group>
+
+      {/* Drinks ready to serve, each with a straw */}
+      {STAND_GLASSES.map(({ color, at }) => (
+        <group key={color} position={at}>
+          <mesh castShadow={!ghost}>
+            <cylinderGeometry args={[0.065, 0.055, 0.16, 10]} />
+            <Mat color={color} ghost={ghost} />
+          </mesh>
+          <mesh position={[0.02, 0.12, 0]} rotation={[0, 0, -0.25]}>
+            <cylinderGeometry args={[0.012, 0.012, 0.16, 5]} />
+            <Mat color="#f8fafc" ghost={ghost} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Fruit bowl */}
+      <mesh position={[0.42, 0.83, -0.18]}>
+        <cylinderGeometry args={[0.18, 0.12, 0.1, 12]} />
+        <Mat color="#a16207" ghost={ghost} />
+      </mesh>
+      {STAND_FRUIT.map(({ color, at, r }) => (
+        <mesh key={color} position={at}>
+          <sphereGeometry args={[r, 10, 8]} />
+          <Mat color={color} ghost={ghost} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+// Small jars beside the big one: where they stand, their size and glaze, and how they are closed
+const SIDE_JARS: { at: Vec3; r: number; color: string; cover: 'cloth' | 'lid' }[] = [
+  { at: [0.48, 0, 0.22], r: 0.24, color: '#92400e', cover: 'cloth' },
+  { at: [0.42, 0, -0.3], r: 0.2, color: '#b45309', cover: 'lid' },
+];
+
+function Crock({ ghost, job }: { ghost?: boolean; job?: MachineJob | null }) {
+  const lidRef = useRef<THREE.Group>(null);
+
+  // The big jar's lid rattles while a batch ferments
+  useFrame(() => {
+    if (!lidRef.current) return;
+    const working = isWorking(job);
+    const t = performance.now() * 0.006;
+    lidRef.current.rotation.z = working ? Math.sin(t) * 0.06 : 0;
+    lidRef.current.position.y = working ? 1.15 + Math.max(0, Math.sin(t * 2)) * 0.03 : 1.15;
+  });
+
+  return (
+    <group>
+      {/* Bamboo mat */}
+      <Block size={[1.5, 0.06, 1.1]} at={[0, 0.03, 0]} color="#ca8a04" ghost={ghost} />
+      {[-0.45, -0.15, 0.15, 0.45].map((z) => (
+        <Block key={z} size={[1.5, 0.065, 0.025]} at={[0, 0.035, z]} color="#a16207" ghost={ghost} />
+      ))}
+
+      {/* The big glazed chum */}
+      <group position={[-0.25, 0, 0]}>
+        <mesh castShadow={!ghost} position={[0, 0.56, 0]} scale={[1, 1.15, 1]}>
+          <sphereGeometry args={[0.45, 16, 12]} />
+          <Mat color="#7c2d12" ghost={ghost} />
+        </mesh>
+        <mesh position={[0, 0.82, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.37, 0.03, 6, 20]} />
+          <Mat color="#d97706" ghost={ghost} />
+        </mesh>
+        <mesh position={[0, 1.02, 0]}>
+          <cylinderGeometry args={[0.22, 0.29, 0.14, 14]} />
+          <Mat color="#7c2d12" ghost={ghost} />
+        </mesh>
+        <mesh position={[0, 1.09, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[0.23, 0.035, 6, 18]} />
+          <Mat color="#9a3412" ghost={ghost} />
+        </mesh>
+        <group ref={lidRef} position={[0, 1.15, 0]}>
+          <mesh castShadow={!ghost}>
+            <cylinderGeometry args={[0.08, 0.27, 0.12, 14]} />
+            <Mat color="#78350f" ghost={ghost} />
+          </mesh>
+          <mesh position={[0, 0.09, 0]}>
+            <sphereGeometry args={[0.05, 8, 6]} />
+            <Mat color="#a16207" ghost={ghost} />
+          </mesh>
+        </group>
+        {!ghost && <Smoke at={[0, 1.3, 0]} job={job} color="#fef9c3" />}
+      </group>
+
+      {SIDE_JARS.map(({ at, r, color, cover }) => (
+        <group key={color} position={at}>
+          <mesh castShadow={!ghost} position={[0, r * 1.15, 0]} scale={[1, 1.1, 1]}>
+            <sphereGeometry args={[r, 12, 10]} />
+            <Mat color={color} ghost={ghost} />
+          </mesh>
+          <mesh position={[0, r * 2.2, 0]}>
+            <cylinderGeometry args={[r * 0.5, r * 0.62, r * 0.35, 12]} />
+            <Mat color={color} ghost={ghost} />
+          </mesh>
+          {cover === 'cloth' ? (
+            <>
+              <mesh position={[0, r * 2.38, 0]}>
+                <sphereGeometry args={[r * 0.6, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2]} />
+                <Mat color="#fef3c7" ghost={ghost} />
+              </mesh>
+              <mesh position={[0, r * 2.36, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <torusGeometry args={[r * 0.55, 0.018, 5, 14]} />
+                <Mat color="#dc2626" ghost={ghost} />
+              </mesh>
+            </>
+          ) : (
+            <mesh position={[0, r * 2.42, 0]}>
+              <cylinderGeometry args={[r * 0.3, r * 0.6, r * 0.22, 12]} />
+              <Mat color="#78350f" ghost={ghost} />
+            </mesh>
+          )}
+        </group>
+      ))}
+    </group>
+  );
+}
+
 // 3D model of a workshop machine; `job` drives its working animation
 export function MachineModel({
   id,
@@ -249,5 +446,9 @@ export function MachineModel({
       return <CheesePress ghost={ghost} job={job} />;
     case 'machine_loom':
       return <Loom ghost={ghost} job={job} />;
+    case 'machine_blender':
+      return <Blender ghost={ghost} job={job} />;
+    case 'machine_crock':
+      return <Crock ghost={ghost} job={job} />;
   }
 }

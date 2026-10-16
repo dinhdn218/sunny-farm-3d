@@ -16,6 +16,17 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   fish_stew: { id: 'fish_stew', name: 'Cá Kho Tộ', icon: '🍲', sellPrice: 230, kind: 'artisan' },
   honey_cake: { id: 'honey_cake', name: 'Bánh Mật Ong', icon: '🍰', sellPrice: 320, kind: 'artisan' },
   strawberry_jam: { id: 'strawberry_jam', name: 'Mứt Dâu', icon: '🫙', sellPrice: 250, kind: 'artisan' },
+  corn_pudding: { id: 'corn_pudding', name: 'Chè Bắp', icon: '🍨', sellPrice: 240, kind: 'artisan' },
+  sour_fish_soup: { id: 'sour_fish_soup', name: 'Canh Chua Cá Lóc', icon: '🥘', sellPrice: 250, kind: 'artisan' },
+  fish_cake: { id: 'fish_cake', name: 'Chả Cá', icon: '🍥', sellPrice: 160, kind: 'artisan' },
+  grilled_squid: { id: 'grilled_squid', name: 'Mực Nướng', icon: '🍢', sellPrice: 170, kind: 'artisan' },
+  mango_smoothie: { id: 'mango_smoothie', name: 'Sinh Tố Xoài', icon: '🥤', sellPrice: 180, kind: 'artisan' },
+  orange_juice: { id: 'orange_juice', name: 'Nước Cam Ép', icon: '🍹', sellPrice: 150, kind: 'artisan' },
+  watermelon_ice: { id: 'watermelon_ice', name: 'Đá Bào Dưa Hấu', icon: '🍧', sellPrice: 280, kind: 'artisan' },
+  fish_sauce: { id: 'fish_sauce', name: 'Nước Mắm Cá Cơm', icon: '🫗', sellPrice: 120, kind: 'artisan' },
+  salted_egg: { id: 'salted_egg', name: 'Trứng Vịt Muối', icon: '🧂', sellPrice: 180, kind: 'artisan' },
+  pickled_cabbage: { id: 'pickled_cabbage', name: 'Dưa Bắp Cải', icon: '🥗', sellPrice: 250, kind: 'artisan' },
+  truffle_oil: { id: 'truffle_oil', name: 'Dầu Nấm Truffle', icon: '🫒', sellPrice: 330, kind: 'artisan' },
 };
 
 // Everything off the fishing line except treasure chests, which are opened on the spot

@@ -17,7 +17,7 @@ const ofKind = (kind: ItemConfig['kind']) => ITEM_LIST.filter((i) => i.kind === 
 export const COLLECTION_SETS: CollectionSet[] = [
   { id: 'crops', name: 'Nông Sản', icon: '🌾', items: ofKind('crop'), reward: { gold: 300, gems: 15 } },
   { id: 'animal', name: 'Chăn Nuôi', icon: '🥚', items: ofKind('animal'), reward: { gold: 300, gems: 15 } },
-  { id: 'artisan', name: 'Đồ Chế Biến', icon: '🏭', items: ofKind('artisan'), reward: { gold: 500, gems: 25 } },
+  { id: 'artisan', name: 'Đồ Chế Biến', icon: '🏭', items: ofKind('artisan'), reward: { gold: 1000, gems: 50 } },
   {
     id: 'fish',
     name: 'Cá',

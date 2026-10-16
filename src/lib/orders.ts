@@ -1,17 +1,29 @@
 import { ArtisanId, FishId, ForageId, ItemCounts, ItemId, MachineId, Order, SaveData } from '@/types/game';
 import { CROP_LIST } from '@/config/crops';
-import { ANIMAL_LIST } from '@/config/animals';
+import { ANIMALS, ANIMAL_LIST } from '@/config/animals';
+import { BUILD_PIECES } from '@/config/build';
 import { CATCH_LIST } from '@/config/fish';
 import { ITEMS } from '@/config/items';
 import { MACHINES, RECIPES } from '@/config/machines';
 import { NPC_PRESETS } from '@/config/npcs';
+import { hiveHoneyToday } from '@/lib/beehive';
 import { levelInfo } from '@/lib/leveling';
 import { seeded } from '@/lib/random';
+import { daysUntilGrown } from '@/lib/trees';
 
 // What the order board needs to know about the farm
 export type OrderFarm = Pick<
   SaveData,
-  'day' | 'xp' | 'orders' | 'animals' | 'machines' | 'fishLog' | 'visitedWorlds'
+  | 'day'
+  | 'xp'
+  | 'orders'
+  | 'animals'
+  | 'machines'
+  | 'fishLog'
+  | 'visitedWorlds'
+  | 'buildPieces'
+  | 'decorPlacements'
+  | 'ownedCosmetics'
 >;
 
 // Orders pay half again what the goods fetch in the shipping bin, plus a diamond for every 400 gold (up to 3)
@@ -33,12 +45,30 @@ const QUANTITIES: { upTo: number; min: number; max: number }[] = [
 export const EXTRA_SLOT_LEVEL = 10;
 export const orderSlots = (level: number) => (level >= EXTRA_SLOT_LEVEL ? 4 : 3);
 
+// What the farm gets each day that can't be had at will: animal products, fruit from the grown trees, honey
+function dailySupply(farm: OrderFarm): ItemCounts {
+  const supply: ItemCounts = {};
+  const add = (id: ItemId, n: number) => {
+    if (n > 0) supply[id] = (supply[id] ?? 0) + n;
+  };
+  farm.animals.forEach((a) => add(ANIMALS[a.species].productId, 1));
+  farm.buildPieces.forEach((piece) => {
+    const fruit = BUILD_PIECES[piece.kind].fruit;
+    if (fruit && daysUntilGrown(piece, farm.day) === 0) add(fruit.item, 1);
+  });
+  add('honey', hiveHoneyToday(farm.decorPlacements, farm.ownedCosmetics, farm.buildPieces));
+  return supply;
+}
+
 // Goods a resident may ask this farm for: what it can produce
 export function orderableItems(farm: OrderFarm): ItemId[] {
   const species = new Set(farm.animals.map((a) => a.species));
+  const supply = dailySupply(farm);
   const basics: ItemId[] = [
     ...CROP_LIST.map((c) => c.id),
     ...ANIMAL_LIST.filter((a) => species.has(a.species)).map((a) => a.productId),
+    // Fruit from trees that bear, and honey from the hive
+    ...(['mango', 'orange', 'honey'] as ItemId[]).filter((id) => supply[id]),
     // Fish the farmer has landed before, but no rare ones (or junk)
     ...CATCH_LIST.filter(
       (c) =>
@@ -66,14 +96,9 @@ export function orderReward(items: ItemCounts) {
   return { rewardGold, rewardGems: Math.min(MAX_ORDER_GEMS, Math.floor(rewardGold / GOLD_PER_GEM)) };
 }
 
-// Animal products: no more than two days of what the herd gives
-function herdCap(id: ItemId, farm: OrderFarm) {
-  const animal = ANIMAL_LIST.find((a) => a.productId === id);
-  return animal ? 2 * farm.animals.filter((a) => a.species === animal.species).length : Infinity;
-}
-
-// Fixed by the day and the slot it fills, so the same morning always posts the same order
-function createOrder(farm: OrderFarm, index: number, pool: ItemId[], level: number): Order {
+// Fixed by the day and the slot it fills, so the same morning always posts the same order;
+// animal products, fruit and honey are asked for no more than two days of what the farm gets
+function createOrder(farm: OrderFarm, index: number, pool: ItemId[], level: number, supply: ItemCounts): Order {
   const random = seeded(farm.day * 6151 + index * 97 + 29);
   const customer = NPC_PRESETS[Math.floor(random() * NPC_PRESETS.length)].name;
   const kinds = 1 + Math.floor(random() * Math.min(pool.length, level >= 5 ? 3 : 2));
@@ -82,7 +107,7 @@ function createOrder(farm: OrderFarm, index: number, pool: ItemId[], level: numb
   for (let i = 0; i < kinds; i++) {
     const [id] = left.splice(Math.floor(random() * left.length), 1);
     const { min, max } = QUANTITIES.find((q) => ITEMS[id].sellPrice <= q.upTo)!;
-    items[id] = Math.min(min + Math.floor(random() * (max - min + 1)), herdCap(id, farm));
+    items[id] = Math.min(min + Math.floor(random() * (max - min + 1)), 2 * (supply[id] ?? Infinity));
   }
   return { id: `ord_${farm.day}_${index}`, customer, items, ...orderReward(items) };
 }
@@ -93,5 +118,9 @@ export function refillOrders(farm: OrderFarm): Order[] {
   const missing = orderSlots(level) - farm.orders.length;
   if (missing <= 0) return farm.orders;
   const pool = orderableItems(farm);
-  return [...farm.orders, ...Array.from({ length: missing }, (_, i) => createOrder(farm, i, pool, level))];
+  const supply = dailySupply(farm);
+  return [
+    ...farm.orders,
+    ...Array.from({ length: missing }, (_, i) => createOrder(farm, i, pool, level, supply)),
+  ];
 }

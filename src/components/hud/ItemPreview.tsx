@@ -38,6 +38,8 @@ const DECOR_FRAMING: Record<string, Framing> = {
   machine_kitchen: { position: [0, 2.2, 4.4], target: [0, 0.8, 0] },
   machine_cheese: { position: [0, 2.2, 4.4], target: [0, 0.85, 0] },
   machine_loom: { position: [0, 2.2, 4.4], target: [0, 0.8, 0] },
+  machine_blender: { position: [0, 2.1, 4.0], target: [0, 0.85, 0] },
+  machine_crock: { position: [0, 2.0, 4.0], target: [0, 0.65, 0] },
 };
 
 function PreviewCamera({ decorId }: { decorId: string | null }) {
