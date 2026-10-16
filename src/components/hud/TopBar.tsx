@@ -13,6 +13,9 @@ import { activeFestival } from '@/lib/festivals';
 import { visibleQuests } from '@/lib/quests';
 import { SEASONS, SEASON_DAYS, WEATHERS } from '@/config/seasons';
 import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
+import { BUFFS } from '@/config/food';
+import { ITEMS } from '@/config/items';
+import { activeBuff, maxEnergyFor } from '@/lib/food';
 import { SoundSettings } from './SoundSettings';
 
 // The small buttons at the far end, in the bars' turquoise (players, photos, sound: see SoundSettings)
@@ -24,8 +27,8 @@ const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-[3px] focus-vi
 function Meter({ label, value, max, fill }: { label: string; value: number; max: number; fill: string }) {
   return (
     <div>
-      <div className="flex justify-between gap-2 text-[10px] font-extrabold leading-snug">
-        <span>{label}</span>
+      <div className="flex justify-between gap-1 text-[10px] font-extrabold leading-snug">
+        <span className="whitespace-nowrap">{label}</span>
         <span className="tabular-nums">
           {value}/{max}
         </span>
@@ -97,11 +100,30 @@ function TimeCard() {
   );
 }
 
+// The dish eaten today, in the corner of the farmer's card: a tap opens the bag, which says what it does
+function BuffBadge() {
+  const buff = useGameStore((s) => (activeBuff(s.buff, s.day) ? s.buff : null));
+  const setActiveModal = useGameStore((s) => s.setActiveModal);
+  if (!buff) return null;
+  const effect = BUFFS[buff.id];
+  const text = `${effect.icon} ${effect.name} (${ITEMS[buff.food].name}): ${effect.effect} đến khi đi ngủ`;
+  return (
+    <button
+      onClick={() => setActiveModal('inventory')}
+      title={text}
+      aria-label={text}
+      className={`absolute -bottom-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-amber-400 text-xs shadow ${FOCUS_RING}`}
+    >
+      {effect.icon}
+    </button>
+  );
+}
+
 // The farmer: level and XP (opens the daily gift), stamina and the water left in the can
 function FarmerCard() {
   const xp = useGameStore((s) => s.xp);
   const energy = useGameStore((s) => s.energy);
-  const maxEnergy = useGameStore((s) => s.maxEnergy);
+  const maxEnergy = useGameStore((s) => maxEnergyFor(s.buff, s.day));
   const water = useGameStore((s) => s.water);
   const maxWater = useGameStore((s) => waterCapacity(s.toolTiers.water));
   const giftReady = useGameStore(
@@ -112,7 +134,7 @@ function FarmerCard() {
   const title = levelTitle(level);
 
   return (
-    <div className="bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-2.5 sm:px-2.5">
+    <div className="bar-panel bar-ink pointer-events-auto relative flex items-center gap-2 rounded-2xl px-2 py-1.5 sm:gap-2.5 sm:px-2.5">
       <button
         onClick={() => setActiveModal('dailyGift')}
         title={`${title} • ${need ? `${into}/${need} XP` : 'Cấp tối đa'} • Quà hằng ngày`}
@@ -139,6 +161,7 @@ function FarmerCard() {
         <Meter label="⚡ Thể lực" value={energy} max={maxEnergy} fill="from-lime-500 to-emerald-500" />
         <Meter label="💧 Bình tưới" value={water} max={maxWater} fill="from-sky-400 to-blue-600" />
       </div>
+      <BuffBadge />
     </div>
   );
 }

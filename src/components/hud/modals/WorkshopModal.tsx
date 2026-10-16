@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useGameStore } from '@/store/useGameStore';
 import { MACHINES, MACHINE_LIST, RECIPES } from '@/config/machines';
 import { ITEMS } from '@/config/items';
+import { BUFFS, foodOf } from '@/config/food';
 import { ItemId, MachineId, RecipeConfig } from '@/types/game';
 import { formatCountdown } from '@/lib/format';
 import { ModalShell } from './ModalShell';
@@ -12,14 +13,14 @@ import { ModalShell } from './ModalShell';
 // The 3D turntable is its own WebGL canvas, browser only
 const ItemPreview = dynamic(() => import('../ItemPreview'), { ssr: false });
 
-const outputLabel = (recipe: RecipeConfig) =>
-  recipe.output.id === 'bread'
-    ? { icon: '🥖', name: 'Bánh Mì', note: '+45⚡ mỗi ổ (phím 5)' }
-    : {
-        icon: ITEMS[recipe.output.id].icon,
-        name: ITEMS[recipe.output.id].name,
-        note: `Bán 🪙${ITEMS[recipe.output.id].sellPrice}`,
-      };
+// A dish also says what eating it does (config/food)
+function outputLabel(recipe: RecipeConfig) {
+  if (recipe.output.id === 'bread') return { icon: '🥖', name: 'Bánh Mì', note: '+45⚡ mỗi ổ (phím 5)' };
+  const item = ITEMS[recipe.output.id];
+  const food = foodOf(item.id);
+  const eat = food && `${food.drink ? 'Uống' : 'Ăn'}: ${BUFFS[food.buff].icon} ${BUFFS[food.buff].name}`;
+  return { icon: item.icon, name: item.name, note: `Bán 🪙${item.sellPrice}${eat ? ` • ${eat}` : ''}` };
+}
 
 const durationLabel = (seconds: number) =>
   seconds < 60 ? `${seconds} giây` : `${Math.round(seconds / 60)} phút`;

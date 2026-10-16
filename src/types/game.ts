@@ -88,6 +88,16 @@ export type CollectionSetId = 'crops' | 'animal' | 'artisan' | 'fish' | 'beach' 
 
 // Calendar festivals (config/festivals)
 export type FestivalId = 'halloween' | 'christmas' | 'tet';
+
+// What a dish from the workshop does for the rest of the day once eaten (config/food, lib/food)
+export type BuffId = 'stamina' | 'swift' | 'angler' | 'netter';
+
+// The dish eaten last and the day it was eaten: its buff lasts until the player sleeps
+export interface ActiveBuff {
+  id: BuffId;
+  food: ItemId;
+  day: number;
+}
 export type Weather = 'sunny' | 'cloudy' | 'rain' | 'storm' | 'snow';
 
 // Every crop's seeds are a tool of their own (one hotbar slot, see lib/tools)
@@ -365,8 +375,9 @@ export interface WeeklyStats {
 export interface BugCatch {
   spot: number;
   bug: BugId;
-  // Centre of the green zone on the 0–1 bar
+  // Centre and width of the green zone on the 0–1 bar
   zone: number;
+  width: number;
   stage: 'aim' | 'result';
   caught?: boolean;
 }
@@ -470,6 +481,8 @@ export interface SaveData {
   giftLog: Partial<Record<ResidentId, ItemId[]>>;
   // This week's gold earned, fish caught and orders delivered, for the leaderboards (lib/leaderboard)
   weekly: WeeklyStats;
+  // The dish eaten today and what it does until bedtime (lib/food)
+  buff: ActiveBuff | null;
 }
 
 export interface RemotePlayer {

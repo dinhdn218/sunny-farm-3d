@@ -65,7 +65,7 @@ export const DAILY_POOL: QuestDef[] = [
   { id: 'd_chat', title: 'Giao Lưu Cư Dân', desc: 'Gửi 2 tin nhắn hoặc thả cảm xúc.', icon: '💬', type: 'chat', target: 2, rewardGold: 70, rewardGems: 3 },
   { id: 'd_visit', title: 'Dạo Chơi Thành Phố', desc: 'Dịch chuyển đến 2 khu vực công cộng.', icon: '✈️', type: 'visit_world', target: 2, rewardGold: 90, rewardGems: 4 },
   { id: 'd_cinema', title: 'Suất Chiếu Trong Ngày', desc: 'Đổi kênh phim ở Rạp 1 lần.', icon: '🎬', type: 'cinema_channel', target: 1, rewardGold: 80, rewardGems: 3 },
-  { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì hoặc Bắp Rang Bơ 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
+  { id: 'd_eat', title: 'Bữa Ăn Năng Lượng', desc: 'Ăn Bánh Mì, đồ ăn vặt hoặc một món từ Xưởng 1 lần.', icon: '🥖', type: 'eat', target: 1, rewardGold: 60, rewardGems: 2 },
   { id: 'd_craft', title: 'Bếp Núc Bận Rộn', desc: 'Chế biến xong 2 mẻ hàng ở Xưởng.', icon: '🍳', type: 'craft', target: 2, rewardGold: 110, rewardGems: 4 },
   { id: 'd_market', title: 'Đi Chợ Phiên', desc: 'Bán ở Chợ Phiên thu về 300 Vàng.', icon: '🧺', type: 'market_sell', target: 300, rewardGold: 120, rewardGems: 5 },
   { id: 'd_fish', title: 'Mẻ Cá Trong Ngày', desc: 'Câu được 3 con cá ở Bãi Biển hoặc Hồ Sen.', icon: '🎣', type: 'fish', target: 3, rewardGold: 100, rewardGems: 4 },

@@ -87,6 +87,8 @@ import { refillOrders } from '@/lib/orders';
 import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
 import { daysUntilGrown, ripenTrees } from '@/lib/trees';
 import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
+import { BUFFS, foodOf } from '@/config/food';
+import { BASE_MAX_ENERGY, activeBuff, maxEnergyFor, netBuffScale } from '@/lib/food';
 import { bugsInPark, netCaught, netZoneWidth } from '@/lib/bugs';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { RESIDENTS } from '@/config/npcs';
@@ -192,7 +194,6 @@ interface GameState extends SaveData {
   // The HUD hides and the camera roams freely for screenshots (not saved)
   photoMode: boolean;
 
-  maxEnergy: number;
   timePhaseIndex: number;
   currentWorld: WorldId;
   activeTool: ToolId;
@@ -277,6 +278,8 @@ interface GameState extends SaveData {
   // The watering can is filled at the well: walk there first
   fetchWater: () => void;
   eatBread: () => void;
+  // Eat or drink a dish from the workshop: stamina back now, and its buff until bedtime (config/food)
+  eatFood: (id: ItemId) => void;
   interactTile: (r: number, c: number) => void;
   interactFront: () => void;
   // Walk over to something and do the job there (straight away when already close enough)
@@ -495,7 +498,6 @@ export const useGameStore = create<GameState>()(
         sfxVolume: 0.8,
         photoMode: false,
 
-        maxEnergy: 100,
         timePhaseIndex: 0,
         currentWorld: 'farm',
         activeTool: 'hoe',
@@ -742,9 +744,10 @@ export const useGameStore = create<GameState>()(
         },
 
         eatPopcornOrSnack: (label, bonusEnergy) => {
-          const { energy, maxEnergy, gold, day, lastFreeSnackDay } = get();
+          const { energy, buff, gold, day, lastFreeSnackDay } = get();
+          const maxEnergy = maxEnergyFor(buff, day);
           if (energy >= maxEnergy) {
-            get().showToast('⚡ Thể lực đang đầy 100/100!', 'text-amber-300');
+            get().showToast(`⚡ Thể lực đang đầy ${maxEnergy}/${maxEnergy}!`, 'text-amber-300');
             return;
           }
           const free = lastFreeSnackDay !== day;
@@ -783,7 +786,8 @@ export const useGameStore = create<GameState>()(
         },
 
         eatBread: () => {
-          const { breadCount, energy, maxEnergy } = get();
+          const { breadCount, energy, buff, day } = get();
+          const maxEnergy = maxEnergyFor(buff, day);
           if (breadCount <= 0) {
             soundFX.error();
             get().showToast(
@@ -793,7 +797,7 @@ export const useGameStore = create<GameState>()(
             return;
           }
           if (energy >= maxEnergy) {
-            get().showToast('⚡ Thể lực đang đầy 100/100!', 'text-amber-300');
+            get().showToast(`⚡ Thể lực đang đầy ${maxEnergy}/${maxEnergy}!`, 'text-amber-300');
             return;
           }
           soundFX.coin();
@@ -802,6 +806,29 @@ export const useGameStore = create<GameState>()(
             energy: Math.min(maxEnergy, energy + 45),
           });
           get().showToast('🥖 Bánh mì nóng giòn (+45⚡)!');
+          get().incrementQuest('eat', 1);
+        },
+
+        // Eaten even on a full stomach: the buff is the point. A new dish's buff replaces the old one.
+        eatFood: (id) => {
+          const { items, energy, buff, day, playerPos } = get();
+          const food = foodOf(id);
+          const rest = food && takeItems(items, { [id]: 1 });
+          if (!food || !rest) return;
+          const before = activeBuff(buff, day);
+          const next = { id: food.buff, food: id, day };
+          soundFX.coin();
+          set({ items: rest, buff: next, energy: Math.min(maxEnergyFor(next, day), energy + food.energy) });
+          const item = ITEMS[id];
+          const effect = BUFFS[food.buff];
+          spawnParticles(playerPos.x, 1.2, playerPos.z, 0xfde68a, 10);
+          get().showToast(
+            `${item.icon} ${item.name} +${food.energy}⚡ • ${effect.icon} ${effect.name}${
+              before && before !== food.buff ? ` thay ${BUFFS[before].name}` : ''
+            }!`,
+            'text-lime-300',
+            [playerPos.x, 1.8, playerPos.z]
+          );
           get().incrementQuest('eat', 1);
         },
 
@@ -1655,7 +1682,7 @@ export const useGameStore = create<GameState>()(
         endFishing: () => set({ fishing: null }),
 
         startBugCatch: (spot) => {
-          const { currentWorld, day, timePhaseIndex, bugDay, bugsTaken, energy, bugCatch, fishing } = get();
+          const { currentWorld, day, timePhaseIndex, bugDay, bugsTaken, energy, bugCatch, fishing, buff } = get();
           if (currentWorld !== 'park' || bugCatch || fishing) return;
           const phase = TIME_PHASES[timePhaseIndex].id;
           const found = bugsInPark(day, phase).find((b) => b.spot === spot);
@@ -1666,9 +1693,10 @@ export const useGameStore = create<GameState>()(
             get().showToast('⚡ Hết thể lực để vung vợt!', 'text-red-400');
             return;
           }
-          const width = netZoneWidth(BUGS[found.bug].difficulty);
+          // A sweet dish today widens the zone
+          const width = netZoneWidth(BUGS[found.bug].difficulty, netBuffScale(buff, day));
           set({
-            bugCatch: { spot, bug: found.bug, zone: width / 2 + Math.random() * (1 - width), stage: 'aim' },
+            bugCatch: { spot, bug: found.bug, zone: width / 2 + Math.random() * (1 - width), width, stage: 'aim' },
             walkGoal: null,
             tooltip: null,
           });
@@ -1679,7 +1707,7 @@ export const useGameStore = create<GameState>()(
           const { bugCatch, energy, items, day, bugDay, bugsTaken, timePhaseIndex } = get();
           if (!bugCatch || bugCatch.stage !== 'aim') return;
           const cfg = BUGS[bugCatch.bug];
-          const caught = netCaught(marker, bugCatch.zone, netZoneWidth(cfg.difficulty));
+          const caught = netCaught(marker, bugCatch.zone, bugCatch.width);
           const phase = TIME_PHASES[timePhaseIndex].id;
           const taken = bugDay === day ? bugsTaken : [];
           set({
@@ -2208,7 +2236,9 @@ export const useGameStore = create<GameState>()(
           soundFX.questClaim();
           set({
             day: day + 1,
-            energy: 100,
+            energy: BASE_MAX_ENERGY,
+            // Yesterday's dish has worn off
+            buff: null,
             timePhaseIndex: 0,
             gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0) + (gift?.gold ?? 0),
             gems: gems + (find?.kind === 'gems' ? find.amount : 0),

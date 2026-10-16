@@ -8,7 +8,13 @@ import { IN_SEASON_BONUS_PERCENT, SEASONS } from '@/config/seasons';
 import { isInSeason, seasonOf, seasonalPrice } from '@/lib/seasons';
 import { ItemId } from '@/types/game';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
+import { BUFFS, FoodConfig, foodOf } from '@/config/food';
+import { activeBuff } from '@/lib/food';
 import { ModalShell } from './ModalShell';
+
+// What a workshop dish gives, e.g. "Ăn: +30⚡ • 🎣 Tay Câu Vững đến khi ngủ"
+const foodLabel = (food: FoodConfig) =>
+  `${food.drink ? 'Uống' : 'Ăn'}: +${food.energy}⚡ • ${BUFFS[food.buff].icon} ${BUFFS[food.buff].name} đến khi ngủ`;
 
 export function InventoryModal() {
   const day = useGameStore((s) => s.day);
@@ -19,6 +25,8 @@ export function InventoryModal() {
   const moveToBin = useGameStore((s) => s.moveToBin);
   const returnFromBin = useGameStore((s) => s.returnFromBin);
   const depositAllToBin = useGameStore((s) => s.depositAllToBin);
+  const eatFood = useGameStore((s) => s.eatFood);
+  const buff = useGameStore((s) => (activeBuff(s.buff, s.day) ? s.buff : null));
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   // Complete sets in the collection book whose reward is waiting
   const setsReady = useGameStore(
@@ -88,37 +96,57 @@ export function InventoryModal() {
             </button>
           </h3>
           <div className="flex-1 space-y-2">
+            {buff && (
+              <p className="rounded-xl border border-lime-600/40 bg-lime-50 px-3 py-1.5 text-[11px] font-bold text-lime-900">
+                {BUFFS[buff.id].icon} Đang có {BUFFS[buff.id].name} ({ITEMS[buff.food].name}): {BUFFS[buff.id].effect}{' '}
+                đến khi ngủ. Ăn món khác sẽ đổi sang hiệu ứng của món đó.
+              </p>
+            )}
             {bag.length === 0 && (
               <p className="text-xs font-bold text-amber-800">
                 Giỏ đang trống. Nông sản thu hoạch, sản phẩm chăn nuôi và hàng chế biến sẽ nằm ở đây.
               </p>
             )}
-            {bag.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between gap-2 rounded-xl border border-amber-700/20 bg-white/80 px-3 py-2"
-              >
-                <span className="text-xs font-black text-amber-950">
-                  {item.icon} {item.name} x{items[item.id]}
-                  {seasonTag(item.id)}
-                </span>
-                <div className="flex shrink-0 gap-1.5">
-                  <button
-                    onClick={() => moveToBin(item.id, 1)}
-                    className="rounded-lg bg-amber-600 px-2 py-1 text-[11px] font-extrabold text-white hover:bg-amber-500"
-                  >
-                    Gửi Rương ➔
-                  </button>
-                  <button
-                    onClick={() => sellNow(item.id, 1)}
-                    title="Bán ngay với 70% giá"
-                    className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-extrabold text-white hover:bg-emerald-500"
-                  >
-                    ⚡ {instantSellPrice(item.id)}🪙
-                  </button>
+            {bag.map((item) => {
+              const food = foodOf(item.id);
+              return (
+                <div key={item.id} className="rounded-xl border border-amber-700/20 bg-white/80 px-3 py-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-black text-amber-950">
+                      {item.icon} {item.name} x{items[item.id]}
+                      {seasonTag(item.id)}
+                    </span>
+                    <div className="flex shrink-0 gap-1.5">
+                      <button
+                        onClick={() => moveToBin(item.id, 1)}
+                        className="rounded-lg bg-amber-600 px-2 py-1 text-[11px] font-extrabold text-white hover:bg-amber-500"
+                      >
+                        Gửi Rương ➔
+                      </button>
+                      <button
+                        onClick={() => sellNow(item.id, 1)}
+                        title="Bán ngay với 70% giá"
+                        className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-extrabold text-white hover:bg-emerald-500"
+                      >
+                        ⚡ {instantSellPrice(item.id)}🪙
+                      </button>
+                    </div>
+                  </div>
+                  {food && (
+                    <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-dashed border-amber-700/25 pt-1.5">
+                      <span className="text-[10px] font-bold text-amber-700">{foodLabel(food)}</span>
+                      <button
+                        onClick={() => eatFood(item.id)}
+                        title={BUFFS[food.buff].effect}
+                        className="shrink-0 rounded-lg bg-lime-600 px-2 py-1 text-[11px] font-extrabold text-white hover:bg-lime-500"
+                      >
+                        {food.drink ? '🥤 Uống' : '🍴 Ăn'}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {bag.length > 0 && (
             <button

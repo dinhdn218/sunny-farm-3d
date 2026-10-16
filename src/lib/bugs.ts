@@ -44,8 +44,8 @@ export function bugsInPark(day: number, phase: TimePhaseId) {
   return spots.slice(0, BUGS_OUT).map((spot) => ({ spot, bug: pick(pool, random) }));
 }
 
-// The green zone on the net's 0–1 bar
-export const netZoneWidth = (difficulty: number) => Math.max(0.08, 0.3 - difficulty * 0.025);
+// The green zone on the net's 0–1 bar; `scale` widens it (a sweet dish, see lib/food)
+export const netZoneWidth = (difficulty: number, scale = 1) => Math.max(0.08, 0.3 - difficulty * 0.025) * scale;
 
 export const netCaught = (marker: number, zone: number, width: number) =>
   Math.abs(marker - zone) <= width / 2 + 1e-9;

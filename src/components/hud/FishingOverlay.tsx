@@ -4,7 +4,9 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { CATCHES, FISHING_ENERGY, RARITY_LABEL, TREASURE_REWARD } from '@/config/fish';
 import { ITEMS } from '@/config/items';
+import { BUFFS } from '@/config/food';
 import { REEL_START, ReelState, reelStep, zoneWidth } from '@/lib/fishing';
+import { reelBuffScale } from '@/lib/food';
 import { reelZoneScale } from '@/lib/pets';
 import { TIME_PHASES } from '@/config/time';
 import { CatchId, FishingSession } from '@/types/game';
@@ -28,7 +30,9 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
   const landCatch = useGameStore((s) => s.landCatch);
   const loseFish = useGameStore((s) => s.loseFish);
   const { difficulty, icon } = CATCHES[catchId];
-  const zoneScale = useGameStore((s) => reelZoneScale(s.cosmetics.pet, TIME_PHASES[s.timePhaseIndex].id));
+  const petScale = useGameStore((s) => reelZoneScale(s.cosmetics.pet, TIME_PHASES[s.timePhaseIndex].id));
+  const buffScale = useGameStore((s) => reelBuffScale(s.buff, s.day));
+  const zoneScale = petScale * buffScale;
   const reel = useRef<ReelState>({ ...REEL_START });
   const holding = useRef(false);
   const [, setFrame] = useState(0);
@@ -74,8 +78,13 @@ function ReelGame({ catchId }: { catchId: CatchId }) {
   return (
     <Panel>
       <div className="mb-2 text-sm font-black text-sky-200">🎣 Đang kéo cá! Giữ cá trong vùng xanh</div>
-      {zoneScale > 1 && (
+      {petScale > 1 && (
         <div className="-mt-1 mb-2 text-[11px] font-bold text-purple-200">🦇 Dơi Con soi đường: vùng xanh rộng hơn 25%</div>
+      )}
+      {buffScale > 1 && (
+        <div className="-mt-1 mb-2 text-[11px] font-bold text-amber-200">
+          {BUFFS.angler.icon} {BUFFS.angler.name}: {BUFFS.angler.effect}
+        </div>
       )}
       <div
         onPointerDown={hold}

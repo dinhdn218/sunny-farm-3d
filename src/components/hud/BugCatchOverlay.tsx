@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { BugCatch } from '@/types/game';
 import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
+import { BUFFS } from '@/config/food';
 import { netMarker, netZoneWidth } from '@/lib/bugs';
 import { Panel } from './FishingOverlay';
 
@@ -12,7 +13,9 @@ function NetGame({ bugCatch }: { bugCatch: BugCatch }) {
   const swingNet = useGameStore((s) => s.swingNet);
   const endBugCatch = useGameStore((s) => s.endBugCatch);
   const cfg = BUGS[bugCatch.bug];
-  const width = netZoneWidth(cfg.difficulty);
+  const { width } = bugCatch;
+  // Wider than usual: a sweet dish eaten today
+  const buffed = width > netZoneWidth(cfg.difficulty);
   const marker = useRef(0);
   const [, setFrame] = useState(0);
 
@@ -45,6 +48,11 @@ function NetGame({ bugCatch }: { bugCatch: BugCatch }) {
       <div className="mt-1 text-[11px] font-bold text-slate-300">
         Vung vợt khi vạch vàng nằm trong vùng xanh (-{BUG_NET_ENERGY}⚡)
       </div>
+      {buffed && (
+        <div className="mt-0.5 text-[11px] font-bold text-amber-200">
+          {BUFFS.netter.icon} {BUFFS.netter.name}: {BUFFS.netter.effect}
+        </div>
+      )}
       <div className="relative mx-1 mt-3 h-6 rounded-full bg-slate-800">
         <div
           className="absolute inset-y-0 rounded-full bg-emerald-500/85"

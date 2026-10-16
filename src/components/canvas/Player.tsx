@@ -8,6 +8,7 @@ import { useCasinoStore } from '@/store/useCasinoStore';
 import { camControl, touchMove } from '@/lib/controls';
 import { WALK_MARGIN, insideIsland, islandShape } from '@/lib/farmLayout';
 import { WALK_SPEED, walkStep } from '@/lib/walk';
+import { walkSpeedScale } from '@/lib/food';
 import { ToolId } from '@/types/game';
 import { levelInfo } from '@/lib/leveling';
 import { nextSeedTool } from '@/lib/tools';
@@ -139,6 +140,8 @@ export function Player() {
     const store = useGameStore.getState();
     const { playerPos: pos, currentWorld, ownedPlots, fishing } = store;
     const k = keys.current;
+    // A drink today puts a spring in the step
+    const speed = WALK_SPEED * walkSpeedScale(store.buff, store.day);
 
     // The player stays put on the jetty while the line is out, and in their chair at a card table
     const seated = !!useCasinoStore.getState().open;
@@ -169,8 +172,8 @@ export function Player() {
       // Movement is relative to the orbit camera's heading
       const sinT = Math.sin(camControl.theta);
       const cosT = Math.cos(camControl.theta);
-      nextX = pos.x + (moveX * cosT + moveZ * sinT) * WALK_SPEED * dt;
-      nextZ = pos.z + (-moveX * sinT + moveZ * cosT) * WALK_SPEED * dt;
+      nextX = pos.x + (moveX * cosT + moveZ * sinT) * speed * dt;
+      nextZ = pos.z + (-moveX * sinT + moveZ * cosT) * speed * dt;
     } else if (goal && !still) {
       // Something that wanders about (an animal) is followed
       const at = goal.track?.();
@@ -178,7 +181,7 @@ export function Player() {
         goal.x = at.x;
         goal.z = at.z;
       }
-      ({ x: nextX, z: nextZ, arrived } = walkStep(pos.x, pos.z, goal, WALK_SPEED * dt));
+      ({ x: nextX, z: nextZ, arrived } = walkStep(pos.x, pos.z, goal, speed * dt));
     }
 
     let y = 0.08;
