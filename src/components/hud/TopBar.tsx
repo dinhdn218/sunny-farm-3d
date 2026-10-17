@@ -469,7 +469,8 @@ export function TopBar() {
         <Groove />
         <Farmer />
       </div>
-      <div className={`bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1 [grid-area:wallet] ${JOINED_RIGHT}`}>
+      {/* Phones: only as wide as the purse, the utilities keeping to the right; from sm it lines up with the bar below */}
+      <div className={`bar-panel bar-ink pointer-events-auto flex items-center gap-2 justify-self-start rounded-2xl px-2 py-1 [grid-area:wallet] sm:justify-self-stretch ${JOINED_RIGHT}`}>
         <Groove className="hidden sm:block" />
         <Wallet />
       </div>
