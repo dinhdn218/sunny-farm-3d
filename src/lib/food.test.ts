@@ -2,7 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { ActiveBuff, ItemId } from '@/types/game';
 import { FOODS, foodOf } from '@/config/food';
 import { ITEMS } from '@/config/items';
-import { activeBuff, maxEnergyFor, netBuffScale, reelBuffScale, walkSpeedScale } from '@/lib/food';
+import {
+  ENERGY_REGEN_MS,
+  activeBuff,
+  maxEnergyFor,
+  netBuffScale,
+  nextEnergyIn,
+  reelBuffScale,
+  settleEnergy,
+  spendEnergy,
+  walkSpeedScale,
+} from '@/lib/food';
 
 const eaten = (id: ActiveBuff['id'], day = 4): ActiveBuff => ({ id, food: 'pumpkin_pie', day });
 
@@ -40,5 +50,32 @@ describe('food', () => {
       expect(foodOf(id), id).toBeUndefined()
     );
     expect(foodOf('fish_stew')).toEqual({ energy: 30, buff: 'angler' });
+  });
+});
+
+describe('stamina on real time', () => {
+  const T = 1_000_000_000;
+  const MIN = 60_000;
+
+  it('comes back a point every three minutes, keeping the time towards the next', () => {
+    expect(ENERGY_REGEN_MS).toBe(3 * MIN);
+    expect(settleEnergy({ energy: 50, energyAt: T }, 100, T + 7 * MIN)).toEqual({ energy: 52, energyAt: T + 6 * MIN });
+  });
+
+  it('stops at the most there is', () => {
+    expect(settleEnergy({ energy: 99, energyAt: T }, 100, T + 60 * MIN)).toEqual({ energy: 100, energyAt: T + 60 * MIN });
+  });
+
+  it('starts counting from the moment it is spent from full', () => {
+    expect(spendEnergy({ energy: 100, energyAt: T }, 4, 100, T + 60 * MIN)).toEqual({ energy: 96, energyAt: T + 60 * MIN });
+    expect(nextEnergyIn({ energy: 96, energyAt: T }, 100, T + MIN)).toBe(2 * MIN);
+  });
+
+  it('needs no countdown when full', () => {
+    expect(nextEnergyIn({ energy: 100, energyAt: T }, 100, T)).toBeNull();
+  });
+
+  it('gives a save without a time stamp one', () => {
+    expect(settleEnergy({ energy: 10, energyAt: 0 }, 100, T)).toEqual({ energy: 10, energyAt: T });
   });
 });

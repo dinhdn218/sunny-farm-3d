@@ -11,6 +11,8 @@ import { MACHINES, RECIPES } from '@/config/machines';
 import { ITEMS } from '@/config/items';
 import { formatCountdown } from '@/lib/format';
 import { areaTiles } from '@/lib/tools';
+import { now as clockNow } from '@/lib/clock';
+import { cropStatus, needsWater } from '@/lib/growth';
 import { seasonOf } from '@/lib/seasons';
 import { SEASON_LOOK } from '@/config/seasons';
 import {
@@ -59,7 +61,7 @@ const SIDE_NAMES: Record<ExpansionSide, string> = {
 function tileTooltip(tile: TileData) {
   const coords = `(${tile.c + 1}, ${tile.r + 1})`;
   if (tile.sprinkler) {
-    return { title: '💦 Bình Phun Tự Động', desc: 'Tưới 8 ô xung quanh mỗi sáng • dùng Giỏ (3) để cất' };
+    return { title: '💦 Bình Phun Tự Động', desc: 'Tự tưới 8 ô xung quanh khi đất khô • dùng Giỏ (3) để cất' };
   }
   if (useGameStore.getState().placingSprinkler) {
     return { title: `Ô đất ${coords}`, desc: '💦 Click để đặt Bình Phun vào ô này' };
@@ -78,10 +80,7 @@ function tileTooltip(tile: TileData) {
   const crop = CROPS[tile.crop];
   return {
     title: `${crop.icon} ${crop.name}`,
-    desc:
-      tile.stage >= 3
-        ? '✨ ĐÃ CHÍN! Click để thu hoạch!'
-        : `Giai đoạn ${tile.stage}/3${tile.fertilized ? ' • 🪴 Đã bón phân' : ''}`,
+    desc: `${cropStatus(tile, clockNow())}${tile.fertilized ? ' • 🪴 Đã bón phân' : ''}`,
   };
 }
 
@@ -198,6 +197,19 @@ const FarmTile = memo(function FarmTile({
       {tile.state === 'planted' && tile.crop && (
         <group position={[0, 0.12, 0]}>
           <CropMesh crop={tile.crop} stage={tile.stage} seed={tile.r + tile.c} />
+        </group>
+      )}
+      {/* A crop waiting for water: still meshes in the soil's material, so the plot's merge draws them for free */}
+      {needsWater(tile) && (
+        <group position={[0, 1.0, 0]}>
+          <mesh position={[0, 0.1, 0]}>
+            <coneGeometry args={[0.09, 0.16, 8]} />
+            <meshLambertMaterial color="#38bdf8" />
+          </mesh>
+          <mesh>
+            <sphereGeometry args={[0.1, 10, 8]} />
+            <meshLambertMaterial color="#38bdf8" />
+          </mesh>
         </group>
       )}
       {tile.fertilized &&
@@ -479,7 +491,7 @@ export function FarmWorld() {
   const fetchWater = useGameStore((s) => s.fetchWater);
   const walkTo = useGameStore((s) => s.walkTo);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const nextDay = useGameStore((s) => s.nextDay);
+  const showDayCountdown = useGameStore((s) => s.showDayCountdown);
   const openExpand = useGameStore((s) => s.openExpand);
 
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -563,10 +575,7 @@ export function FarmWorld() {
     walkTo({ x, z, reach, act });
   const barnX = FARM_SITES.ranch[0] + ranchDx + BARN_OFFSET[0];
   const barnZ = FARM_SITES.ranch[1] + ranchDz + BARN_OFFSET[1];
-  const house = interactable(
-    'Nhà Nông Trại (Ngủ qua ngày)',
-    goTo(houseX, houseZ, REACH.house, nextDay)
-  );
+  const house = interactable('Nhà Nông Trại', goTo(houseX, houseZ, REACH.house, showDayCountdown));
   const shippingBin = interactable(
     'Rương Bán Hàng',
     goTo(binX, binZ, REACH.shippingBin, () => setActiveModal('inventory'))

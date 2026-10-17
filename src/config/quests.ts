@@ -30,8 +30,7 @@ export const MAIN_QUESTS: QuestDef[] = [
   { id: 'm_till', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Khởi Đầu Nhà Nông', desc: 'Dùng Cuốc (phím 1) xới 5 ô đất trống.', icon: '⛏️', type: 'till', target: 5, rewardGold: 60, rewardGems: 3 },
   { id: 'm_plant', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Gieo Mầm Hy Vọng', desc: 'Gieo 5 hạt giống bất kỳ lên đất đã xới.', icon: '🌱', type: 'plant', target: 5, rewardGold: 70, rewardGems: 3 },
   { id: 'm_water', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Dòng Nước Mát Lành', desc: 'Tưới nước cho 5 ô đất (phím 2).', icon: '💧', type: 'water', target: 5, rewardGold: 80, rewardGems: 4 },
-  { id: 'm_sleep', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Giấc Ngủ Ngon', desc: 'Bấm Qua Ngày để cây trồng lớn lên.', icon: '🛌', type: 'sleep', target: 1, rewardGold: 60, rewardGems: 3 },
-  { id: 'm_harvest', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Vụ Mùa Đầu Tiên', desc: 'Thu hoạch 5 nông sản chín.', icon: '🧺', type: 'harvest', target: 5, rewardGold: 120, rewardGems: 6 },
+  { id: 'm_harvest', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Vụ Mùa Đầu Tiên', desc: 'Thu hoạch 5 nông sản chín (5 cây đầu tiên chỉ mất 5 phút).', icon: '🧺', type: 'harvest', target: 5, rewardGold: 120, rewardGems: 6 },
   { id: 'm_earn', chapter: 'Chương 1 · Khởi Nghiệp', title: 'Thương Lái Tập Sự', desc: 'Bán nông sản thu về 300 Vàng.', icon: '🪙', type: 'earn_gold', target: 300, rewardGold: 100, rewardGems: 6 },
   { id: 'm_feed', chapter: 'Chương 2 · Chăn Nuôi', title: 'Người Bạn Gia Súc', desc: 'Cho vật nuôi ăn 3 lần ở Chuồng Trại.', icon: '🐔', type: 'feed_animal', target: 3, rewardGold: 120, rewardGems: 6 },
   { id: 'm_collect', chapter: 'Chương 2 · Chăn Nuôi', title: 'Quà Sáng Từ Chuồng', desc: 'Thu 3 sản phẩm Trứng, Lông Cừu hoặc Sữa.', icon: '🥚', type: 'collect_animal', target: 3, rewardGold: 150, rewardGems: 8 },
@@ -212,7 +211,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     title: 'Nông Dân Kiên Trì',
     icon: '📅',
     type: 'sleep',
-    desc: 'Trải qua {n} ngày ở nông trại.',
+    desc: 'Ghé nông trại vào {n} ngày khác nhau.',
     tiers: [
       { target: 3, rewardGold: 100, rewardGems: 5 },
       { target: 10, rewardGold: 300, rewardGems: 15 },

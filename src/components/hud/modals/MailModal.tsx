@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { FESTIVALS } from '@/config/festivals';
 import { MAILBOX_ID, letterGiftLabel } from '@/lib/mail';
+import { dayLabel } from '@/lib/clock';
 import { ModalShell } from './ModalShell';
 
 // The farm's letters: welcome, festival news and residents' thanks, some with a gift to claim
@@ -60,7 +61,7 @@ export function MailModal() {
                         {letter.title}
                       </span>
                       <span className="block truncate text-[10px] font-bold text-amber-700">
-                        {letter.from} • Ngày {letter.day}
+                        {letter.from} • {dayLabel(letter.day)}
                       </span>
                     </span>
                     {waitingGift && <span className="shrink-0 text-base">🎁</span>}
@@ -73,7 +74,7 @@ export function MailModal() {
           {open && (
             <article className="min-h-0 flex-1 overflow-y-auto rounded-2xl border-2 border-amber-700/30 bg-white/85 p-4">
               <div className="text-[11px] font-bold text-amber-700">
-                Từ: {open.from} • Ngày {open.day}
+                Từ: {open.from} • {dayLabel(open.day)}
               </div>
               <h3 className="mt-0.5 text-lg font-black text-amber-950">{open.title}</h3>
               <p className="mt-2 text-sm font-bold leading-relaxed text-amber-900">{open.body}</p>

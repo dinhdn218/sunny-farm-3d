@@ -4,17 +4,17 @@ import { useGameStore } from '@/store/useGameStore';
 import { CROP_LIST } from '@/config/crops';
 import { IN_SEASON_BONUS_PERCENT, SEASONS, WEATHERS } from '@/config/seasons';
 import { dayInSeason, seasonOf } from '@/lib/seasons';
+import { dayLabel } from '@/lib/clock';
 import { CloseButton, useBackdropDismiss } from './ModalShell';
 
 export function DaySummaryModal() {
   const summary = useGameStore((s) => s.lastDaySummary);
-  const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const close = () => setActiveModal(null);
+  const close = useGameStore((s) => s.closeDaySummary);
   const backdrop = useBackdropDismiss(close);
 
   if (!summary) return null;
 
-  const today = summary.day + 1;
+  const today = summary.day;
   const seasonId = seasonOf(today);
   const season = SEASONS[seasonId];
   const weather = WEATHERS[summary.weather];
@@ -32,10 +32,12 @@ export function DaySummaryModal() {
             🐓
           </div>
           <h2 className="text-2xl font-black text-amber-950">
-            {season.icon} Ngày {today} - {season.name}
+            {season.icon} {dayLabel(today)} - {season.name}
           </h2>
           <p className="mb-3 text-xs font-bold text-amber-800">
-            Bạn đã nghỉ ngơi khỏe khoắn và hồi phục 100% Thể lực.
+            {summary.daysPassed > 1
+              ? `Bạn vắng ${summary.daysPassed} ngày, nông trại vẫn chạy đều nè!`
+              : 'Chào buổi sáng! Đây là những gì đã diễn ra đêm qua.'}
           </p>
 
           {newSeason && (
@@ -60,10 +62,6 @@ export function DaySummaryModal() {
             </div>
             <div className="space-y-1.5 text-sm font-bold text-amber-950">
               <div className="flex justify-between">
-                <span>🌱 Cây lớn thêm đêm qua:</span>
-                <span className="text-emerald-700">{summary.cropsGrownCount} ô</span>
-              </div>
-              <div className="flex justify-between">
                 <span>✨ Cây đã chín chờ thu hoạch:</span>
                 <span className="text-amber-700">{summary.readyCount} ô</span>
               </div>
@@ -71,12 +69,6 @@ export function DaySummaryModal() {
                 <span>🥚 Vật nuôi có sản phẩm mới:</span>
                 <span className="text-sky-700">{summary.animalProductsReady} con</span>
               </div>
-              {summary.sprinklerWatered > 0 && (
-                <div className="flex justify-between">
-                  <span>💦 Bình phun đã tưới sẵn:</span>
-                  <span className="text-sky-700">{summary.sprinklerWatered} ô</span>
-                </div>
-              )}
               {summary.rainWatered > 0 && (
                 <div className="flex justify-between">
                   <span>
@@ -108,12 +100,6 @@ export function DaySummaryModal() {
                 <div className="flex justify-between">
                   <span>📦 Đơn hàng mới trên Bảng Đơn Hàng:</span>
                   <span className="text-violet-700">{summary.newOrders} đơn</span>
-                </div>
-              )}
-              {summary.batchesReady > 0 && (
-                <div className="flex justify-between">
-                  <span>🏭 Mẻ chế biến đã xong, chờ thu:</span>
-                  <span className="text-amber-700">{summary.batchesReady} máy</span>
                 </div>
               )}
               {summary.soldItems.map((item) => (

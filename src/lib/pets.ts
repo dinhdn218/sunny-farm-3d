@@ -2,6 +2,7 @@ import { CropId, ForageId, ItemCounts, TileData, TimePhaseId } from '@/types/gam
 import { CROPS, CROP_LIST } from '@/config/crops';
 import { FORAGE_ITEMS } from '@/config/forage';
 import { seeded } from '@/lib/random';
+import { canWater, waterTile } from '@/lib/growth';
 
 // What the Shiba digs up overnight
 export type ShibaFind =
@@ -24,14 +25,13 @@ export function shibaFind(day: number): ShibaFind {
 
 export const ROBO_CAT_TILES = 6;
 
-// Robo Cat waters a few dry tiles each morning: growing crops first, then bare tilled soil
-export function roboCatWater(tiles: TileData[]) {
-  const dry = (t: TileData) => !t.watered && !t.sprinkler;
-  const growing = tiles.filter((t) => dry(t) && t.state === 'planted' && t.stage < 3);
-  const soil = tiles.filter((t) => dry(t) && t.state === 'tilled');
+// Robo Cat waters a few dry tiles each morning (from `at`): growing crops first, then bare tilled soil
+export function roboCatWater(tiles: TileData[], at: number) {
+  const growing = tiles.filter((t) => canWater(t) && t.state === 'planted');
+  const soil = tiles.filter((t) => canWater(t) && t.state === 'tilled');
   const chosen = new Set([...growing, ...soil].slice(0, ROBO_CAT_TILES).map((t) => t.id));
   return {
-    tiles: chosen.size ? tiles.map((t) => (chosen.has(t.id) ? { ...t, watered: true } : t)) : tiles,
+    tiles: chosen.size ? tiles.map((t) => (chosen.has(t.id) ? waterTile(t, at) : t)) : tiles,
     watered: chosen.size,
   };
 }

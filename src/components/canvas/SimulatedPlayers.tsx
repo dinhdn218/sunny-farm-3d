@@ -8,7 +8,7 @@ import { NpcPreset, npcPresetsFor } from '@/config/npcs';
 import { WORLDS } from '@/config/worlds';
 import { VISITOR_GREETINGS, VISITOR_PHRASES } from '@/config/visitors';
 import { Visitor, visitorsFor } from '@/lib/visitors';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { AvatarMesh, createMotion } from './models/AvatarMesh';
 import { PlayerTag } from './PlayerTag';
 import { interactable } from '@/lib/interact';
@@ -180,7 +180,7 @@ export function SimulatedPlayers() {
   const currentWorld = useGameStore((s) => s.currentWorld);
   const presets = useMemo(() => npcPresetsFor(currentWorld), [currentWorld]);
   // A new crowd each calendar day
-  const today = localDateKey(new Date());
+  const today = todayKey();
   const visitors = useMemo(() => visitorsFor(currentWorld, today), [currentWorld, today]);
   // How far they stroll: across the middle of the zone's island
   const roam = WORLDS[currentWorld].islandRadius * 0.55;

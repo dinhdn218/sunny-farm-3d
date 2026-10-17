@@ -13,7 +13,7 @@ import {
 import { FESTIVALS } from '@/config/festivals';
 import { bauCuaPayout, totalBet } from '@/lib/baucua';
 import { activeFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { soundFX } from '@/lib/audio';
 import { ModalShell } from './ModalShell';
 
@@ -58,7 +58,7 @@ type Phase = 'bet' | 'shake' | 'result';
 export function BauCuaModal() {
   const gold = useGameStore((s) => s.gold);
   const playBauCua = useGameStore((s) => s.playBauCua);
-  const tet = activeFestival(localDateKey(new Date()))?.id === 'tet';
+  const tet = activeFestival(todayKey())?.id === 'tet';
   const [chip, setChip] = useState(BAU_CUA_CHIPS[0]);
   const [bets, setBets] = useState<BauCuaBets>({});
   const [lastBets, setLastBets] = useState<BauCuaBets>({});

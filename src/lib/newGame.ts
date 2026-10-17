@@ -4,6 +4,8 @@ import { createInitialQuests } from '@/lib/quests';
 import { refillOrders } from '@/lib/orders';
 import { welcomeLetter } from '@/lib/mail';
 import { discoveriesFrom } from '@/lib/collection';
+import { gameDayAt, now as clockNow } from '@/lib/clock';
+import { FAST_CROPS_FOR_NEW_PLAYERS, waterTile } from '@/lib/growth';
 
 export const createEmptyGrid = (): TileData[] => {
   const grid: TileData[] = [];
@@ -17,7 +19,6 @@ export const createEmptyGrid = (): TileData[] => {
         watered: false,
         crop: null,
         stage: 0,
-        daysWatered: 0,
       });
     }
   }
@@ -35,8 +36,12 @@ const STARTER_TILES: Record<
   '8-8': { state: 'tilled', crop: null, stage: 0, watered: false },
 };
 
-const createInitialGrid = (): TileData[] =>
-  createEmptyGrid().map((t) => ({ ...t, ...STARTER_TILES[t.id] }));
+// The starter field; the watered tomato bush grows back from the moment the game begins
+const createInitialGrid = (at: number): TileData[] =>
+  createEmptyGrid().map((t) => {
+    const tile = { ...t, ...STARTER_TILES[t.id] };
+    return tile.state === 'planted' && tile.watered && tile.stage < 3 ? waterTile({ ...tile, watered: false }, at) : tile;
+  });
 
 const createInitialAnimals = (): FarmAnimal[] => [
   {
@@ -73,15 +78,18 @@ const createInitialAnimals = (): FarmAnimal[] => [
 
 // The farm a new player starts with
 export function createNewGameSave(): SaveData {
+  const at = clockNow();
+  const day = gameDayAt(at);
   const save: SaveData = {
     playerName: 'Nông Dân ' + Math.floor(100 + Math.random() * 899),
     gold: 810,
     gems: 130,
     energy: 98,
+    energyAt: at,
     water: 10,
-    day: 1,
+    day,
     visitedWorlds: ['farm'],
-    tiles: createInitialGrid(),
+    tiles: createInitialGrid(at),
     ownedPlots: [...STARTER_PLOTS],
     seeds: { carrot: 6, wheat: 4, tomato: 3, pumpkin: 2, strawberry: 0, watermelon: 0, corn: 0, cabbage: 0 },
     items: { carrot: 2, wheat: 1, egg: 1 },
@@ -101,6 +109,7 @@ export function createNewGameSave(): SaveData {
     toolTiers: { hoe: 0, water: 0 },
     sprinklers: 0,
     fertilizer: 0,
+    fastCropsLeft: FAST_CROPS_FOR_NEW_PLAYERS,
     festivalTokens: {},
     loginStreak: 0,
     lastGiftDate: null,
@@ -121,11 +130,11 @@ export function createNewGameSave(): SaveData {
     decorPlacements: {},
     buildStock: {},
     buildPieces: [],
-    quests: createInitialQuests(1),
-    dailyDay: 1,
+    quests: createInitialQuests(day),
+    dailyDay: day,
     orders: [],
     beehiveHoney: 0,
-    mail: [welcomeLetter()],
+    mail: [welcomeLetter(day)],
     pendingThanks: null,
     collected: [],
     collectionClaimed: [],

@@ -4,6 +4,8 @@ import { useGameStore } from '@/store/useGameStore';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 const tileAt = (id: string) => store().tiles.find((t) => t.id === id) as TileData;
 
 beforeEach(() => {
@@ -128,7 +130,7 @@ describe('sprinklers', () => {
         t.id === '6-6' ? { ...t, sprinkler: true } : t.id === '6-7' ? { ...t, state: 'tilled' as const } : t
       ),
     });
-    store().nextDay();
+    nextDay();
     expect(tileAt('6-7').watered).toBe(true);
   });
 

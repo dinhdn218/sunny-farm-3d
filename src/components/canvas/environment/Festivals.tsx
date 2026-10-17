@@ -9,7 +9,7 @@ import { FestivalId } from '@/types/game';
 import { FIELD_BORDER } from '@/config/farm';
 import { fieldRect } from '@/lib/farmLayout';
 import { activeFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { camControl } from '@/lib/controls';
 import { DecorModel } from '../models/DecorModel';
 import { StaticMerge } from '../StaticMerge';
@@ -271,7 +271,7 @@ export function FestivalScene() {
   const ownedPlots = useGameStore((s) => s.ownedPlots);
   const night = useGameStore((s) => TIME_PHASES[s.timePhaseIndex].id === 'night');
 
-  const festival = activeFestival(localDateKey(new Date()));
+  const festival = activeFestival(todayKey());
   if (!festival) return null;
   if (currentWorld !== 'farm' && currentWorld !== 'park') return null;
 

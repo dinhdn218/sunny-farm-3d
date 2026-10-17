@@ -3,13 +3,14 @@
 import { useMemo } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { saveFromCloud } from '@/lib/saveData';
+import { levelInfo } from '@/lib/leveling';
 import { CloseButton, useBackdropDismiss } from './ModalShell';
 
 function FarmCard({
   icon,
   title,
   note,
-  day,
+  level,
   gold,
   gems,
   plots,
@@ -18,7 +19,7 @@ function FarmCard({
   icon: string;
   title: string;
   note: string;
-  day: number;
+  level: number;
   gold: number;
   gems: number;
   plots: number;
@@ -32,7 +33,7 @@ function FarmCard({
         </div>
         <div className="mb-2 text-[11px] font-bold text-amber-700">{note}</div>
         <div className="space-y-1 text-sm font-bold text-amber-950">
-          <div>📅 Ngày {day}</div>
+          <div>⭐ Cấp {level}</div>
           <div>🪙 {gold.toLocaleString('vi-VN')} Vàng</div>
           <div>💎 {gems.toLocaleString('vi-VN')} Kim Cương</div>
           <div>🗺️ {plots} lô đất</div>
@@ -51,7 +52,7 @@ function FarmCard({
 // Shown when signing in finds a different farm both here and in the cloud: the player keeps one
 export function CloudConflictModal() {
   const conflict = useGameStore((s) => s.cloudConflict);
-  const day = useGameStore((s) => s.day);
+  const level = useGameStore((s) => levelInfo(s.xp).level);
   const gold = useGameStore((s) => s.gold);
   const gems = useGameStore((s) => s.gems);
   const plots = useGameStore((s) => s.ownedPlots.length);
@@ -89,7 +90,7 @@ export function CloudConflictModal() {
               icon="💻"
               title="Trên máy này"
               note="Đang chơi trên thiết bị này"
-              day={day}
+              level={level}
               gold={gold}
               gems={gems}
               plots={plots}
@@ -99,7 +100,7 @@ export function CloudConflictModal() {
               icon="☁️"
               title="Trên Cloud"
               note={`Lưu lúc ${savedAt}`}
-              day={cloudFarm.day}
+              level={levelInfo(cloudFarm.xp).level}
               gold={cloudFarm.gold}
               gems={cloudFarm.gems}
               plots={cloudFarm.ownedPlots.length}

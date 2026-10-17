@@ -13,7 +13,6 @@ const tile = (id: string, over: Partial<TileData> = {}): TileData => ({
   watered: false,
   crop: 'carrot',
   stage: 1,
-  daysWatered: 0,
   ...over,
 });
 
@@ -49,7 +48,7 @@ describe('shibaFind', () => {
 describe('roboCatWater', () => {
   it(`waters at most ${ROBO_CAT_TILES} dry tiles`, () => {
     const tiles = Array.from({ length: 10 }, (_, i) => tile(`t${i}`));
-    const { tiles: after, watered } = roboCatWater(tiles);
+    const { tiles: after, watered } = roboCatWater(tiles, 0);
     expect(watered).toBe(ROBO_CAT_TILES);
     expect(after.filter((t) => t.watered)).toHaveLength(ROBO_CAT_TILES);
   });
@@ -59,7 +58,7 @@ describe('roboCatWater', () => {
       ...Array.from({ length: 4 }, (_, i) => tile(`soil${i}`, { state: 'tilled', crop: null, stage: 0 })),
       ...Array.from({ length: 5 }, (_, i) => tile(`crop${i}`)),
     ];
-    const { tiles: after } = roboCatWater(tiles);
+    const { tiles: after } = roboCatWater(tiles, 0);
     expect(after.filter((t) => t.watered && t.state === 'planted')).toHaveLength(5);
     expect(after.filter((t) => t.watered && t.state === 'tilled')).toHaveLength(1);
   });
@@ -71,7 +70,7 @@ describe('roboCatWater', () => {
       tile('ripe', { stage: 3 }),
       tile('wet', { watered: true }),
     ];
-    const { tiles: after, watered } = roboCatWater(tiles);
+    const { tiles: after, watered } = roboCatWater(tiles, 0);
     expect(watered).toBe(0);
     expect(after).toEqual(tiles);
   });

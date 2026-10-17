@@ -122,7 +122,9 @@ export interface CropConfig {
   icon: string;
   seedPrice: number;
   sellPrice: number;
-  daysPerStage: number;
+  // Minutes from watering to ripe, and for crops that grow back, from one picking to the next
+  growMinutes: number;
+  regrowMinutes?: number;
   regrow: boolean;
   color: string;
   description: string;
@@ -229,7 +231,11 @@ export interface TileData {
   watered: boolean;
   crop: CropId | null;
   stage: number;
-  daysWatered: number;
+  // How long the crop's current cycle takes once watered (ms), and when it reaches stage 2 and ripens
+  // (ms since 1970); `readyAt` stays null until the crop is watered (lib/growth)
+  growMs?: number;
+  midAt?: number | null;
+  readyAt?: number | null;
   // A sprinkler stands on this tile: it can't be worked and waters its neighbours each morning
   sprinkler?: boolean;
   // Fertilized: the next harvest from this tile is doubled
@@ -391,6 +397,8 @@ export interface NeighborVisit {
   visitorId: string;
   visitorName: string;
   kind: VisitKind;
+  // When the neighbour came by (ms), so their watering counts from then
+  at?: number;
 }
 
 // A swing of the net at a bug in the Park (not saved)
@@ -434,6 +442,8 @@ export interface SaveData {
   gold: number;
   gems: number;
   energy: number;
+  // When stamina was last counted (ms): it comes back by itself from then (lib/food)
+  energyAt: number;
   water: number;
   day: number;
   visitedWorlds: WorldId[];
@@ -469,6 +479,8 @@ export interface SaveData {
   sprinklers: number;
   // Bags of fertilizer
   fertilizer: number;
+  // Crops a new player can still grow in five minutes (lib/growth)
+  fastCropsLeft: number;
   // Each festival's own currency (config/festivals), kept after it ends
   festivalTokens: Partial<Record<FestivalId, number>>;
   // Daily login gift: day of the 7-day streak last claimed and the calendar date it was claimed

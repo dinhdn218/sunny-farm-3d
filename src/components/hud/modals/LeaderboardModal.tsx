@@ -12,6 +12,7 @@ import {
   weekKey,
 } from '@/lib/leaderboard';
 import { fetchLeaderboard, isSupabaseConfigured } from '@/lib/supabase';
+import { calendarDate } from '@/lib/clock';
 import { ModalShell } from './ModalShell';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -26,8 +27,9 @@ export function LeaderboardModal() {
   const [online, setOnline] = useState<BoardEntry[] | null>(null);
   const [failed, setFailed] = useState(false);
 
-  const now = new Date();
-  const week = weekKey(now);
+  // The week by the date in Vietnam, as the store counts it
+  const today = calendarDate();
+  const week = weekKey(today);
   const cfg = BOARD_CATEGORIES.find((c) => c.id === category) ?? BOARD_CATEGORIES[0];
   const yourScore =
     category === 'level' ? levelInfo(xp).level : weekly.week === week ? weekly[category] ?? 0 : 0;
@@ -58,7 +60,7 @@ export function LeaderboardModal() {
       subtitle={
         category === 'level'
           ? 'Cấp độ nông dân cao nhất'
-          : `Tuần ${week.split('-W')[1]} • còn ${weekDaysLeft(now)} ngày, sang tuần mới tính lại từ đầu`
+          : `Tuần ${week.split('-W')[1]} • còn ${weekDaysLeft(today)} ngày, sang tuần mới tính lại từ đầu`
       }
       maxWidth="max-w-lg"
     >

@@ -7,7 +7,7 @@ import { Ambience, MusicScene, NoteEvent, composeBar, musicSceneFor } from '@/li
 import { audioContext, soundFX } from '@/lib/audio';
 import { seasonOf, weatherOf } from '@/lib/seasons';
 import { activeFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { useGameStore } from '@/store/useGameStore';
 
 // Seconds of music queued ahead of the audio clock
@@ -326,7 +326,7 @@ export function useBackgroundMusic() {
         phase,
         weather: weatherOf(day),
         season: seasonOf(day),
-        festivalNight: activeFestival(localDateKey(new Date()))?.nightTheme ?? null,
+        festivalNight: activeFestival(todayKey())?.nightTheme ?? null,
       })
     );
   }, [world, phase, day]);

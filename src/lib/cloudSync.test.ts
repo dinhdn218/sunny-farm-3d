@@ -4,6 +4,7 @@ import { createNewGameSave } from '@/lib/newGame';
 import { CloudSave } from '@/lib/cloudSave';
 import { fetchCloudSave, uploadCloudSave } from '@/lib/supabase';
 import { handleSignedIn, resetCloudSession } from '@/lib/cloudSync';
+import { gameDayAt } from '@/lib/clock';
 
 // Supabase is the network boundary: the cloud is faked, the store and sync logic are real
 vi.mock('@/lib/supabase', () => ({
@@ -26,6 +27,13 @@ const cloudFarm = (): CloudSave => ({
 
 const initialState = useGameStore.getState();
 
+// A farm that has been played: a day visited counts towards an achievement, so it is no longer a fresh save
+const playedFarm = () =>
+  useGameStore.setState({
+    gold: 1500,
+    quests: useGameStore.getState().quests.map((q) => (q.id === 'a_days' ? { ...q, progress: 1 } : q)),
+  });
+
 beforeEach(() => {
   useGameStore.setState(initialState, true);
   // Swapping the whole farm back in counts as a change; start each test with nothing unsynced
@@ -43,7 +51,8 @@ describe('signing in', () => {
 
     const s = useGameStore.getState();
     expect(s.gold).toBe(5000);
-    expect(s.day).toBe(12);
+    // An older cloud save opens on yesterday, so the clock's first tick brings its morning report (lib/saveData)
+    expect(s.day).toBe(gameDayAt(Date.now()) - 1);
     expect(s.userProfile?.id).toBe('u1');
     expect(s.cloudLink).toEqual({ userId: 'u1', lastSyncedAt: 2000 });
     expect(s.cloudDirty).toBe(false);
@@ -51,7 +60,7 @@ describe('signing in', () => {
   });
 
   it('asks before replacing a farm that has been played', async () => {
-    useGameStore.setState({ day: 3, gold: 1500 });
+    playedFarm();
     vi.mocked(fetchCloudSave).mockResolvedValue(cloudFarm());
 
     await handleSignedIn(user);
@@ -65,7 +74,7 @@ describe('signing in', () => {
   });
 
   it('uploads this farm to an account without a cloud save', async () => {
-    useGameStore.setState({ day: 3, gold: 1500 });
+    playedFarm();
     vi.mocked(fetchCloudSave).mockResolvedValue(null);
 
     await handleSignedIn(user);
@@ -79,7 +88,7 @@ describe('signing in', () => {
   });
 
   it('leaves the farm alone when the cloud cannot be reached, and tries again on the next sign-in event', async () => {
-    useGameStore.setState({ day: 3, gold: 1500 });
+    playedFarm();
     vi.mocked(fetchCloudSave).mockRejectedValueOnce(new Error('offline'));
 
     await handleSignedIn(user);
@@ -95,7 +104,7 @@ describe('signing in', () => {
 
 describe('resolving a save conflict', () => {
   beforeEach(async () => {
-    useGameStore.setState({ day: 3, gold: 1500 });
+    playedFarm();
     vi.mocked(fetchCloudSave).mockResolvedValue(cloudFarm());
     await handleSignedIn(user);
   });

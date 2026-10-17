@@ -7,7 +7,7 @@ import { COSMETICS } from '@/config/cosmetics';
 import { CosmeticCategory, CosmeticItem } from '@/types/game';
 import { activeFestival } from '@/lib/festivals';
 import { FESTIVALS } from '@/config/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { ModalShell } from './ModalShell';
 import { BuildShop } from './BuildShop';
 
@@ -59,7 +59,7 @@ export function WardrobeModal() {
 
   const tab = TABS.find((t) => t.id === tabId) ?? TABS[0];
   // Festival items show up while their festival runs, and afterwards only for those who own them
-  const festival = activeFestival(localDateKey(new Date()))?.id;
+  const festival = activeFestival(todayKey())?.id;
   const items = COSMETICS.filter(
     (c) =>
       tab.categories.includes(c.category) &&

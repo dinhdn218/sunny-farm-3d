@@ -1,4 +1,4 @@
-import { ItemCounts, SaveData } from '@/types/game';
+import { ItemCounts, SaveData, TileData } from '@/types/game';
 import { COSMETICS } from '@/config/cosmetics';
 import { GRID_SIZE, PLOT_TILES, STARTER_PLOTS } from '@/config/farm';
 import { defaultDecorPlacements } from '@/lib/farmLayout';
@@ -7,8 +7,10 @@ import { addItems } from '@/lib/inventory';
 import { estimateXp } from '@/lib/leveling';
 import { discoveriesFrom } from '@/lib/collection';
 import { createEmptyGrid, createNewGameSave } from '@/lib/newGame';
+import { gameDayAt, now as clockNow } from '@/lib/clock';
+import { cycleMs, waterTile } from '@/lib/growth';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 // A save as read back from storage: possibly from an older version, possibly with extra keys
 export type StoredSave = Partial<SaveData> & Record<string, unknown>;
@@ -19,6 +21,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   gold: true,
   gems: true,
   energy: true,
+  energyAt: true,
   water: true,
   day: true,
   visitedWorlds: true,
@@ -42,6 +45,7 @@ const SAVE_FIELDS: Record<keyof SaveData, true> = {
   toolTiers: true,
   sprinklers: true,
   fertilizer: true,
+  fastCropsLeft: true,
   festivalTokens: true,
   loginStreak: true,
   lastGiftDate: true,
@@ -75,9 +79,10 @@ export function pickSaveData(state: SaveData): SaveData {
   return Object.fromEntries(SAVE_KEYS.map((key) => [key, state[key]])) as unknown as SaveData;
 }
 
-// A new game nobody has played yet: nothing to lose by replacing it with a cloud save
-export function isFreshSave(save: Pick<SaveData, 'day' | 'quests'>) {
-  return save.day <= 1 && save.quests.every((q) => !q.claimed && q.progress === 0);
+// A new game nobody has played yet: nothing to lose by replacing it with a cloud save (every day played counts
+// towards an achievement, so a save that went through a day is not fresh)
+export function isFreshSave(save: Pick<SaveData, 'quests'>) {
+  return save.quests.every((q) => !q.claimed && q.progress === 0);
 }
 
 const cosmeticById = (id: string) => COSMETICS.find((c) => c.id === id);
@@ -151,14 +156,43 @@ function fromV4(saved: StoredSave): StoredSave {
   return { ...saved, collected: discoveriesFrom(saved), collectionClaimed: [] };
 }
 
+// v5 saves ran on days slept through: crops grow on the clock now, stamina comes back by itself and the day is the
+// date in Vietnam. The save opens as if a night just went by (so on a morning report); fruit trees and letters keep
+// their age.
+function fromV5(saved: StoredSave, at: number): StoredSave {
+  const day = gameDayAt(at) - 1;
+  const shift = day - (saved.day ?? 1);
+  // Only what the save holds is converted: anything it lacks is filled in as in a new game (saveFromCloud)
+  return {
+    ...saved,
+    day,
+    ...(saved.tiles && {
+      tiles: saved.tiles.map((t) => {
+        const { daysWatered: _daysWatered, ...tile } = t as TileData & { daysWatered?: number };
+        if (tile.state !== 'planted' || !tile.crop || tile.stage >= 3) return tile;
+        const waiting: TileData = { ...tile, watered: false, growMs: cycleMs(tile), readyAt: null, midAt: null };
+        return tile.watered ? waterTile(waiting, at) : waiting;
+      }),
+    }),
+    energyAt: at,
+    fastCropsLeft: 0,
+    buff: null,
+    ...(saved.buildPieces && {
+      buildPieces: saved.buildPieces.map((p) => (p.planted === undefined ? p : { ...p, planted: p.planted + shift })),
+    }),
+    ...(saved.mail && { mail: saved.mail.map((letter) => ({ ...letter, day: letter.day + shift })) }),
+  };
+}
+
 // Brings a save written by an older version of the game up to date
-export function migrateSave(raw: Record<string, unknown>, version: number): StoredSave {
+export function migrateSave(raw: Record<string, unknown>, version: number, at = clockNow()): StoredSave {
   let save = raw as StoredSave;
   if (version < 1) save = fromV0(save);
   if (version < 2) save = fromV1(save);
   if (version < 3) save = fromV2(save);
   if (version < 4) save = fromV3(save);
   if (version < 5) save = fromV4(save);
+  if (version < 6) save = fromV5(save, at);
   return save;
 }
 

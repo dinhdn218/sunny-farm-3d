@@ -8,6 +8,8 @@ import { petMorningGift, shibaFind } from '@/lib/pets';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -34,7 +36,7 @@ const dryField = () =>
   useGameStore.setState({
     tiles: store().tiles.map((t, i): TileData =>
       i < 8 && !t.sprinkler
-        ? { ...t, state: 'planted', crop: 'carrot', stage: 1, watered: false, daysWatered: 0 }
+        ? { ...t, state: 'planted', crop: 'carrot', stage: 1, watered: false }
         : { ...t, watered: false }
     ),
   });
@@ -47,7 +49,7 @@ describe('Shiba', () => {
     const before = store();
     const find = shibaFind(day + 1);
 
-    store().nextDay();
+    nextDay();
 
     if (find.kind === 'gold') expect(store().gold).toBe(before.gold + find.amount);
     if (find.kind === 'gems') expect(store().gems).toBe(before.gems + find.amount);
@@ -61,7 +63,7 @@ describe('Shiba', () => {
     useGameStore.setState({ day: 5, shippingBin: {} });
     const { gold, gems, breadCount, seeds } = store();
 
-    store().nextDay();
+    nextDay();
 
     expect(store()).toMatchObject({ gold, gems, breadCount, seeds });
     expect(store().lastDaySummary?.petNote).toBeNull();
@@ -74,7 +76,7 @@ describe('Robo Cat', () => {
     dryField();
     useGameStore.setState({ day: dayBefore((d) => !isWet(weatherOf(d))) });
 
-    store().nextDay();
+    nextDay();
 
     expect(store().tiles.filter((t) => t.state === 'planted' && t.watered).length).toBeGreaterThan(0);
     expect(store().lastDaySummary?.petNote).toContain('Mèo Máy');
@@ -85,7 +87,7 @@ describe('Robo Cat', () => {
     dryField();
     useGameStore.setState({ day: dayBefore((d) => weatherOf(d) === 'rain') });
 
-    store().nextDay();
+    nextDay();
 
     expect(store().lastDaySummary?.petNote).toBeNull();
   });
@@ -151,7 +153,7 @@ describe('bunny, sea turtle and panda', () => {
       withPet(pet);
       useGameStore.setState({ day: 9, items: {}, animalFeed: 0, shippingBin: {} });
       const gift = petMorningGift(pet, 10)!;
-      store().nextDay();
+      nextDay();
       expect(store().items).toEqual(gift.items ?? {});
       expect(store().animalFeed).toBe(gift.feed ?? 0);
       expect(store().lastDaySummary?.petNote).toBe(gift.label);
@@ -163,7 +165,7 @@ describe('reindeer', () => {
   it('brings two loaves of bread home every morning', () => {
     withPet('reindeer_pet');
     useGameStore.setState({ day: 9, breadCount: 0, shippingBin: {} });
-    store().nextDay();
+    nextDay();
     expect(store().breadCount).toBe(2);
     expect(store().lastDaySummary?.petNote).toContain('Bánh Mì');
   });
@@ -174,7 +176,7 @@ describe('lucky cat', () => {
     withPet('lucky_cat');
     useGameStore.setState({ day: 9, gold: 0, shippingBin: {} });
     const gift = petMorningGift('lucky_cat', 10)!;
-    store().nextDay();
+    nextDay();
     expect(store().gold).toBe(gift.gold);
   });
 });

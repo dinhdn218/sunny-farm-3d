@@ -6,6 +6,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { useMultiplayerSync } from '@/lib/multiplayer';
 import { useCloudSync } from '@/lib/cloudSync';
 import { useBackgroundMusic } from '@/lib/music';
+import { useGameClock } from '@/lib/gameClock';
 import { useCasinoSync } from '@/lib/casinoNet';
 import { TopBar } from '@/components/hud/TopBar';
 import { QuestTracker } from '@/components/hud/QuestTracker';
@@ -43,7 +44,6 @@ import { LeaderboardModal } from '@/components/hud/modals/LeaderboardModal';
 import { VisitModal } from '@/components/hud/modals/VisitModal';
 import { BauCuaModal } from '@/components/hud/modals/BauCuaModal';
 import { TienLenTable } from '@/components/hud/casino/TienLenTable';
-import { giftDay, localDateKey } from '@/lib/dailyGift';
 
 // WebGL canvas only exists in the browser
 const GameCanvas = dynamic(() => import('@/components/canvas/GameCanvas'), {
@@ -59,15 +59,12 @@ export default function HomePage() {
   useCasinoSync();
   useCloudSync();
   useBackgroundMusic();
+  useGameClock();
 
-  // The store is persisted in localStorage, so the HUD renders client-side only to avoid hydration mismatches
+  // The store is persisted in localStorage, so the HUD renders client-side only to avoid hydration mismatches.
+  // Today's gift is offered by the game clock's first tick, after any morning report (store's tickClock).
   useEffect(() => {
     setMounted(true);
-    // Greet the player with today's gift if it has not been claimed yet
-    const s = useGameStore.getState();
-    if (!s.activeModal && giftDay(s.lastGiftDate, s.loginStreak, localDateKey(new Date())) !== null) {
-      s.setActiveModal('dailyGift');
-    }
   }, []);
 
   if (!mounted) {

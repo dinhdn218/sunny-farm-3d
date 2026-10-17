@@ -6,7 +6,7 @@ import { QuestCategory, QuestItem } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
 import { activeFestival, festivalDaysLeft } from '@/lib/festivals';
 import { FESTIVALS } from '@/config/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { dayLabel, todayKey } from '@/lib/clock';
 import { ModalShell } from './ModalShell';
 
 const TABS: { id: QuestCategory; label: string }[] = [
@@ -96,7 +96,7 @@ export function QuestModal() {
   const allQuests = useGameStore((s) => s.quests);
   const day = useGameStore((s) => s.day);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const today = localDateKey(new Date());
+  const today = todayKey();
   const festival = activeFestival(today);
   const quests = visibleQuests(allQuests, festival?.id ?? null);
   const tabs = festival ? [...TABS, { id: 'event' as const, label: `${festival.icon} Lễ Hội` }] : TABS;
@@ -178,7 +178,7 @@ export function QuestModal() {
         {tab === 'daily' && (
           <>
             <div className="rounded-2xl border-2 border-sky-700/30 bg-sky-50/80 p-3 text-xs font-bold text-sky-900">
-              🔄 Nhiệm vụ hằng ngày của Ngày {day}: đổi mới mỗi khi bạn Qua Ngày.
+              🔄 Nhiệm vụ hằng ngày hôm nay ({dayLabel(day)}): đổi mới lúc 0 giờ.
             </div>
             {dailies.map((q) => (
               <QuestRow key={q.id} quest={q} />

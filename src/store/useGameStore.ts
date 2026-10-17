@@ -33,7 +33,6 @@ import {
   UserProfile,
   VisitKind,
   WalkGoal,
-  Weather,
   WorldId,
 } from '@/types/game';
 import { CROPS } from '@/config/crops';
@@ -88,12 +87,11 @@ import {
   takeItems,
 } from '@/lib/inventory';
 import { marketPrice } from '@/lib/market';
-import { refillOrders } from '@/lib/orders';
-import { BEEHIVE_ID, HIVE_CAPACITY, hiveHoneyToday } from '@/lib/beehive';
-import { daysUntilGrown, ripenTrees } from '@/lib/trees';
+import { BEEHIVE_ID } from '@/lib/beehive';
+import { daysUntilGrown } from '@/lib/trees';
 import { BUGS, BUG_NET_ENERGY } from '@/config/bugs';
 import { BUFFS, foodOf } from '@/config/food';
-import { BASE_MAX_ENERGY, activeBuff, maxEnergyFor, netBuffScale } from '@/lib/food';
+import { activeBuff, maxEnergyFor, netBuffScale, settleEnergy, spendEnergy } from '@/lib/food';
 import { bugsInPark, netCaught, netZoneWidth } from '@/lib/bugs';
 import { COLLECTION_SETS, setProgress } from '@/lib/collection';
 import { RESIDENTS } from '@/config/npcs';
@@ -108,15 +106,16 @@ import {
   hearts,
   residentByName,
 } from '@/lib/friendship';
-import { MAILBOX_ID, deliverLetters, festivalLetter, letterGiftLabel, thankYouLetter } from '@/lib/mail';
+import { deliverLetters, letterGiftLabel } from '@/lib/mail';
 import { FARM_LIKE_POINTS, NEIGHBOR_WATER_TILES, visitLetter, waterForNeighbors } from '@/lib/neighbors';
 import { rollCatch, rollSize } from '@/lib/fishing';
 import { levelInfo, levelReward, levelTitle, xpFor } from '@/lib/leveling';
-import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
+import { DAILY_GIFTS, giftDay, giftLabel } from '@/lib/dailyGift';
+import { calendarDate, formatDuration, gameDayAt, msUntilNextDay, now as clockNow, todayKey } from '@/lib/clock';
+import { autoWater, canWater, harvestTile, msLeft, plantTile, refreshStages, waterTile } from '@/lib/growth';
 import { activeFestival, festivalTokensFor } from '@/lib/festivals';
 import { FESTIVALS } from '@/config/festivals';
-import { isWet, seasonOf, seasonalPrice, weatherOf } from '@/lib/seasons';
-import { petMorningGift, roboCatWater, shibaFind, shibaFindLabel } from '@/lib/pets';
+import { isWet, seasonOf, weatherOf } from '@/lib/seasons';
 import { pieceAt, snapToCell } from '@/lib/build';
 import { BUILD_PIECES } from '@/config/build';
 import {
@@ -126,7 +125,6 @@ import {
   TOOL_NAMES,
   TOOL_UPGRADES,
   UpgradableTool,
-  applySprinklers,
   areaTiles,
   energyPerTile,
   waterCapacity,
@@ -151,33 +149,7 @@ import { spawnParticles } from '@/lib/effects';
 import { projectToScreen } from '@/lib/controls';
 import { REACH, inReach } from '@/lib/walk';
 import { signOutCloud, uploadCloudSave } from '@/lib/supabase';
-
-interface DaySummaryData {
-  day: number;
-  soldItems: { label: string; icon: string; count: number; gold: number }[];
-  totalGoldEarned: number;
-  cropsGrownCount: number;
-  readyCount: number;
-  animalProductsReady: number;
-  // Workshop batches the night finished, waiting to be collected
-  batchesReady: number;
-  // Tiles the sprinklers watered this morning
-  sprinklerWatered: number;
-  // The new day's weather (rain, storms and snow water the fields) and the next day's forecast
-  weather: Weather;
-  forecast: Weather;
-  rainWatered: number;
-  // What the pet you walk with did overnight
-  petNote: string | null;
-  // Orders posted on the board this morning
-  newOrders: number;
-  // Jars the bees added to the hive overnight
-  honeyMade: number;
-  // Letters that came with the morning post
-  newLetters: number;
-  // Fruit the trees bore overnight
-  fruitRipened: number;
-}
+import { DaySummaryData, advanceDays } from '@/lib/dayCycle';
 
 // Popcorn at the cinema: the first one each day is free
 export const SNACK_PRICE = 15;
@@ -293,10 +265,20 @@ interface GameState extends SaveData {
   // The watering can is filled at the well: walk there first
   fetchWater: () => void;
   eatBread: () => void;
-  // Eat or drink a dish from the workshop: stamina back now, and its buff until bedtime (config/food)
+  // Eat or drink a dish from the workshop: stamina back now, and its buff until the day ends (config/food)
   eatFood: (id: ItemId) => void;
   interactTile: (r: number, c: number) => void;
   interactFront: () => void;
+  // Every few seconds (lib/gameClock): the day turns over at midnight, crops move on, stamina comes back
+  tickClock: () => void;
+  // The clock has ticked since the game opened (not saved): the first turnover counts as opening the game
+  clockStarted: boolean;
+  // Turns the farm over to the morning of `today` (lib/dayCycle); `opening` when it happens as the game opens
+  startNewDay: (today: number, opening?: boolean) => void;
+  // Closing the morning report brings today's gift if it is waiting
+  closeDaySummary: () => void;
+  // The farmhouse tells when the next day begins
+  showDayCountdown: () => void;
   // Walk over to something and do the job there (straight away when already close enough)
   walkTo: (goal: WalkGoal) => void;
   // The player got there: face it and do the job
@@ -378,7 +360,6 @@ interface GameState extends SaveData {
   interactAnimal: (animalId: string) => void;
   feedAllAnimals: () => void;
 
-  nextDay: () => void;
   buyOrEquipCosmetic: (itemId: string) => void;
   incrementQuest: (type: QuestType, amount?: number, crop?: CropId) => void;
   claimQuest: (questId: string) => void;
@@ -422,8 +403,8 @@ const WEEKLY_COUNTERS: Partial<Record<QuestType, 'gold' | 'fish' | 'orders'>> = 
   deliver_order: 'orders',
 };
 
-// Festivals run by the device's calendar date
-const runningFestival = () => activeFestival(localDateKey(new Date()));
+// Festivals run by the date in Vietnam (lib/clock)
+const runningFestival = () => activeFestival(todayKey());
 
 // The device save (localStorage), written only when something in it changed. Hover tooltips, other players' positions
 // and the like update the store many times a second, and serialising the whole farm for each of them stalled frames.
@@ -445,6 +426,19 @@ function deviceSaveStorage<S>(): PersistStorage<S> | undefined {
 export const useGameStore = create<GameState>()(
   persist(
     (set, get) => {
+      // Stamina as it stands now: the points that came back go into the save
+      const energyNow = () => {
+        const s = get();
+        const settled = settleEnergy(s, maxEnergyFor(s.buff, s.day), clockNow());
+        if (settled.energy !== s.energy || settled.energyAt !== s.energyAt) set(settled);
+        return settled.energy;
+      };
+      // Stamina after spending `amount`, to set together with what the action changes
+      const paid = (amount: number) => {
+        const s = get();
+        return spendEnergy(s, amount, maxEnergyFor(s.buff, s.day), clockNow());
+      };
+
       const announceCompleted = (completed: QuestItem[]) => {
         if (completed.length === 0) return;
         const { playerPos } = get();
@@ -557,6 +551,7 @@ export const useGameStore = create<GameState>()(
         bugCatch: null,
         activeResident: null,
         lastDaySummary: null,
+        clockStarted: false,
         floatingLabels: [],
         tooltip: null,
         cinemaChannel: 0,
@@ -616,7 +611,7 @@ export const useGameStore = create<GameState>()(
             lastDaySummary: null,
             tooltip: null,
           });
-          get().showToast(`☁️ Đã tải nông trại từ Cloud (Ngày ${save.day})`, 'text-sky-300');
+          get().showToast('☁️ Đã tải nông trại từ Cloud!', 'text-sky-300');
         },
 
         openCloudConflict: (profile, cloud) =>
@@ -793,7 +788,8 @@ export const useGameStore = create<GameState>()(
         },
 
         eatPopcornOrSnack: (label, bonusEnergy) => {
-          const { energy, buff, gold, day, lastFreeSnackDay } = get();
+          const { buff, gold, day, lastFreeSnackDay } = get();
+          const energy = energyNow();
           const maxEnergy = maxEnergyFor(buff, day);
           if (energy >= maxEnergy) {
             get().showToast(`⚡ Thể lực đang đầy ${maxEnergy}/${maxEnergy}!`, 'text-amber-300');
@@ -835,7 +831,8 @@ export const useGameStore = create<GameState>()(
         },
 
         eatBread: () => {
-          const { breadCount, energy, buff, day } = get();
+          const { breadCount, buff, day } = get();
+          const energy = energyNow();
           const maxEnergy = maxEnergyFor(buff, day);
           if (breadCount <= 0) {
             soundFX.error();
@@ -860,7 +857,8 @@ export const useGameStore = create<GameState>()(
 
         // Eaten even on a full stomach: the buff is the point. A new dish's buff replaces the old one.
         eatFood: (id) => {
-          const { items, energy, buff, day, playerPos } = get();
+          const { items, buff, day, playerPos } = get();
+          const energy = energyNow();
           const food = foodOf(id);
           const rest = food && takeItems(items, { [id]: 1 });
           if (!food || !rest) return;
@@ -883,11 +881,13 @@ export const useGameStore = create<GameState>()(
 
         interactTile: (r, c) => {
           const state = get();
-          const { activeTool, tiles, energy, water, seeds, items, playerPos } = state;
+          const { activeTool, tiles, water, seeds, items, playerPos } = state;
+          const energy = energyNow();
           const targetTile = tiles.find((t) => t.r === r && t.c === c);
           if (!targetTile) return;
 
           const { x: tx, z: tz } = tileToWorld(r, c);
+          const now = clockNow();
           if (!state.ownedPlots.includes(plotOfTile(r, c))) {
             soundFX.error();
             get().showToast('🔒 Lô đất chưa mở khóa!', 'text-amber-300', [tx, 0.4, tz]);
@@ -913,7 +913,7 @@ export const useGameStore = create<GameState>()(
               get().showToast('💦 Đã cất Bình Phun vào kho', 'text-sky-300', [tx, 0.6, tz]);
             } else {
               get().showToast(
-                '💦 Bình Phun tưới 8 ô xung quanh mỗi sáng • dùng Giỏ (phím 3) để cất',
+                '💦 Bình Phun tự tưới 8 ô xung quanh • dùng Giỏ (phím 3) để cất',
                 'text-sky-300',
                 [tx, 0.6, tz]
               );
@@ -935,23 +935,12 @@ export const useGameStore = create<GameState>()(
 
             // Fertilized soil gives a double harvest, and the fertilizer is used up
             const count = targetTile.fertilized ? 2 : 1;
-            const updatedTiles = tiles.map((t) => {
-              if (t.r !== r || t.c !== c) return t;
-              if (cropCfg.regrow) {
-                return { ...t, stage: 2, watered: false, daysWatered: 0, fertilized: false };
-              }
-              return {
-                ...t,
-                state: 'tilled' as const,
-                crop: null,
-                stage: 0,
-                watered: false,
-                daysWatered: 0,
-                fertilized: false,
-              };
+            // A plant that grows back is watered again at once next to a sprinkler or in the rain
+            const picked = tiles.map((t) => (t.r === r && t.c === c ? harvestTile(t) : t));
+            set({
+              tiles: autoWater(picked, now, isWet(weatherOf(state.day))).tiles,
+              items: addItems(items, { [cropKey]: count }),
             });
-
-            set({ tiles: updatedTiles, items: addItems(items, { [cropKey]: count }) });
             spawnParticles(tx, 0.45, tz, 0xfacc15, 20);
             get().showToast(`${cropCfg.icon} +${count} ${cropCfg.name}!`, 'text-yellow-300', [tx, 0.65, tz]);
             get().incrementQuest('harvest', count, cropKey);
@@ -991,7 +980,7 @@ export const useGameStore = create<GameState>()(
           const perTile = energyPerTile(tier);
           if (energy < perTile) {
             soundFX.error();
-            get().showToast('⚡ Hết thể lực! Hãy ăn Bánh Mì hoặc đi ngủ!', 'text-red-400', [
+            get().showToast('⚡ Hết thể lực! Ăn Bánh Mì hoặc chờ hồi (3 phút 1 điểm)', 'text-red-400', [
               tx,
               0.5,
               tz,
@@ -1021,7 +1010,7 @@ export const useGameStore = create<GameState>()(
             const ids = new Set(worked.map((t) => t.id));
             soundFX.till();
             set({
-              energy: energy - worked.length * perTile,
+              ...paid(worked.length * perTile),
               tiles: tiles.map((t) => (ids.has(t.id) ? { ...t, state: 'tilled' } : t)),
             });
             burst(worked, 0.1, 0x78350f);
@@ -1039,10 +1028,7 @@ export const useGameStore = create<GameState>()(
               ]);
               return;
             }
-            const worked = reach((t) => t.state !== 'empty' && !t.watered).slice(
-              0,
-              Math.min(water, Math.floor(energy / perTile))
-            );
+            const worked = reach(canWater).slice(0, Math.min(water, Math.floor(energy / perTile)));
             if (worked.length === 0) {
               if (targetTile.state === 'empty') {
                 soundFX.error();
@@ -1053,9 +1039,9 @@ export const useGameStore = create<GameState>()(
             const ids = new Set(worked.map((t) => t.id));
             soundFX.water();
             set({
-              energy: energy - worked.length * perTile,
+              ...paid(worked.length * perTile),
               water: water - worked.length,
-              tiles: tiles.map((t) => (ids.has(t.id) ? { ...t, watered: true } : t)),
+              tiles: tiles.map((t) => (ids.has(t.id) ? waterTile(t, now) : t)),
             });
             burst(worked, 0.2, 0x38bdf8);
             get().incrementQuest('water', worked.length);
@@ -1085,36 +1071,29 @@ export const useGameStore = create<GameState>()(
               return;
             }
 
+            // A new player's first crops ripen in minutes; next to a sprinkler or in the rain a crop is watered at once
+            const fast = state.fastCropsLeft > 0;
+            const sown = tiles.map((t) => (t.r === r && t.c === c ? plantTile(t, cropKey, now, fast) : t));
             soundFX.plant();
             set({
-              energy: Math.max(0, energy - 2),
-              seeds: {
-                ...seeds,
-                [cropKey]: seeds[cropKey] - 1,
-              },
-              tiles: tiles.map((t) =>
-                t.r === r && t.c === c
-                  ? {
-                      ...t,
-                      state: 'planted',
-                      crop: cropKey,
-                      stage: 1,
-                      daysWatered: 0,
-                    }
-                  : t
-              ),
+              ...paid(2),
+              seeds: { ...seeds, [cropKey]: seeds[cropKey] - 1 },
+              tiles: autoWater(sown, now, isWet(weatherOf(state.day))).tiles,
+              fastCropsLeft: fast ? state.fastCropsLeft - 1 : state.fastCropsLeft,
             });
+            if (fast) get().showToast('🌱 Cây của người mới: chín sau 5 phút!', 'text-lime-300', [tx, 0.6, tz]);
             get().incrementQuest('plant', 1, cropKey);
             return;
           }
 
           if (activeTool === 'basket') {
             if (targetTile.state === 'planted' && targetTile.stage < 3) {
-              get().showToast('⏳ Cây chưa chín! Tưới nước rồi Qua Ngày.', 'text-amber-300', [
-                tx,
-                0.4,
-                tz,
-              ]);
+              const left = msLeft(targetTile, now);
+              get().showToast(
+                left === null ? '💧 Cây chưa được tưới!' : `⏳ Còn ${formatDuration(left)} nữa mới chín`,
+                'text-amber-300',
+                [tx, 0.4, tz]
+              );
             }
           }
         },
@@ -1141,6 +1120,66 @@ export const useGameStore = create<GameState>()(
           if (Math.hypot(playerPos.x - px, playerPos.z - pz) < 2.6) {
             set({ activeModal: 'map' });
           }
+        },
+
+        tickClock: () => {
+          const now = clockNow();
+          const opening = !get().clockStarted;
+          if (opening) set({ clockStarted: true });
+          const today = gameDayAt(now);
+          if (today > get().day) get().startNewDay(today, opening);
+          energyNow();
+          const tiles = refreshStages(get().tiles, now);
+          if (tiles !== get().tiles) set({ tiles });
+          // Opening the game: today's gift comes after the morning report
+          const s = get();
+          if (opening && !s.activeModal && giftDay(s.lastGiftDate, s.loginStreak, todayKey()) !== null) {
+            set({ activeModal: 'dailyGift' });
+          }
+        },
+
+        startNewDay: (today, opening = false) => {
+          energyNow();
+          const before = get();
+          const result = advanceDays(pickSaveData(before), today, clockNow());
+          if (!result) return;
+          set(result.save);
+          // The night's sales and the day's visit count before the daily quests roll over
+          get().incrementQuest('earn_gold', result.summary.totalGoldEarned);
+          get().incrementQuest('sleep', 1);
+          // The morning report waits while a window is open or the player is busy; nothing is cut short
+          const busy = !!(
+            before.activeModal ||
+            before.fishing ||
+            before.bugCatch ||
+            before.buildMode ||
+            before.placingDecor ||
+            before.placingSprinkler
+          );
+          set((s) => ({
+            quests: [...s.quests.filter((q) => q.category !== 'daily'), ...createDailyQuests(today)],
+            dailyDay: today,
+            lastDaySummary: result.summary,
+            ...(opening ? { timePhaseIndex: 0 } : {}),
+            ...(busy ? {} : { activeModal: 'summary' as const }),
+          }));
+          soundFX.questClaim();
+          if (!opening) get().showToast('🌅 Ngày mới!', 'text-amber-300');
+          get().syncToCloud();
+        },
+
+        closeDaySummary: () =>
+          set((s) => ({
+            activeModal: giftDay(s.lastGiftDate, s.loginStreak, todayKey()) !== null ? 'dailyGift' : null,
+          })),
+
+        showDayCountdown: () => {
+          const { playerPos } = get();
+          get().showToast(
+            `🏠 Ngày mới bắt đầu lúc 0 giờ (còn ${formatDuration(msUntilNextDay(clockNow()))})`,
+            'text-amber-300',
+            [playerPos.x, 1.6, playerPos.z]
+          );
         },
 
         walkTo: (goal) => {
@@ -1290,10 +1329,12 @@ export const useGameStore = create<GameState>()(
             return;
           }
           soundFX.plant();
+          // The dry soil around it is watered straight away
+          const placed = tiles.map((t) =>
+            t.id === tile.id ? { ...t, sprinkler: true, state: 'empty' as const, watered: false } : t
+          );
           set({
-            tiles: tiles.map((t) =>
-              t.id === tile.id ? { ...t, sprinkler: true, state: 'empty', watered: false } : t
-            ),
+            tiles: autoWater(placed, clockNow(), false).tiles,
             sprinklers: sprinklers - 1,
             placingSprinkler: false,
           });
@@ -1544,14 +1585,23 @@ export const useGameStore = create<GameState>()(
           const { neighborVisitsSeen, tiles, mail, day, weekly } = get();
           const fresh = visits.filter((v) => v.id > neighborVisitsSeen);
           if (!fresh.length) return;
-          const waterings = fresh.filter((v) => v.kind === 'water').length;
-          const likes = fresh.length - waterings;
-          const watering = waterForNeighbors(tiles, waterings * NEIGHBOR_WATER_TILES);
+          const now = clockNow();
+          // Each watering counts from when the neighbour came by, so the crops grew while the farm was left
+          let field = tiles;
+          let watered = 0;
+          fresh
+            .filter((v) => v.kind === 'water')
+            .forEach((v) => {
+              const watering = waterForNeighbors(field, NEIGHBOR_WATER_TILES, Math.min(v.at ?? now, now));
+              field = watering.tiles;
+              watered += watering.watered;
+            });
+          const likes = fresh.filter((v) => v.kind === 'like').length;
           set({
-            tiles: watering.tiles,
-            mail: deliverLetters(mail, [visitLetter(fresh, day, watering.watered)]),
+            tiles: refreshStages(field, now),
+            mail: deliverLetters(mail, [visitLetter(fresh, day, watered)]),
             neighborVisitsSeen: Math.max(...fresh.map((v) => v.id)),
-            weekly: likes ? addWeekly(weekly, weekKey(new Date()), { likes }) : weekly,
+            weekly: likes ? addWeekly(weekly, weekKey(calendarDate()), { likes }) : weekly,
           });
           soundFX.questClaim();
           get().showToast(`🏡 ${fresh.length} lượt hàng xóm ghé thăm! Xem Hộp Thư ✉️`, 'text-pink-300');
@@ -1652,7 +1702,8 @@ export const useGameStore = create<GameState>()(
         // Cast at the Beach jetty or the Park pond; what bites is decided now, by the waters, the time of day
         // and the season
         startFishing: (spotId) => {
-          const { currentWorld, energy, timePhaseIndex, day, playerPos, fishing } = get();
+          const { currentWorld, timePhaseIndex, day, playerPos, fishing } = get();
+          const energy = energyNow();
           // A cast already in progress is finished first (re-casting is offered on the result card)
           if (fishing && fishing.stage !== 'result') return;
           const spot = spotId ? FISHING_SPOTS[spotId] : fishingSpotIn(currentWorld);
@@ -1672,7 +1723,7 @@ export const useGameStore = create<GameState>()(
           playerPos.actionTime = Date.now();
           soundFX.cast();
           set({
-            energy: energy - FISHING_ENERGY,
+            ...paid(FISHING_ENERGY),
             activeModal: null,
             tooltip: null,
             walkGoal: null,
@@ -1769,7 +1820,8 @@ export const useGameStore = create<GameState>()(
         endFishing: () => set({ fishing: null }),
 
         startBugCatch: (spot) => {
-          const { currentWorld, day, timePhaseIndex, bugDay, bugsTaken, energy, bugCatch, fishing, buff } = get();
+          const { currentWorld, day, timePhaseIndex, bugDay, bugsTaken, bugCatch, fishing, buff } = get();
+          const energy = energyNow();
           if (currentWorld !== 'park' || bugCatch || fishing) return;
           const phase = TIME_PHASES[timePhaseIndex].id;
           const found = bugsInPark(day, phase).find((b) => b.spot === spot);
@@ -1791,14 +1843,14 @@ export const useGameStore = create<GameState>()(
 
         // One swing: in the zone the bug is netted, otherwise it flies off; either way the spot is empty till later
         swingNet: (marker) => {
-          const { bugCatch, energy, items, day, bugDay, bugsTaken, timePhaseIndex } = get();
+          const { bugCatch, items, day, bugDay, bugsTaken, timePhaseIndex } = get();
           if (!bugCatch || bugCatch.stage !== 'aim') return;
           const cfg = BUGS[bugCatch.bug];
           const caught = netCaught(marker, bugCatch.zone, bugCatch.width);
           const phase = TIME_PHASES[timePhaseIndex].id;
           const taken = bugDay === day ? bugsTaken : [];
           set({
-            energy: Math.max(0, energy - BUG_NET_ENERGY),
+            ...paid(BUG_NET_ENERGY),
             bugDay: day,
             bugsTaken: [...taken, `${phase}:${bugCatch.spot}`],
             items: caught ? addItems(items, { [bugCatch.bug]: 1 }) : items,
@@ -2211,170 +2263,6 @@ export const useGameStore = create<GameState>()(
           get().showToast(`🌾 Đã cho ${hungry.length} vật nuôi ăn no!`, 'text-pink-300');
         },
 
-        nextDay: () => {
-          const { day, tiles, shippingBin, animals, machines, gold, gems, breadCount, seeds, cosmetics, items, animalFeed } =
-            get();
-
-          // The shipping bin sells overnight at full price; the bag is kept
-          const soldItems = (Object.entries(shippingBin) as [ItemId, number][])
-            .filter(([, count]) => count > 0)
-            .map(([id, count]) => ({
-              label: ITEMS[id].name,
-              icon: ITEMS[id].icon,
-              count,
-              gold: count * seasonalPrice(id, day),
-            }));
-          const totalGoldEarned = soldItems.reduce((sum, item) => sum + item.gold, 0);
-
-          // A night's sleep finishes every batch in the workshop
-          const now = Date.now();
-          let batchesReady = 0;
-          const nextMachines: SaveData['machines'] = {};
-          (Object.keys(machines) as MachineId[]).forEach((id) => {
-            const job = machines[id]?.job ?? null;
-            if (job) batchesReady++;
-            nextMachines[id] = { job: job && { ...job, readyAt: Math.min(job.readyAt, now) } };
-          });
-
-          let cropsGrownCount = 0;
-          const nextTiles = tiles.map((t) => {
-            if (t.state === 'planted' && t.crop && t.watered && t.stage < 3) {
-              const cfg = CROPS[t.crop];
-              const nextDaysWatered = t.daysWatered + 1;
-              if (nextDaysWatered >= cfg.daysPerStage) {
-                cropsGrownCount++;
-                return {
-                  ...t,
-                  stage: Math.min(3, t.stage + 1),
-                  watered: false,
-                  daysWatered: 0,
-                };
-              }
-              return {
-                ...t,
-                watered: false,
-                daysWatered: nextDaysWatered,
-              };
-            }
-            return { ...t, watered: false };
-          });
-          const readyCount = nextTiles.filter(
-            (t) => t.state === 'planted' && t.stage >= 3
-          ).length;
-          // Sprinklers water their neighbours for the new day (so those crops grow tonight)
-          const sprinkledTiles = applySprinklers(nextTiles);
-          const sprinklerWatered = sprinkledTiles.filter((t) => t.watered).length;
-          // Rain, storms and snow water every worked tile
-          const weather = weatherOf(day + 1);
-          const morningTiles = isWet(weather)
-            ? sprinkledTiles.map((t) =>
-                t.state !== 'empty' && !t.sprinkler && !t.watered ? { ...t, watered: true } : t
-              )
-            : sprinkledTiles;
-          const rainWatered = morningTiles.filter((t) => t.watered).length - sprinklerWatered;
-
-          // The pet you walk with lends a hand overnight
-          const cat = cosmetics.pet === 'robo_cat' ? roboCatWater(morningTiles) : null;
-          const find = cosmetics.pet === 'shiba_inu' ? shibaFind(day + 1) : null;
-          const gift = petMorningGift(cosmetics.pet, day + 1);
-          const petNote = find
-            ? shibaFindLabel(find)
-            : cat?.watered
-            ? `🤖 Mèo Máy đã tưới giúp ${cat.watered} ô ruộng`
-            : gift?.label ?? null;
-
-          let animalProductsReady = 0;
-          const nextAnimals = animals.map((a) => {
-            const ready = a.fedToday || a.hasProduct;
-            if (ready) animalProductsReady++;
-            return {
-              ...a,
-              hasProduct: ready,
-              fedToday: false,
-            };
-          });
-
-          // Overnight sales and the night's sleep count before the daily quests roll over
-          get().incrementQuest('earn_gold', totalGoldEarned);
-          get().incrementQuest('sleep', 1);
-
-          // Residents post new orders in the board's empty slots
-          const orders = refillOrders({ ...get(), day: day + 1 });
-          const newOrders = orders.length - get().orders.length;
-
-          // The fruit trees bear overnight
-          const trees = ripenTrees(get().buildPieces, day + 1);
-
-          // The bees fill the hive overnight, up to what it holds
-          const { decorPlacements, ownedCosmetics, buildPieces, beehiveHoney, mail, pendingThanks } = get();
-          const hiveHoney = Math.min(
-            HIVE_CAPACITY,
-            beehiveHoney + hiveHoneyToday(decorPlacements, ownedCosmetics, buildPieces)
-          );
-          // The morning post: the running festival's letter, and thanks for yesterday's orders to a farm with a mailbox
-          const festival = runningFestival();
-          const hasMailbox = !!decorPlacements[MAILBOX_ID] && ownedCosmetics.includes(MAILBOX_ID);
-          const nextMail = deliverLetters(mail, [
-            ...(festival ? [festivalLetter(festival, day + 1)] : []),
-            ...(pendingThanks && hasMailbox ? [thankYouLetter(pendingThanks, day + 1)] : []),
-          ]);
-          const newLetters = nextMail.filter((l) => !mail.includes(l)).length;
-
-          soundFX.questClaim();
-          set({
-            day: day + 1,
-            energy: BASE_MAX_ENERGY,
-            // Yesterday's dish has worn off
-            buff: null,
-            timePhaseIndex: 0,
-            gold: gold + totalGoldEarned + (find?.kind === 'gold' ? find.amount : 0) + (gift?.gold ?? 0),
-            gems: gems + (find?.kind === 'gems' ? find.amount : 0),
-            breadCount: breadCount + (find?.kind === 'bread' ? 1 : 0) + (gift?.bread ?? 0),
-            seeds: find?.kind === 'seeds' ? { ...seeds, [find.crop]: (seeds[find.crop] ?? 0) + find.count } : seeds,
-            items: gift?.items ? addItems(items, gift.items) : items,
-            animalFeed: animalFeed + (gift?.feed ?? 0),
-            tiles: cat ? cat.tiles : morningTiles,
-            animals: nextAnimals,
-            machines: nextMachines,
-            shippingBin: {},
-            quests: [
-              ...get().quests.filter((q) => q.category !== 'daily'),
-              ...createDailyQuests(day + 1),
-            ],
-            dailyDay: day + 1,
-            orders,
-            buildPieces: trees.pieces,
-            beehiveHoney: hiveHoney,
-            mail: nextMail,
-            pendingThanks: null,
-            placingDecor: null,
-            buildMode: null,
-            fishing: null,
-            walkGoal: null,
-            lastDaySummary: {
-              day,
-              soldItems,
-              totalGoldEarned,
-              cropsGrownCount,
-              readyCount,
-              animalProductsReady,
-              batchesReady,
-              sprinklerWatered,
-              weather,
-              forecast: weatherOf(day + 2),
-              rainWatered,
-              petNote,
-              newOrders,
-              honeyMade: hiveHoney - beehiveHoney,
-              fruitRipened: trees.ripened,
-              newLetters,
-            },
-            activeModal: 'summary',
-          });
-
-          get().syncToCloud();
-        },
-
         buyOrEquipCosmetic: (itemId) => {
           const { ownedCosmetics, cosmetics, gold, gems, playerPos } = get();
           const item = cosmeticById(itemId);
@@ -2449,7 +2337,7 @@ export const useGameStore = create<GameState>()(
           gainXp(xpFor(type, amount));
           // This week's counters for the leaderboards
           const counter = WEEKLY_COUNTERS[type];
-          if (counter) set((s) => ({ weekly: addWeekly(s.weekly, weekKey(new Date()), { [counter]: amount }) }));
+          if (counter) set((s) => ({ weekly: addWeekly(s.weekly, weekKey(calendarDate()), { [counter]: amount }) }));
           const tokens = festival ? festivalTokensFor(festival, type, amount, crop) : 0;
           if (festival && tokens > 0) {
             const { playerPos } = get();
@@ -2548,7 +2436,7 @@ export const useGameStore = create<GameState>()(
 
         spinLuckyWheel: () => {
           const { lastWheelDate, gold, gems, breadCount, seeds } = get();
-          const today = localDateKey(new Date());
+          const today = todayKey();
           if (lastWheelDate === today) return null;
           const index = rollWheel();
           const prize = WHEEL_PRIZES[index];
@@ -2634,7 +2522,7 @@ export const useGameStore = create<GameState>()(
         claimDailyGift: () => {
           const { loginStreak, lastGiftDate, gold, gems, breadCount, animalFeed, seeds, playerPos } =
             get();
-          const today = localDateKey(new Date());
+          const today = todayKey();
           const day = giftDay(lastGiftDate, loginStreak, today);
           if (day === null) return;
           const gift = DAILY_GIFTS[day - 1];

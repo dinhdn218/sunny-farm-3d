@@ -12,7 +12,7 @@ import { goToTable } from '@/lib/casinoNet';
 import { NPC_PRESETS } from '@/config/npcs';
 import { WHEEL_COLORS, WHEEL_PRIZES } from '@/config/luckyWheel';
 import { ZONE_SPOTS } from '@/config/zones';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { activeFestival } from '@/lib/festivals';
 import { BAU_CUA_FACES } from '@/config/baucua';
 import { PlayerCosmetics } from '@/types/game';
@@ -201,7 +201,7 @@ function LuckyWheelBooth() {
   const texture = useWheelTexture();
   const walkTo = useGameStore((s) => s.walkTo);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
-  const ready = useGameStore((s) => s.lastWheelDate !== localDateKey(new Date()));
+  const ready = useGameStore((s) => s.lastWheelDate !== todayKey());
   const handlers = interactable(
     '🎡 Vòng Quay May Mắn',
     () => walkTo({ ...ZONE_SPOTS.casinoWheel, act: () => setActiveModal('luckyWheel') }),
@@ -398,7 +398,7 @@ function BauCuaTable() {
 
 export function CasinoWorld() {
   // Bầu Cua comes out for Tết
-  const tet = activeFestival(localDateKey(new Date()))?.id === 'tet';
+  const tet = activeFestival(todayKey())?.id === 'tet';
 
   // The hall's props are merged into a few draw calls (see StaticMerge)
   return (

@@ -5,6 +5,8 @@ import { snapToCell } from '@/lib/build';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -53,7 +55,7 @@ describe('fruit trees', () => {
   it('ripen overnight once grown, and the morning report says so', () => {
     // Orange trees take 5 days to grow
     useGameStore.setState({ day: 5, buildPieces: [tree()], shippingBin: {} });
-    store().nextDay();
+    nextDay();
     expect(store().buildPieces[0].fruit).toBe(1);
     expect(store().lastDaySummary?.fruitRipened).toBe(1);
   });

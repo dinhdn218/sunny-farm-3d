@@ -24,7 +24,7 @@ import { FestivalScene } from './environment/Festivals';
 import { WeatherEffects } from './environment/WeatherEffects';
 import { PhotoRig } from './PhotoRig';
 import { activeFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { weatherOf } from '@/lib/seasons';
 import { islandShape } from '@/lib/farmLayout';
 import { Weather } from '@/types/game';
@@ -43,7 +43,7 @@ function SkyAndLights() {
   const sunRef = useRef<THREE.DirectionalLight>(null);
   // A festival can colour its nights (Lễ Hội Bí Ngô turns them purple); wet days are overcast
   const festiveNight =
-    phase.id === 'night' ? activeFestival(localDateKey(new Date()))?.nightSky ?? null : null;
+    phase.id === 'night' ? activeFestival(todayKey())?.nightSky ?? null : null;
   const overcast = WET_SKY[weather];
   const tint = (color: string) =>
     overcast ? `#${new THREE.Color(color).lerp(new THREE.Color(overcast), 0.6).getHexString()}` : color;

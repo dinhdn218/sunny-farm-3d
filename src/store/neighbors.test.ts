@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { NeighborVisit, QuestItem } from '@/types/game';
 import { useGameStore } from '@/store/useGameStore';
 import { weekKey } from '@/lib/leaderboard';
+import { calendarDate } from '@/lib/clock';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
@@ -43,7 +44,7 @@ describe('visits from other players', () => {
     store().receiveNeighborVisits([visit(1, 'water'), visit(2, 'like'), visit(3, 'like')]);
     expect(store().tiles.filter((t) => t.watered)).toHaveLength(4);
     expect(store().mail[0]).toMatchObject({ id: 'visits_3', gift: { gold: 30 }, read: false });
-    expect(store().weekly).toMatchObject({ week: weekKey(new Date()), likes: 2 });
+    expect(store().weekly).toMatchObject({ week: weekKey(calendarDate()), likes: 2 });
     expect(store().neighborVisitsSeen).toBe(3);
   });
 

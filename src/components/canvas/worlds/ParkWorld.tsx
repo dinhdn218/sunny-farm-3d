@@ -9,7 +9,7 @@ import { interactable } from '@/lib/interact';
 import { activeFestival } from '@/lib/festivals';
 import { FestivalConfig } from '@/config/festivals';
 import { ParkBugs } from '../ParkBugs';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { FISHING_ENERGY, FISHING_SPOTS } from '@/config/fish';
 import { SNACKS, ZONE_SPOTS } from '@/config/zones';
 import { Fountain, Tree } from '../environment/Props';
@@ -303,7 +303,7 @@ export function ParkWorld() {
   const gazebo = interactable('Đài Nhiệm Vụ Trung Tâm (Nhận Thưởng)', () =>
     walkTo({ x: gx, z: gz, reach, act: () => setActiveModal('quests') })
   );
-  const festival = activeFestival(localDateKey(new Date()));
+  const festival = activeFestival(todayKey());
 
   // The park's props are merged into a few draw calls (see StaticMerge); the bugs fly about on their own
   return (

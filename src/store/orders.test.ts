@@ -4,6 +4,8 @@ import { useGameStore } from '@/store/useGameStore';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -91,14 +93,14 @@ describe('refusing an order', () => {
 describe('a new morning', () => {
   it('fills the free slots and keeps the open orders', () => {
     useGameStore.setState({ orders: [order()] });
-    store().nextDay();
+    nextDay();
     expect(store().orders).toHaveLength(3);
     expect(store().orders[0]).toEqual(order());
   });
 
   it('reports how many new orders came in', () => {
     useGameStore.setState({ orders: [order()] });
-    store().nextDay();
+    nextDay();
     expect(store().lastDaySummary?.newOrders).toBe(2);
   });
 });

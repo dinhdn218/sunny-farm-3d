@@ -6,7 +6,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { COSMETICS } from '@/config/cosmetics';
 import { FestivalConfig } from '@/config/festivals';
 import { activeFestival, festivalDaysLeft, nextFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { ModalShell } from './ModalShell';
 
 // The try-on preview is its own WebGL canvas, browser only
@@ -17,7 +17,7 @@ const shortDate = (key: string) => key.split('-').reverse().join('/');
 
 // The running festival's stall: trade its tokens for festival-only wearables and decor (in the Park)
 export function FestivalShopModal() {
-  const today = localDateKey(new Date());
+  const today = todayKey();
   const festival = activeFestival(today);
   if (!festival) {
     const next = nextFestival(today);

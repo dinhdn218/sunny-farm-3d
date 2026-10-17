@@ -20,6 +20,9 @@ import {
 import { seasonOf } from '@/lib/seasons';
 import { daysUntilGrown } from '@/lib/trees';
 import { FarmView } from '@/lib/visit';
+import { now as clockNow } from '@/lib/clock';
+import { refreshStages } from '@/lib/growth';
+import { useGameStore } from '@/store/useGameStore';
 import { CropMesh } from './models/CropMesh';
 import { DecorModel } from './models/DecorModel';
 import { MachineModel } from './models/MachineModel';
@@ -34,7 +37,10 @@ const LEGACY_LIGHT_SCALE = Math.PI;
 // Someone else's farm as it stands, to look round but not touch
 function Farm({ farm }: { farm: FarmView }) {
   const motion = useRef(createMotion()).current;
-  const look = SEASON_LOOK[seasonOf(farm.day)];
+  // Their crops as they stand now, in today's season (their save may be hours old)
+  const day = useGameStore((s) => s.day);
+  const tiles = useMemo(() => refreshStages(farm.tiles, clockNow()), [farm.tiles]);
+  const look = SEASON_LOOK[seasonOf(day)];
   const bands = useMemo(() => farmBands(farm.ownedPlots), [farm.ownedPlots]);
   const field = useMemo(() => fieldRect(farm.ownedPlots), [farm.ownedPlots]);
   const island = useMemo(() => islandShape('farm', farm.ownedPlots), [farm.ownedPlots]);
@@ -57,7 +63,7 @@ function Farm({ farm }: { farm: FarmView }) {
         <meshLambertMaterial color="#78350f" />
       </mesh>
 
-      {farm.tiles.map((tile) => {
+      {tiles.map((tile) => {
         const { x, z } = tileToWorld(tile.r, tile.c);
         if (x < field.minX + FIELD_BORDER || x > field.maxX - FIELD_BORDER) return null;
         if (z < field.minZ + FIELD_BORDER || z > field.maxZ - FIELD_BORDER) return null;
@@ -152,8 +158,8 @@ function Farm({ farm }: { farm: FarmView }) {
           <BuildPieceModel
             kind={p.kind}
             leaves={look.oak}
-            winter={seasonOf(farm.day) === 'winter'}
-            grown={daysUntilGrown(p, farm.day) === 0}
+            winter={seasonOf(day) === 'winter'}
+            grown={daysUntilGrown(p, day) === 0}
             fruit={p.fruit ?? 0}
           />
         </group>

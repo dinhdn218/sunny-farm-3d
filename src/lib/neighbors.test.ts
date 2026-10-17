@@ -25,6 +25,11 @@ describe('visitsFromRows', () => {
       { id: 11, visitorId: 'u5', visitorName: 'Nông Dân', kind: 'like' },
     ]);
   });
+
+  it('reads when each visit was made', () => {
+    const rows = [{ id: 4, visitor_id: 'u1', visitor_name: 'Minh', kind: 'water', created_at: '2026-10-17T03:00:00Z' }];
+    expect(visitsFromRows(rows)[0].at).toBe(Date.UTC(2026, 9, 17, 3));
+  });
 });
 
 describe('vnDateKey', () => {
@@ -51,15 +56,15 @@ describe('waterForNeighbors', () => {
     });
 
   it('waters dry growing tiles, up to the count', () => {
-    const { tiles, watered } = waterForNeighbors(field(), 4);
+    const { tiles, watered } = waterForNeighbors(field(), 4, 0);
     expect(watered).toBe(4);
     expect(tiles.slice(0, 8).map((t) => t.watered)).toEqual([true, false, false, true, true, true, true, false]);
   });
 
   it('waters what there is, and leaves a field with nothing dry as it was', () => {
-    expect(waterForNeighbors(field(), 20).watered).toBe(5);
+    expect(waterForNeighbors(field(), 20, 0).watered).toBe(5);
     const wet = field().map((t) => ({ ...t, watered: true }));
-    expect(waterForNeighbors(wet, 4).tiles).toBe(wet);
+    expect(waterForNeighbors(wet, 4, 0).tiles).toBe(wet);
   });
 });
 

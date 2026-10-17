@@ -6,7 +6,8 @@ import { SAVE_VERSION, saveFromCloud } from '@/lib/saveData';
 import { CloudSave, parseCloudRow } from '@/lib/cloudSave';
 import { BoardCategory, BoardEntry, boardFromRows } from '@/lib/leaderboard';
 import { FarmListing, FarmView, farmListFromRows, farmViewOf } from '@/lib/visit';
-import { VISITOR_NAME_MAX, visitsFromRows, vnDateKey } from '@/lib/neighbors';
+import { VISITOR_NAME_MAX, visitsFromRows } from '@/lib/neighbors';
+import { todayKey } from '@/lib/clock';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -151,7 +152,7 @@ export async function fetchVisitsToday(hostId: string, visitorId: string): Promi
     .select('kind')
     .eq('host_id', hostId)
     .eq('visitor_id', visitorId)
-    .eq('visit_date', vnDateKey(new Date()));
+    .eq('visit_date', todayKey());
   if (error) throw error;
   return (data ?? []).map((row) => row.kind).filter((kind): kind is VisitKind => kind === 'like' || kind === 'water');
 }
@@ -160,7 +161,7 @@ export async function fetchVisitsToday(hostId: string, visitorId: string): Promi
 export async function fetchFarmVisits(hostId: string, afterId: number): Promise<NeighborVisit[]> {
   const { data, error } = await requireClient()
     .from('farm_visits')
-    .select('id, visitor_id, visitor_name, kind')
+    .select('id, visitor_id, visitor_name, kind, created_at')
     .eq('host_id', hostId)
     .gt('id', afterId)
     .order('id', { ascending: true })

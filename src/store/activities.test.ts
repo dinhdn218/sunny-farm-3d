@@ -3,7 +3,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { beachFinds } from '@/lib/forage';
 import { WHEEL_PRIZES } from '@/config/luckyWheel';
 import { CLAW_PRICE, CLAW_PRIZES } from '@/config/claw';
-import { localDateKey } from '@/lib/dailyGift';
+import { DAY_MS, resetClock, skipClock, todayKey } from '@/lib/clock';
 import { QuestItem } from '@/types/game';
 
 const initialState = useGameStore.getState();
@@ -68,8 +68,17 @@ describe('lucky wheel', () => {
     const prize = WHEEL_PRIZES[index!];
     expect(store().gold).toBe(prize.gold ?? 0);
     expect(store().gems).toBe(prize.gems ?? 0);
-    expect(store().lastWheelDate).toBe(localDateKey(new Date()));
+    expect(store().lastWheelDate).toBe(todayKey());
     expect(store().spinLuckyWheel()).toBeNull();
+  });
+
+  it('follows the game clock, not the device date', () => {
+    useGameStore.setState({ lastWheelDate: null });
+    store().spinLuckyWheel();
+    expect(store().spinLuckyWheel()).toBeNull();
+    skipClock(DAY_MS);
+    expect(store().spinLuckyWheel()).not.toBeNull();
+    resetClock();
   });
 });
 

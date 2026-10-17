@@ -4,6 +4,8 @@ import { useGameStore } from '@/store/useGameStore';
 import { CROP_LIST } from '@/config/crops';
 import { IN_SEASON_BONUS_PERCENT, SEASONS } from '@/config/seasons';
 import { isInSeason, seasonalPrice } from '@/lib/seasons';
+import { formatDuration } from '@/lib/clock';
+import { growMsOf, regrowMsOf } from '@/lib/growth';
 import {
   MAX_TOOL_TIER,
   SPRINKLER_PRICE,
@@ -131,7 +133,7 @@ function SprinklerCard() {
             </span>
           </div>
           <p className="text-xs text-amber-800">
-            Đặt lên một ô ruộng trống; mỗi sáng tự tưới 8 ô xung quanh. Dùng Giỏ (phím 3) để cất lại.
+            Đặt lên một ô ruộng trống; tự tưới 8 ô xung quanh khi đất khô. Dùng Giỏ (phím 3) để cất lại.
           </p>
         </div>
       </div>
@@ -197,6 +199,10 @@ export function SeedShopModal() {
                     </span>
                   </div>
                   <p className="text-xs text-amber-800">{crop.description}</p>
+                  <p className="text-xs font-bold text-emerald-800">
+                    ⏱ Chín sau {formatDuration(growMsOf(crop.id))}
+                    {crop.regrow ? ` • thu lại sau ${formatDuration(regrowMsOf(crop.id))}` : ''}
+                  </p>
                   <div className="text-[11px] font-black text-emerald-800">
                     Bán: 🪙 {seasonalPrice(crop.id, day)} Vàng
                   </div>

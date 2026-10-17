@@ -12,9 +12,9 @@ import { BUFFS, FoodConfig, foodOf } from '@/config/food';
 import { activeBuff } from '@/lib/food';
 import { ModalShell } from './ModalShell';
 
-// What a workshop dish gives, e.g. "Ăn: +30⚡ • 🎣 Tay Câu Vững đến khi ngủ"
+// What a workshop dish gives, e.g. "Ăn: +30⚡ • 🎣 Tay Câu Vững đến hết ngày"
 const foodLabel = (food: FoodConfig) =>
-  `${food.drink ? 'Uống' : 'Ăn'}: +${food.energy}⚡ • ${BUFFS[food.buff].icon} ${BUFFS[food.buff].name} đến khi ngủ`;
+  `${food.drink ? 'Uống' : 'Ăn'}: +${food.energy}⚡ • ${BUFFS[food.buff].icon} ${BUFFS[food.buff].name} đến hết ngày`;
 
 export function InventoryModal() {
   const day = useGameStore((s) => s.day);
@@ -55,7 +55,7 @@ export function InventoryModal() {
     <ModalShell
       icon="📦"
       title="Kho Đồ & Rương Bán Hàng"
-      subtitle="Gửi Rương để bán đủ giá khi Qua Ngày, hoặc Bán Ngay lấy tiền liền với 70% giá"
+      subtitle="Gửi Rương để bán đủ giá lúc 0 giờ, hoặc Bán Ngay lấy tiền liền với 70% giá"
       headerRight={
         <button
           onClick={() => setActiveModal('collection')}
@@ -99,7 +99,7 @@ export function InventoryModal() {
             {buff && (
               <p className="rounded-xl border border-lime-600/40 bg-lime-50 px-3 py-1.5 text-[11px] font-bold text-lime-900">
                 {BUFFS[buff.id].icon} Đang có {BUFFS[buff.id].name} ({ITEMS[buff.food].name}): {BUFFS[buff.id].effect}{' '}
-                đến khi ngủ. Ăn món khác sẽ đổi sang hiệu ứng của món đó.
+                đến hết ngày. Ăn món khác sẽ đổi sang hiệu ứng của món đó.
               </p>
             )}
             {bag.length === 0 && (
@@ -162,7 +162,7 @@ export function InventoryModal() {
           <div>
             <h3 className="mb-2 flex items-center justify-between text-base font-black text-red-950">
               <span>📮 Rương Bán Hàng</span>
-              <span className="text-xs font-extrabold text-red-700">Đủ giá khi Qua Ngày</span>
+              <span className="text-xs font-extrabold text-red-700">Đủ giá lúc 0 giờ</span>
             </h3>
             <div className="mb-3 space-y-2">
               {bin.length === 0 && (
@@ -193,7 +193,7 @@ export function InventoryModal() {
             </div>
           </div>
           <div className="border-t-2 border-red-800/20 pt-3">
-            <div className="text-xs font-bold text-red-900">Dự kiến thu về khi Qua Ngày:</div>
+            <div className="text-xs font-bold text-red-900">Dự kiến thu về lúc 0 giờ:</div>
             <div className="text-lg font-black text-amber-700">🪙 +{binValue} Vàng</div>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { Letter, NeighborVisit, TileData, VisitKind } from '@/types/game';
+import { canWater, waterTile } from '@/lib/growth';
 
 // A watering from a neighbour reaches this many dry tiles on the farm
 export const NEIGHBOR_WATER_TILES = 4;
@@ -15,7 +16,7 @@ const KINDS: VisitKind[] = ['like', 'water'];
 // Rows of the cloud's farm_visits table, oldest first; anything malformed is left out
 export function visitsFromRows(rows: unknown[]): NeighborVisit[] {
   return rows
-    .map((raw) => raw as { id?: unknown; visitor_id?: unknown; visitor_name?: unknown; kind?: unknown })
+    .map((raw) => raw as { id?: unknown; visitor_id?: unknown; visitor_name?: unknown; kind?: unknown; created_at?: unknown })
     .filter(
       (row) =>
         typeof row.id === 'number' &&
@@ -23,12 +24,16 @@ export function visitsFromRows(rows: unknown[]): NeighborVisit[] {
         typeof row.visitor_name === 'string' &&
         KINDS.includes(row.kind as VisitKind)
     )
-    .map((row) => ({
-      id: row.id as number,
-      visitorId: row.visitor_id as string,
-      visitorName: (row.visitor_name as string).slice(0, VISITOR_NAME_MAX) || 'Nông Dân',
-      kind: row.kind as VisitKind,
-    }))
+    .map((row) => {
+      const at = typeof row.created_at === 'string' ? Date.parse(row.created_at) : NaN;
+      return {
+        id: row.id as number,
+        visitorId: row.visitor_id as string,
+        visitorName: (row.visitor_name as string).slice(0, VISITOR_NAME_MAX) || 'Nông Dân',
+        kind: row.kind as VisitKind,
+        ...(Number.isFinite(at) ? { at } : {}),
+      };
+    })
     .sort((a, b) => a.id - b.id);
 }
 
@@ -36,13 +41,13 @@ export function visitsFromRows(rows: unknown[]): NeighborVisit[] {
 export const vnDateKey = (date: Date) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(date);
 
-// Neighbours' watering: up to `count` growing tiles that are still dry get watered
-export function waterForNeighbors(tiles: TileData[], count: number) {
+// Neighbours' watering at `at`: up to `count` growing crops that are still dry start growing
+export function waterForNeighbors(tiles: TileData[], count: number, at: number) {
   let left = count;
   const next = tiles.map((t) => {
-    if (left <= 0 || t.state !== 'planted' || t.watered || t.sprinkler || t.stage >= 3) return t;
+    if (left <= 0 || t.state !== 'planted' || !canWater(t)) return t;
     left--;
-    return { ...t, watered: true };
+    return waterTile(t, at);
   });
   return { tiles: left === count ? tiles : next, watered: count - left };
 }

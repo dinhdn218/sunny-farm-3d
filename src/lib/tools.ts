@@ -1,4 +1,4 @@
-import { CropId, TileData, ToolId } from '@/types/game';
+import { CropId, ToolId } from '@/types/game';
 import { GRID_SIZE } from '@/config/farm';
 import { CROP_LIST } from '@/config/crops';
 
@@ -63,18 +63,4 @@ export function nextSeedTool(activeTool: ToolId, lastSeedCrop: CropId): ToolId {
   if (!activeTool.startsWith('seed_')) return `seed_${lastSeedCrop}`;
   const current = CROP_LIST.findIndex((c) => `seed_${c.id}` === activeTool);
   return `seed_${CROP_LIST[(current + 1) % CROP_LIST.length].id}`;
-}
-
-const NEIGHBOURS: [number, number][] = AREA_OFFSETS[2].slice(1);
-
-// Each morning sprinklers water the worked (tilled or planted) tiles around them
-export function applySprinklers(tiles: TileData[]): TileData[] {
-  const reached = new Set<string>();
-  tiles
-    .filter((t) => t.sprinkler)
-    .forEach((s) => NEIGHBOURS.forEach(([dr, dc]) => reached.add(`${s.r + dr}-${s.c + dc}`)));
-  if (reached.size === 0) return tiles;
-  return tiles.map((t) =>
-    reached.has(t.id) && !t.sprinkler && t.state !== 'empty' && !t.watered ? { ...t, watered: true } : t
-  );
 }

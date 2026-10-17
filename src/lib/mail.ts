@@ -15,14 +15,14 @@ export function deliverLetters(mail: Letter[], letters: Letter[]): Letter[] {
   return fresh.length ? [...fresh, ...mail].slice(0, MAX_LETTERS) : mail;
 }
 
-export const welcomeLetter = (): Letter => ({
+export const welcomeLetter = (day = 1): Letter => ({
   id: 'welcome',
   from: 'Trưởng Làng 👴',
   title: 'Chào mừng đến Nông Trại!',
   body:
-    'Chào cháu! Cả làng mừng lắm khi có người về chăm mảnh đất này. Cứ xới đất, gieo hạt, tưới nước rồi đi ngủ là cây lớn. ' +
+    'Chào cháu! Cả làng mừng lắm khi có người về chăm mảnh đất này. Cứ xới đất, gieo hạt, tưới nước rồi chờ cây lớn, chạm vào cây là biết còn bao lâu nữa chín. ' +
     'Cư dân hay đặt hàng ở Bảng Đơn Hàng (phím O), giao cho họ là có lời to. Ông gửi chút vốn để cháu mua hạt giống nhé!',
-  day: 1,
+  day,
   read: false,
   gift: { gold: 100 },
   claimed: false,

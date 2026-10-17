@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { WHEEL_COLORS, WHEEL_PRIZES } from '@/config/luckyWheel';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { soundFX } from '@/lib/audio';
 import { ModalShell } from './ModalShell';
 
@@ -13,7 +13,7 @@ const SPIN_MS = 4200;
 // The casino's free daily spin: the wheel eases out onto the prize the store picked
 export function LuckyWheelModal() {
   const spinLuckyWheel = useGameStore((s) => s.spinLuckyWheel);
-  const spunToday = useGameStore((s) => s.lastWheelDate === localDateKey(new Date()));
+  const spunToday = useGameStore((s) => s.lastWheelDate === todayKey());
   const [angle, setAngle] = useState(0);
   const [spinning, setSpinning] = useState(false);
   const [won, setWon] = useState<number | null>(null);

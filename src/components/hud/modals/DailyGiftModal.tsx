@@ -1,7 +1,8 @@
 'use client';
 
 import { useGameStore } from '@/store/useGameStore';
-import { DAILY_GIFTS, giftDay, giftLabel, localDateKey } from '@/lib/dailyGift';
+import { DAILY_GIFTS, giftDay, giftLabel } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { levelInfo, levelReward, levelTitle } from '@/lib/leveling';
 import { ModalShell } from './ModalShell';
 
@@ -14,7 +15,7 @@ export function DailyGiftModal() {
   const lastGiftDate = useGameStore((s) => s.lastGiftDate);
   const claimDailyGift = useGameStore((s) => s.claimDailyGift);
 
-  const todayGift = giftDay(lastGiftDate, loginStreak, localDateKey(new Date()));
+  const todayGift = giftDay(lastGiftDate, loginStreak, todayKey());
   // Highlighted day of the round: today's gift, or the one already claimed today
   const currentDay = todayGift ?? loginStreak;
   const { level, into, need } = levelInfo(xp);

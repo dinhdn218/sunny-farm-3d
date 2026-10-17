@@ -12,7 +12,7 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   flan: { id: 'flan', name: 'Bánh Flan', icon: '🍮', sellPrice: 300, kind: 'artisan' },
   cheese: { id: 'cheese', name: 'Phô Mai', icon: '🧀', sellPrice: 260, kind: 'artisan' },
   wool_scarf: { id: 'wool_scarf', name: 'Khăn Len', icon: '🧣', sellPrice: 300, kind: 'artisan' },
-  pumpkin_pie: { id: 'pumpkin_pie', name: 'Bánh Bí Ngô', icon: '🥧', sellPrice: 480, kind: 'artisan' },
+  pumpkin_pie: { id: 'pumpkin_pie', name: 'Bánh Bí Ngô', icon: '🥧', sellPrice: 610, kind: 'artisan' },
   fish_stew: { id: 'fish_stew', name: 'Cá Kho Tộ', icon: '🍲', sellPrice: 230, kind: 'artisan' },
   honey_cake: { id: 'honey_cake', name: 'Bánh Mật Ong', icon: '🍰', sellPrice: 320, kind: 'artisan' },
   strawberry_jam: { id: 'strawberry_jam', name: 'Mứt Dâu', icon: '🫙', sellPrice: 250, kind: 'artisan' },
@@ -22,10 +22,10 @@ export const ARTISAN_GOODS: Record<ArtisanId, ItemConfig> = {
   grilled_squid: { id: 'grilled_squid', name: 'Mực Nướng', icon: '🍢', sellPrice: 170, kind: 'artisan' },
   mango_smoothie: { id: 'mango_smoothie', name: 'Sinh Tố Xoài', icon: '🥤', sellPrice: 180, kind: 'artisan' },
   orange_juice: { id: 'orange_juice', name: 'Nước Cam Ép', icon: '🍹', sellPrice: 150, kind: 'artisan' },
-  watermelon_ice: { id: 'watermelon_ice', name: 'Đá Bào Dưa Hấu', icon: '🍧', sellPrice: 280, kind: 'artisan' },
+  watermelon_ice: { id: 'watermelon_ice', name: 'Đá Bào Dưa Hấu', icon: '🍧', sellPrice: 325, kind: 'artisan' },
   fish_sauce: { id: 'fish_sauce', name: 'Nước Mắm Cá Cơm', icon: '🫗', sellPrice: 120, kind: 'artisan' },
   salted_egg: { id: 'salted_egg', name: 'Trứng Vịt Muối', icon: '🧂', sellPrice: 180, kind: 'artisan' },
-  pickled_cabbage: { id: 'pickled_cabbage', name: 'Dưa Bắp Cải', icon: '🥗', sellPrice: 250, kind: 'artisan' },
+  pickled_cabbage: { id: 'pickled_cabbage', name: 'Dưa Bắp Cải', icon: '🥗', sellPrice: 340, kind: 'artisan' },
   truffle_oil: { id: 'truffle_oil', name: 'Dầu Nấm Truffle', icon: '🫒', sellPrice: 330, kind: 'artisan' },
 };
 

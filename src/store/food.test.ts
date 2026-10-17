@@ -6,6 +6,8 @@ import { BUGS } from '@/config/bugs';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -71,7 +73,7 @@ describe('eating a dish from the workshop', () => {
 
   it('wears off overnight', () => {
     useGameStore.setState({ day: 4, energy: 120, buff: { id: 'stamina', food: 'cheese', day: 4 } });
-    store().nextDay();
+    nextDay();
     expect(store().buff).toBeNull();
     expect(store().energy).toBe(100);
   });

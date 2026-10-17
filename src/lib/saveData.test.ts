@@ -1,15 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { createNewGameSave } from '@/lib/newGame';
 import { createInitialQuests } from '@/lib/quests';
-import { SAVE_VERSION, isFreshSave, migrateSave, saveFromCloud } from '@/lib/saveData';
+import { SAVE_VERSION, StoredSave, isFreshSave, migrateSave, saveFromCloud } from '@/lib/saveData';
+import { gameDayAt } from '@/lib/clock';
 
 describe('isFreshSave', () => {
   it('treats a brand-new game as fresh', () => {
     expect(isFreshSave(createNewGameSave())).toBe(true);
   });
 
-  it('is not fresh once a day has passed', () => {
-    expect(isFreshSave({ ...createNewGameSave(), day: 2 })).toBe(false);
+  it('is not fresh once a day has been played', () => {
+    const save = createNewGameSave();
+    const quests = save.quests.map((q) => (q.id === 'a_days' ? { ...q, progress: 1 } : q));
+    expect(isFreshSave({ ...save, quests })).toBe(false);
   });
 
   it('is not fresh once any quest has progress', () => {
@@ -109,7 +112,7 @@ describe('saveFromCloud', () => {
   it('fills fields missing from an older cloud save with new-game values', () => {
     const save = saveFromCloud({ gold: 999, day: 7 }, 1);
     expect(save.gold).toBe(999);
-    expect(save.day).toBe(7);
+    expect(save.day).toBe(gameDayAt(Date.now()) - 1);
     expect(save.breadCount).toBe(2);
     expect(save.tiles).toHaveLength(256);
   });
@@ -137,5 +140,51 @@ describe('migrateSave from version 4', () => {
     const save = migrateSave(v4, 4);
     expect([...(save.collected ?? [])].sort()).toEqual(['tomato', 'tuna']);
     expect(save.collectionClaimed).toEqual([]);
+  });
+});
+
+describe('migrateSave from version 5', () => {
+  const T = Date.UTC(2026, 9, 20, 3);
+  const HOUR = 3_600_000;
+  const v5 = () => {
+    const save = createNewGameSave();
+    return {
+      ...save,
+      day: 12,
+      tiles: save.tiles.map((t) =>
+        t.id === '6-6'
+          ? { ...t, state: 'planted', crop: 'carrot', stage: 1, watered: true, daysWatered: 0 }
+          : t.id === '6-7'
+            ? { ...t, state: 'planted', crop: 'pumpkin', stage: 2, watered: false, daysWatered: 1 }
+            : t.id === '6-8'
+              ? { ...t, state: 'planted', crop: 'tomato', stage: 3, watered: true, daysWatered: 0 }
+              : t
+      ),
+      buildPieces: [{ kind: 'orange_tree', x: 1, z: 1, rotY: 0, planted: 10, fruit: 0 }],
+      mail: [{ ...save.mail[0], day: 11 }],
+      buff: { id: 'swift', food: 'carrot_juice', day: 12 },
+      energyAt: undefined,
+      fastCropsLeft: undefined,
+    };
+  };
+  const tileOf = (save: StoredSave, id: string) => save.tiles?.find((t) => t.id === id);
+
+  it('starts the watered crops on the clock and leaves the dry ones waiting', () => {
+    const save = migrateSave(v5(), 5, T);
+    expect(tileOf(save, '6-6')).toMatchObject({ watered: true, readyAt: T + HOUR, midAt: T + HOUR / 2 });
+    expect(tileOf(save, '6-7')).toMatchObject({ watered: false, growMs: 12 * HOUR, readyAt: null });
+    expect(tileOf(save, '6-8')).toMatchObject({ stage: 3 });
+    expect(tileOf(save, '6-6')).not.toHaveProperty('daysWatered');
+  });
+
+  it('opens on yesterday, so the first tick brings a morning report; trees and letters keep their age', () => {
+    const save = migrateSave(v5(), 5, T);
+    expect(save.day).toBe(gameDayAt(T) - 1);
+    expect(save.buildPieces?.[0].planted).toBe(gameDayAt(T) - 3);
+    expect(save.mail?.[0].day).toBe(gameDayAt(T) - 2);
+  });
+
+  it('counts stamina from now, gives no five-minute crops and forgets the dish', () => {
+    expect(migrateSave(v5(), 5, T)).toMatchObject({ energyAt: T, fastCropsLeft: 0, buff: null });
   });
 });

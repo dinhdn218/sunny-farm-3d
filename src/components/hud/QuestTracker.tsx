@@ -6,7 +6,7 @@ import { QuestCategory } from '@/types/game';
 import { activeMainQuest, isClaimable, visibleQuests } from '@/lib/quests';
 import { activeFestival } from '@/lib/festivals';
 import { FESTIVALS } from '@/config/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 import { ZonePanel } from './ZonePanel';
 
 const CATEGORY_TAG: Record<QuestCategory, string> = {
@@ -18,7 +18,7 @@ const CATEGORY_TAG: Record<QuestCategory, string> = {
 
 export function QuestTracker() {
   const allQuests = useGameStore((s) => s.quests);
-  const festival = activeFestival(localDateKey(new Date()));
+  const festival = activeFestival(todayKey());
   const quests = visibleQuests(allQuests, festival?.id ?? null);
   const currentWorld = useGameStore((s) => s.currentWorld);
   const claimQuest = useGameStore((s) => s.claimQuest);

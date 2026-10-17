@@ -5,6 +5,8 @@ import { isWet, seasonOf, weatherOf } from '@/lib/seasons';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 const tileAt = (id: string) => store().tiles.find((t) => t.id === id) as TileData;
 
 beforeEach(() => {
@@ -27,28 +29,28 @@ describe('morning weather', () => {
   it('rain waters every worked tile', () => {
     tilledDry66();
     useGameStore.setState({ day: dayBefore((d) => weatherOf(d) === 'rain') });
-    store().nextDay();
+    nextDay();
     expect(tileAt('6-6').watered).toBe(true);
   });
 
   it('snow waters the fields in winter too', () => {
     tilledDry66();
     useGameStore.setState({ day: dayBefore((d) => weatherOf(d) === 'snow') });
-    store().nextDay();
+    nextDay();
     expect(tileAt('6-6').watered).toBe(true);
   });
 
   it('a dry morning leaves the fields to the watering can', () => {
     tilledDry66();
     useGameStore.setState({ day: dayBefore((d) => !isWet(weatherOf(d))) });
-    store().nextDay();
+    nextDay();
     expect(tileAt('6-6').watered).toBe(false);
   });
 
   it("reports today's weather and tomorrow's forecast", () => {
     const day = dayBefore((d) => weatherOf(d) === 'rain');
     useGameStore.setState({ day });
-    store().nextDay();
+    nextDay();
     expect(store().lastDaySummary).toMatchObject({
       weather: 'rain',
       forecast: weatherOf(day + 2),
@@ -61,7 +63,7 @@ describe('seasonal prices', () => {
     // Day 1 is spring, the carrot's season
     useGameStore.setState({ day: 1, gold: 0, shippingBin: { carrot: 3 } });
     expect(seasonOf(1)).toBe('spring');
-    store().nextDay();
+    nextDay();
     expect(store().gold).toBe(3 * 48);
   });
 });

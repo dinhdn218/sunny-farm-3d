@@ -5,6 +5,8 @@ import { marketPrice } from '@/lib/market';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -62,7 +64,7 @@ describe('selling', () => {
   it('sells the shipping bin at full price overnight and keeps the bag', () => {
     // Day 10 is summer: no seasonal bonus on carrots
     useGameStore.setState({ day: 10, gold: 0, items: { wheat: 1 }, shippingBin: { carrot: 3, cheese: 1 } });
-    store().nextDay();
+    nextDay();
     expect(store().gold).toBe(3 * 40 + 260);
     expect(store().items).toEqual({ wheat: 1 });
     expect(store().shippingBin).toEqual({});
@@ -167,13 +169,13 @@ describe('workshop', () => {
     expect(store().items).toEqual({ wheat: 1 });
   });
 
-  it('finishes every batch overnight', () => {
+  it('leaves a batch on its own time over a new day', () => {
     withPlacedOven();
     useGameStore.setState({ items: { pumpkin: 1, egg: 1, wheat: 1 } });
     store().startRecipe('pumpkin_pie');
-    store().nextDay();
-    store().collectMachine('machine_oven');
-    expect(store().items.pumpkin_pie).toBe(1);
+    const readyAt = store().machines.machine_oven?.job?.readyAt;
+    nextDay();
+    expect(store().machines.machine_oven?.job?.readyAt).toBe(readyAt);
   });
 });
 

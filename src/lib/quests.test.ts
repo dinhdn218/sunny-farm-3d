@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { QuestItem } from '@/types/game';
 import { MAIN_QUESTS } from '@/config/quests';
-import { achievementQuest, advanceQuests, createInitialQuests, reconcileQuests, visibleQuests } from '@/lib/quests';
+import {
+  achievementQuest,
+  activeMainQuest,
+  advanceQuests,
+  createInitialQuests,
+  reconcileQuests,
+  visibleQuests,
+} from '@/lib/quests';
 
 const byId = (quests: QuestItem[], id: string) => quests.find((q) => q.id === id);
 
@@ -103,5 +110,24 @@ describe('advanceQuests', () => {
 describe('visibleQuests at Tết', () => {
   it("shows Tết's quests", () => {
     expect(visibleQuests(createInitialQuests(1), 'tet').map((q) => q.id)).toContain('t_orders');
+  });
+});
+
+describe('the story without sleeping', () => {
+  it('goes from watering straight to the first harvest', () => {
+    const ids = createInitialQuests(1).filter((q) => q.category === 'main').map((q) => q.id);
+    expect(ids[ids.indexOf('m_water') + 1]).toBe('m_harvest');
+  });
+
+  it('moves a save that stopped at "Giấc Ngủ Ngon" on to the first harvest', () => {
+    const saved = createInitialQuests(1).map((q) =>
+      ['m_till', 'm_plant', 'm_water'].includes(q.id) ? { ...q, claimed: true } : q
+    );
+    const withSleep = [...saved, { ...saved[0], id: 'm_sleep', title: 'Giấc Ngủ Ngon', type: 'sleep' as const, claimed: false }];
+    expect(activeMainQuest(reconcileQuests(withSleep, 1))?.id).toBe('m_harvest');
+  });
+
+  it('counts days visited, not nights slept', () => {
+    expect(createInitialQuests(1).find((q) => q.id === 'a_days')?.desc).toBe('Ghé nông trại vào 3 ngày khác nhau.');
   });
 });

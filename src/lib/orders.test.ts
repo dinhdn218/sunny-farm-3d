@@ -153,7 +153,7 @@ describe('orderReward', () => {
   it('adds a diamond for every 400 gold, up to 3', () => {
     expect(orderReward({ carrot_juice: 2 })).toEqual({ rewardGold: 510, rewardGems: 1 });
     expect(orderReward({ cheese: 2, egg: 2 })).toEqual({ rewardGold: 915, rewardGems: 2 });
-    expect(orderReward({ pumpkin_pie: 2, milk: 2 })).toEqual({ rewardGold: 1920, rewardGems: 3 });
+    expect(orderReward({ pumpkin_pie: 2, milk: 2 })).toEqual({ rewardGold: 2310, rewardGems: 3 });
   });
 });
 
@@ -244,11 +244,11 @@ describe('refillOrders', () => {
       carrot: 40,
       wheat: 70,
       tomato: 65,
-      pumpkin: 210,
+      pumpkin: 300,
       strawberry: 55,
-      watermelon: 190,
+      watermelon: 220,
       corn: 80,
-      cabbage: 85,
+      cabbage: 115,
       egg: 45,
     };
     ordersOver(40).forEach((order) => {

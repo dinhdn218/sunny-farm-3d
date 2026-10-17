@@ -212,7 +212,7 @@ export function VisitModal() {
               >
                 <span className="block truncate text-xs font-black text-amber-950">{entry.name}</span>
                 <span className="block text-[10px] font-bold text-amber-700">
-                  Cấp {entry.level} • Ngày {entry.day}
+                  Cấp {entry.level}
                 </span>
               </button>
             </li>
@@ -241,7 +241,6 @@ export function VisitModal() {
             <div className="flex flex-wrap gap-1.5 text-[11px] font-black text-amber-900">
               <span className="rounded-full bg-amber-200 px-2 py-0.5">👩‍🌾 {farm.playerName}</span>
               <span className="rounded-full bg-amber-200 px-2 py-0.5">⭐ Cấp {summary.level}</span>
-              <span className="rounded-full bg-amber-200 px-2 py-0.5">📅 Ngày {farm.day}</span>
               <span className="rounded-full bg-amber-200 px-2 py-0.5">🌱 {summary.planted} ô đang trồng</span>
               <span className="rounded-full bg-amber-200 px-2 py-0.5">🐄 {summary.animals} vật nuôi</span>
               <span className="rounded-full bg-amber-200 px-2 py-0.5">🏡 {summary.decor} đồ trang trí</span>

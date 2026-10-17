@@ -11,7 +11,7 @@ import { BEACH_FINDS_PER_DAY } from '@/config/forage';
 import { TABLE_LIST, humans } from '@/lib/casino';
 import { goToTable } from '@/lib/casinoNet';
 import { activeFestival } from '@/lib/festivals';
-import { localDateKey } from '@/lib/dailyGift';
+import { todayKey } from '@/lib/clock';
 
 function ZoneButton({
   onClick,
@@ -49,9 +49,9 @@ export function ZonePanel() {
   const findsLeft = useGameStore(
     (s) => BEACH_FINDS_PER_DAY - (s.beachDay === s.day ? s.beachTaken.length : 0)
   );
-  const wheelReady = useGameStore((s) => s.lastWheelDate !== localDateKey(new Date()));
+  const wheelReady = useGameStore((s) => s.lastWheelDate !== todayKey());
   const tables = useCasinoStore((s) => s.tables);
-  const festival = activeFestival(localDateKey(new Date()));
+  const festival = activeFestival(todayKey());
   const world = WORLDS[currentWorld];
   const open = useGameStore((s) => s.zonePanelOpen);
   const toggleZonePanel = useGameStore((s) => s.toggleZonePanel);

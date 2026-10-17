@@ -4,6 +4,8 @@ import { useGameStore } from '@/store/useGameStore';
 
 const initialState = useGameStore.getState();
 const store = () => useGameStore.getState();
+// The farm turned over to the next morning, as the clock does at midnight
+const nextDay = () => store().startNewDay(store().day + 1);
 
 beforeEach(() => {
   useGameStore.setState(initialState, true);
@@ -33,7 +35,7 @@ describe('the beehive', () => {
   it('fills with honey overnight once it stands on the farm', () => {
     withHive();
     useGameStore.setState({ beehiveHoney: 0 });
-    store().nextDay();
+    nextDay();
     expect(store().beehiveHoney).toBe(1);
     expect(store().lastDaySummary?.honeyMade).toBe(1);
   });
@@ -41,14 +43,14 @@ describe('the beehive', () => {
   it('holds no more than six jars', () => {
     withHive();
     useGameStore.setState({ beehiveHoney: 6 });
-    store().nextDay();
+    nextDay();
     expect(store().beehiveHoney).toBe(6);
     expect(store().lastDaySummary?.honeyMade).toBe(0);
   });
 
   it('makes nothing while it is still in the shop', () => {
     useGameStore.setState({ beehiveHoney: 0 });
-    store().nextDay();
+    nextDay();
     expect(store().beehiveHoney).toBe(0);
   });
 

@@ -8,7 +8,8 @@ import { npcPresetsFor } from '@/config/npcs';
 import { VISITORS_PER_WORLD } from '@/config/visitors';
 import { countItems, hasItems } from '@/lib/inventory';
 import { levelInfo, levelTitle } from '@/lib/leveling';
-import { giftDay, localDateKey } from '@/lib/dailyGift';
+import { giftDay } from '@/lib/dailyGift';
+import { dayLabel, todayKey } from '@/lib/clock';
 import { waterCapacity } from '@/lib/tools';
 import { activeFestival } from '@/lib/festivals';
 import { visibleQuests } from '@/lib/quests';
@@ -16,8 +17,9 @@ import { SEASONS, SEASON_DAYS, WEATHERS } from '@/config/seasons';
 import { dayInSeason, seasonOf, weatherOf } from '@/lib/seasons';
 import { BUFFS } from '@/config/food';
 import { ITEMS } from '@/config/items';
-import { activeBuff, maxEnergyFor } from '@/lib/food';
-import { formatAmount } from '@/lib/format';
+import { activeBuff, maxEnergyFor, nextEnergyIn, settleEnergy } from '@/lib/food';
+import { formatAmount, formatCountdown } from '@/lib/format';
+import { useNow } from '@/lib/gameClock';
 import { SoundSettings } from './SoundSettings';
 import { SYSTEM_BUTTON } from './hudStyles';
 
@@ -35,15 +37,17 @@ function Meter({
   value,
   max,
   fill,
+  hint,
 }: {
   icon: string;
   name: string;
   value: number;
   max: number;
   fill: string;
+  hint?: string;
 }) {
   return (
-    <div title={`${name}: ${value}/${max}`}>
+    <div title={`${name}: ${value}/${max}${hint ? ` • ${hint}` : ''}`}>
       <div className="flex justify-between gap-1 text-[10px] font-extrabold leading-snug">
         <span className="whitespace-nowrap">
           {icon}
@@ -59,18 +63,18 @@ function Meter({
           style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
         />
       </div>
+      {hint && <div className="hidden text-right text-[9px] font-bold leading-none text-emerald-800 sm:block">{hint}</div>}
     </div>
   );
 }
 
-// Where and when: the zone (opens the map), day, season and weather, next to the buttons that move time on
+// Where and when: the zone (opens the map), date, season and weather, next to the time-of-day button
 function WhereWhen() {
   const day = useGameStore((s) => s.day);
   const timePhaseIndex = useGameStore((s) => s.timePhaseIndex);
   const currentWorld = useGameStore((s) => s.currentWorld);
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const cycleTimeOfDay = useGameStore((s) => s.cycleTimeOfDay);
-  const nextDay = useGameStore((s) => s.nextDay);
   const worldCfg = WORLDS[currentWorld];
   const season = SEASONS[seasonOf(day)];
   const weather = WEATHERS[weatherOf(day)];
@@ -88,7 +92,7 @@ function WhereWhen() {
         <span className="block min-w-0">
           <span className="block truncate text-[13px] font-black leading-tight">{worldCfg.name}</span>
           <span className="block truncate text-[10px] font-bold leading-tight text-amber-800">
-            Ngày {day} • {TIME_PHASES[timePhaseIndex].label}
+            {dayLabel(day)} • {TIME_PHASES[timePhaseIndex].label}
           </span>
           <span className="block truncate text-[10px] font-bold leading-tight text-amber-800">
             {season.icon} {season.name} {dayInSeason(day)}/{SEASON_DAYS} • {weather.icon}
@@ -96,24 +100,14 @@ function WhereWhen() {
           </span>
         </span>
       </button>
-      <div className="flex shrink-0 flex-col gap-1">
-        <button
-          onClick={cycleTimeOfDay}
-          title="Đổi giờ: Sáng → Trưa → Hoàng Hôn → Đêm"
-          aria-label="Đổi giờ trong ngày"
-          className="game-btn flex h-[22px] w-8 items-center justify-center rounded-lg border-2 border-indigo-900 bg-indigo-500 text-[11px] hover:bg-indigo-400"
-        >
-          🌤️
-        </button>
-        <button
-          onClick={nextDay}
-          title="Ngủ qua ngày mới"
-          aria-label="Ngủ qua ngày mới"
-          className="game-btn flex h-[22px] w-8 items-center justify-center rounded-lg border-2 border-purple-900 bg-purple-600 text-[11px] hover:bg-purple-500"
-        >
-          🛌
-        </button>
-      </div>
+      <button
+        onClick={cycleTimeOfDay}
+        title="Đổi giờ: Sáng → Trưa → Hoàng Hôn → Đêm"
+        aria-label="Đổi giờ trong ngày"
+        className="game-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 border-indigo-900 bg-indigo-500 text-sm hover:bg-indigo-400"
+      >
+        🌤️
+      </button>
     </div>
   );
 }
@@ -124,7 +118,7 @@ function BuffBadge() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   if (!buff) return null;
   const effect = BUFFS[buff.id];
-  const text = `${effect.icon} ${effect.name} (${ITEMS[buff.food].name}): ${effect.effect} đến khi đi ngủ`;
+  const text = `${effect.icon} ${effect.name} (${ITEMS[buff.food].name}): ${effect.effect} đến hết ngày`;
   return (
     <button
       onClick={() => setActiveModal('inventory')}
@@ -140,12 +134,17 @@ function BuffBadge() {
 // The farmer: level and XP (opens the daily gift), stamina and the water left in the can
 function Farmer() {
   const xp = useGameStore((s) => s.xp);
-  const energy = useGameStore((s) => s.energy);
+  const storedEnergy = useGameStore((s) => s.energy);
+  const energyAt = useGameStore((s) => s.energyAt);
   const maxEnergy = useGameStore((s) => maxEnergyFor(s.buff, s.day));
+  // Counted every second while it comes back (the store catches up within a few seconds)
+  const now = useNow(storedEnergy < maxEnergy ? 1000 : null);
+  const energy = settleEnergy({ energy: storedEnergy, energyAt }, maxEnergy, now).energy;
+  const nextIn = nextEnergyIn({ energy: storedEnergy, energyAt }, maxEnergy, now);
   const water = useGameStore((s) => s.water);
   const maxWater = useGameStore((s) => waterCapacity(s.toolTiers.water));
   const giftReady = useGameStore(
-    (s) => giftDay(s.lastGiftDate, s.loginStreak, localDateKey(new Date())) !== null
+    (s) => giftDay(s.lastGiftDate, s.loginStreak, todayKey()) !== null
   );
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const { level, into, need } = levelInfo(xp);
@@ -176,7 +175,14 @@ function Farmer() {
         )}
       </button>
       <div className="flex w-[72px] flex-col gap-0.5 sm:w-28">
-        <Meter icon="⚡" name="Thể lực" value={energy} max={maxEnergy} fill="from-lime-500 to-emerald-500" />
+        <Meter
+          icon="⚡"
+          name="Thể lực"
+          value={energy}
+          max={maxEnergy}
+          fill="from-lime-500 to-emerald-500"
+          hint={nextIn === null ? undefined : `+1 sau ${formatCountdown(nextIn)}`}
+        />
         <Meter icon="💧" name="Bình tưới" value={water} max={maxWater} fill="from-sky-400 to-blue-600" />
       </div>
       <BuffBadge />
@@ -199,7 +205,7 @@ function Coin({ icon, label, value, valueClass }: { icon: string; label: string;
 function Wallet() {
   const gold = useGameStore((s) => s.gold);
   const gems = useGameStore((s) => s.gems);
-  const festival = activeFestival(localDateKey(new Date()));
+  const festival = activeFestival(todayKey());
   const tokens = useGameStore((s) => (festival ? s.festivalTokens[festival.id] ?? 0 : 0));
   const setActiveModal = useGameStore((s) => s.setActiveModal);
 
@@ -280,7 +286,7 @@ function MenuTiles() {
   const setActiveModal = useGameStore((s) => s.setActiveModal);
   const openExpand = useGameStore((s) => s.openExpand);
   const openWorkshop = useGameStore((s) => s.openWorkshop);
-  const festival = activeFestival(localDateKey(new Date()))?.id ?? null;
+  const festival = activeFestival(todayKey())?.id ?? null;
   const hasClaimable = visibleQuests(quests, festival).some((q) => !q.claimed && q.progress >= q.target);
 
   return (
