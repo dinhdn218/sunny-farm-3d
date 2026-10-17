@@ -30,7 +30,8 @@ function Groove({ className = '' }: { className?: string }) {
   return <span aria-hidden className={`w-0.5 shrink-0 self-stretch rounded-full bg-amber-900/20 ${className}`} />;
 }
 
-// The name shows beside the icon from sm up; phones keep the icon, to leave the zone's name room
+// The name shows beside the icon from sm up; phones keep the icon, to leave the zone's name room. While the meter
+// refills, the countdown takes the name's place, so the bar stays as tall as the menus beside it
 function Meter({
   icon,
   name,
@@ -51,7 +52,7 @@ function Meter({
       <div className="flex justify-between gap-1 text-[10px] font-extrabold leading-snug">
         <span className="whitespace-nowrap">
           {icon}
-          <span className="hidden sm:inline"> {name}</span>
+          <span className={`hidden sm:inline ${hint ? 'text-[9px] font-bold text-emerald-800' : ''}`}> {hint ?? name}</span>
         </span>
         <span className="tabular-nums">
           {value}/{max}
@@ -63,7 +64,6 @@ function Meter({
           style={{ width: `${Math.min(100, (value / max) * 100)}%` }}
         />
       </div>
-      {hint && <div className="hidden text-right text-[9px] font-bold leading-none text-emerald-800 sm:block">{hint}</div>}
     </div>
   );
 }
@@ -243,7 +243,8 @@ function Badge({ children, bounce = false }: { children: ReactNode; bounce?: boo
 }
 
 // A menu tile: icon over a short label where the bar has room for it (1024–1279px, and from 1440px), the icon
-// alone elsewhere; the full name and shortcut are in the tooltip
+// alone elsewhere; the full name and shortcut are in the tooltip. From sm the tiles fill the bar's height, which
+// the status bar beside it can stretch
 function MenuButton({
   icon,
   label,
@@ -266,7 +267,7 @@ function MenuButton({
       onClick={onClick}
       title={hotkey ? `${name} (phím ${hotkey})` : name}
       aria-label={name}
-      className={`game-btn relative flex h-9 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border-2 sm:h-[42px] sm:min-w-[40px] sm:flex-none sm:px-1 lg:min-w-[50px] xl:min-w-[40px] min-[1440px]:min-w-[50px] ${color}`}
+      className={`game-btn relative flex h-9 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl border-2 sm:h-auto sm:min-h-[42px] sm:min-w-[40px] sm:flex-none sm:px-1.5 lg:min-w-[50px] xl:min-w-[40px] min-[1440px]:min-w-[50px] ${color}`}
     >
       <span className="text-base leading-none sm:text-lg">{icon}</span>
       <span className="hidden whitespace-nowrap text-[10px] font-extrabold leading-none [text-shadow:0_1px_0_rgba(0,0,0,0.2)] lg:block xl:hidden min-[1440px]:block">
