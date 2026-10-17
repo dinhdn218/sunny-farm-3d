@@ -511,19 +511,23 @@ export interface SaveData {
   likedFarms: ResidentId[];
 }
 
+// Another player in the same zone, as drawn on screen (where they stand lives in lib/multiplayer's livePeers)
 export interface RemotePlayer {
   uid: string;
   name: string;
-  avatarUrl?: string;
   world: WorldId;
-  x: number;
-  z: number;
-  rotY: number;
   cosmetics: PlayerCosmetics;
-  level?: number;
+  level: number;
   chatMsg?: string;
   emote?: string;
-  updatedAt: number;
+}
+
+// Someone online anywhere in the game, for the lobby list
+export interface OnlinePlayer {
+  uid: string;
+  name: string;
+  world: WorldId;
+  level: number;
 }
 
 export interface ChatMessage {

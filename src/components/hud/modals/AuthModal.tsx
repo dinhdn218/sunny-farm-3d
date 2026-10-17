@@ -106,7 +106,7 @@ export function AuthModal() {
   const playerId = useGameStore((s) => s.playerId);
   const playerName = useGameStore((s) => s.playerName);
   const currentWorld = useGameStore((s) => s.currentWorld);
-  const remotePlayers = useGameStore((s) => s.remotePlayers);
+  const onlinePlayers = useGameStore((s) => s.onlinePlayers);
   const setPlayerName = useGameStore((s) => s.setPlayerName);
   const setWorld = useGameStore((s) => s.setWorld);
 
@@ -165,7 +165,7 @@ export function AuthModal() {
           </span>
         </div>
 
-        {Object.values(remotePlayers).map((p) => {
+        {Object.values(onlinePlayers).map((p) => {
           const peerZone = WORLDS[p.world] ?? WORLDS.farm;
           return (
             <div
@@ -173,15 +173,24 @@ export function AuthModal() {
               className="flex items-center justify-between rounded-xl border border-amber-700/20 bg-white/80 p-2.5"
             >
               <div>
-                <div className="text-sm font-black text-amber-950">🟢 {p.name}</div>
+                <div className="text-sm font-black text-amber-950">
+                  🟢 {p.name} <span className="text-[10px] font-bold text-amber-700">Lv{p.level}</span>
+                </div>
                 <div className="break-all font-mono text-[10px] text-slate-600">ID: {p.uid}</div>
               </div>
-              <button
-                onClick={() => setWorld(peerZone.id)}
-                className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-black text-white"
-              >
-                {peerZone.icon} Ghé thăm
-              </button>
+              {/* Someone on their own farm can't be joined there */}
+              {p.world === 'farm' ? (
+                <span className="rounded-lg bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900">
+                  🏡 Ở nông trại
+                </span>
+              ) : (
+                <button
+                  onClick={() => setWorld(peerZone.id)}
+                  className="rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-black text-white"
+                >
+                  {peerZone.icon} Ghé thăm
+                </button>
+              )}
             </div>
           );
         })}

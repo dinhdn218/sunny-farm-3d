@@ -22,6 +22,7 @@ import {
   ItemId,
   MachineId,
   NeighborVisit,
+  OnlinePlayer,
   QuestItem,
   QuestType,
   RecipeId,
@@ -256,7 +257,9 @@ interface GameState extends SaveData {
   walkGoal: WalkGoal | null;
   localChatMsg: string;
   localEmote: string;
+  // Other players in this zone, and everyone online anywhere (lib/multiplayer)
   remotePlayers: Record<string, RemotePlayer>;
+  onlinePlayers: Record<string, OnlinePlayer>;
   chatMessages: ChatMessage[];
 
   setPlayerName: (name: string) => void;
@@ -398,6 +401,7 @@ interface GameState extends SaveData {
   sendChat: (text: string) => void;
   triggerEmote: (emote: string, chatText?: string) => void;
   setRemotePlayers: (players: Record<string, RemotePlayer>) => void;
+  setOnlinePlayers: (players: Record<string, OnlinePlayer>) => void;
   addChatMessage: (msg: ChatMessage) => void;
 }
 
@@ -567,6 +571,7 @@ export const useGameStore = create<GameState>()(
         localChatMsg: '',
         localEmote: '',
         remotePlayers: {},
+        onlinePlayers: {},
         chatMessages: [
           {
             id: 'welcome_system',
@@ -2697,6 +2702,8 @@ export const useGameStore = create<GameState>()(
         },
 
         setRemotePlayers: (players) => set({ remotePlayers: players }),
+
+        setOnlinePlayers: (players) => set({ onlinePlayers: players }),
 
         addChatMessage: (msg) =>
           set((state) => {
