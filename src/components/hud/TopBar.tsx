@@ -434,19 +434,23 @@ function SystemButtons() {
   );
 }
 
-// The bars in the game's parchment. Phones: status, then purse and utilities, then the menus, a row each.
-// From sm two bars of one width, one over the other: status and purse, then menus and utilities.
+// The bars in the game's parchment. Phones: status, then purse and utilities joined in one bar, then the menus,
+// a row each. From sm two bars of one width, one over the other: status and purse, then menus and utilities.
 // From xl the two bars sit side by side on one row.
 const HEADER = [
-  'pointer-events-none fixed inset-x-0 top-0 z-20 grid gap-x-2 gap-y-1.5 p-2',
+  'pointer-events-none fixed inset-x-0 top-0 z-20 grid gap-y-1.5 p-2',
   "grid-cols-[minmax(0,1fr)_auto] [grid-template-areas:'status_status'_'wallet_system'_'menu_menu']",
-  "sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:gap-x-0 sm:p-3 sm:[grid-template-areas:'status_wallet_.'_'menu_system_.']",
+  "sm:grid-cols-[auto_auto_minmax(0,1fr)] sm:p-3 sm:[grid-template-areas:'status_wallet_.'_'menu_system_.']",
   "xl:grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] xl:[grid-template-areas:'status_wallet_._menu_system']",
 ].join(' ');
 
-// The right half of a joined bar: no left edge, and none of the soft shadow, which would darken the seam
+// The right half of a joined bar: no left edge, and none of the soft shadow, which would darken the seam. The
+// utilities are one on every screen (after the purse on phones, after the menus from sm)
 const JOINED_RIGHT =
-  'sm:rounded-l-none sm:border-l-0 sm:pl-0 sm:shadow-[0_6px_0_var(--bar-drop),inset_0_2px_0_rgba(255,255,255,0.4)]';
+  'rounded-l-none border-l-0 pl-0 shadow-[0_6px_0_var(--bar-drop),inset_0_2px_0_rgba(255,255,255,0.4)]';
+// The purse: the left half of its bar on phones, the right half of the status bar from sm
+const WALLET_JOIN =
+  'max-sm:rounded-r-none max-sm:border-r-0 sm:rounded-l-none sm:border-l-0 sm:pl-0 sm:shadow-[0_6px_0_var(--bar-drop),inset_0_2px_0_rgba(255,255,255,0.4)]';
 
 export function TopBar() {
   const headerRef = useRef<HTMLElement>(null);
@@ -469,8 +473,7 @@ export function TopBar() {
         <Groove />
         <Farmer />
       </div>
-      {/* Phones: only as wide as the purse, the utilities keeping to the right; from sm it lines up with the bar below */}
-      <div className={`bar-panel bar-ink pointer-events-auto flex items-center gap-2 justify-self-start rounded-2xl px-2 py-1 [grid-area:wallet] sm:justify-self-stretch ${JOINED_RIGHT}`}>
+      <div className={`bar-panel bar-ink pointer-events-auto flex items-center gap-2 rounded-2xl px-2 py-1 [grid-area:wallet] ${WALLET_JOIN}`}>
         <Groove className="hidden sm:block" />
         <Wallet />
       </div>
@@ -481,7 +484,7 @@ export function TopBar() {
         <MenuTiles />
       </nav>
       <div className={`bar-panel pointer-events-auto flex items-center gap-1 rounded-2xl p-1 [grid-area:system] ${JOINED_RIGHT}`}>
-        <Groove className="mr-0.5 hidden sm:block" />
+        <Groove className="mr-0.5" />
         <SystemButtons />
       </div>
     </header>
